@@ -64,7 +64,7 @@ git push origin main
 | 5 | 改根 `main.py` 的 `TOPICS`、根 `README.md` 主题索引 |
 | 6 | `git push origin main` → 等 Actions 成功 |
 
-首页展示：主题多了以后仍是同一网格；出现多个分类时自动显示筛选（大数据 / AI / 量化交易等）。`status: 'coming'` 可占位「即将推出」。
+首页展示：固定五大类筛选（基础语言 / 大数据 / AI技术 / AI应用 / 金融技术），「全部」下按大类分组；空类显示占位。大类说明见 [知识框架.md](./知识框架.md)。`status: 'coming'` 可占位「即将推出」。
 
 笔记源文件放在 `主题名/notes/*.md`。构建时 `web/scripts/sync-notes.mjs` 会同步到 `web/docs/主题名/notes/`（同步结果不入库）。
 

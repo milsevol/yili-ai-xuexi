@@ -1,87 +1,116 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { withBase } from 'vitepress'
-import { categoryOrder, topics, type TopicCategory } from '../../topics'
+import {
+  categoryHints,
+  categoryOrder,
+  topics,
+  type TopicCategory,
+} from '../../topics'
 
 const filter = ref<'全部' | TopicCategory>('全部')
 
-const categories = computed(() => {
-  const present = new Set(topics.map((t) => t.category))
-  return categoryOrder.filter((c) => present.has(c))
-})
+const countIn = (cat: TopicCategory) => topics.filter((t) => t.category === cat).length
 
-const visible = computed(() => {
-  const list =
-    filter.value === '全部'
-      ? topics
-      : topics.filter((t) => t.category === filter.value)
-  return [...list].sort((a, b) => {
+const sortTopics = (list: typeof topics) =>
+  [...list].sort((a, b) => {
     if (a.status === 'coming' && b.status !== 'coming') return 1
     if (b.status === 'coming' && a.status !== 'coming') return -1
     return a.title.localeCompare(b.title, 'zh-CN')
   })
+
+/** 「全部」只展示有内容的大类；点进空类才显示空状态 */
+const sections = computed(() => {
+  if (filter.value === '全部') {
+    return categoryOrder
+      .map((category) => ({
+        category,
+        hint: categoryHints[category],
+        items: sortTopics(topics.filter((t) => t.category === category)),
+      }))
+      .filter((s) => s.items.length > 0)
+  }
+
+  return [
+    {
+      category: filter.value,
+      hint: categoryHints[filter.value],
+      items: sortTopics(topics.filter((t) => t.category === filter.value)),
+    },
+  ]
 })
 
 const readyCount = computed(() => topics.filter((t) => t.status !== 'coming').length)
+const activeHint = computed(() =>
+  filter.value === '全部' ? '选择左侧大类，或直接进入主题' : categoryHints[filter.value],
+)
 </script>
 
 <template>
-  <section class="home-topics">
-    <div class="home-topics__inner">
-      <header class="home-topics__header">
-        <p class="home-topics__eyebrow">主题目录</p>
-        <h2 class="home-topics__title">按主题进入学习</h2>
-        <p class="home-topics__lead">
-          现有 {{ readyCount }} 个可学主题。主题变多后仍按分类筛选；点进主题读笔记，演示在本地用 Python 跑。
-        </p>
-      </header>
-
-      <div v-if="categories.length > 1" class="home-topics__filters" role="tablist" aria-label="按分类筛选">
+  <div class="home-page">
+    <div class="home-shell">
+      <aside class="home-cats" aria-label="知识大类">
+        <p class="home-cats__label">知识大类</p>
         <button
           type="button"
-          class="home-topics__chip"
+          class="home-cat"
           :class="{ 'is-active': filter === '全部' }"
           @click="filter = '全部'"
         >
-          全部
-          <span class="home-topics__count">{{ topics.length }}</span>
+          <span class="home-cat__name">全部</span>
+          <span class="home-cat__count">{{ topics.length }}</span>
         </button>
         <button
-          v-for="cat in categories"
+          v-for="cat in categoryOrder"
           :key="cat"
           type="button"
-          class="home-topics__chip"
-          :class="{ 'is-active': filter === cat }"
+          class="home-cat"
+          :class="{ 'is-active': filter === cat, 'is-empty': countIn(cat) === 0 }"
           @click="filter = cat"
         >
-          {{ cat }}
-          <span class="home-topics__count">{{ topics.filter((t) => t.category === cat).length }}</span>
+          <span class="home-cat__name">{{ cat }}</span>
+          <span class="home-cat__count">{{ countIn(cat) }}</span>
         </button>
-      </div>
+      </aside>
 
-      <div class="home-topics__grid">
-        <component
-          :is="topic.status === 'coming' ? 'div' : 'a'"
-          v-for="topic in visible"
-          :key="topic.id"
-          class="topic-card"
-          :class="{ 'is-coming': topic.status === 'coming' }"
-          v-bind="
-            topic.status === 'coming'
-              ? { role: 'note', 'aria-label': `${topic.title}（即将推出）` }
-              : { href: withBase(topic.link) }
-          "
-        >
-          <div class="topic-card__meta">
-            <span class="topic-card__cat">{{ topic.category }}</span>
-            <span v-if="topic.chapters" class="topic-card__chapters">{{ topic.chapters }} 章</span>
-            <span v-if="topic.status === 'coming'" class="topic-card__badge">即将推出</span>
+      <main class="home-main">
+        <div class="home-main__bar">
+          <div>
+            <h1 class="home-main__title">
+              {{ filter === '全部' ? '主题' : filter }}
+            </h1>
+            <p class="home-main__hint">{{ activeHint }} · {{ readyCount }} 个可学</p>
           </div>
-          <h3 class="topic-card__title">{{ topic.title }}</h3>
-          <p class="topic-card__desc">{{ topic.description }}</p>
-          <span v-if="topic.status !== 'coming'" class="topic-card__cta">进入主题 →</span>
-        </component>
-      </div>
+        </div>
+
+        <template v-for="section in sections" :key="section.category">
+          <div v-if="filter === '全部'" class="home-group__label">{{ section.category }}</div>
+
+          <div v-if="section.items.length" class="home-grid">
+            <a
+              v-for="topic in section.items"
+              :key="topic.id"
+              class="topic-row"
+              :href="withBase(topic.link)"
+            >
+              <div class="topic-row__body">
+                <div class="topic-row__top">
+                  <h2 class="topic-row__title">{{ topic.title }}</h2>
+                  <span v-if="topic.chapters" class="topic-row__chapters">{{ topic.chapters }} 章</span>
+                </div>
+                <p class="topic-row__desc">{{ topic.description }}</p>
+              </div>
+              <span class="topic-row__go" aria-hidden="true">→</span>
+            </a>
+          </div>
+
+          <p v-else class="home-empty">该类暂无主题，后续补充。</p>
+        </template>
+
+        <p v-if="filter === '全部' && sections.length === 0" class="home-empty">
+          还没有主题，先在仓库中新增一个吧。
+        </p>
+      </main>
     </div>
-  </section>
+  </div>
 </template>
