@@ -16,8 +16,7 @@ export type Topic = {
   category: TopicCategory
   description: string
   link: string
-  /** 已有笔记章节数（可选，用于首页展示） */
-  chapters?: number
+  /** 章数由 sync-notes 扫描 notes/<主题>/notes/*.md 自动生成，勿在此手写 */
   status?: 'ready' | 'coming'
 }
 
@@ -44,9 +43,8 @@ export const topics: Topic[] = [
     title: '海豚调度',
     category: '大数据',
     description:
-      'Apache DolphinScheduler：DAG 工作流调度、架构与核心概念。本地 Python 演示，不依赖真实集群。',
+      'Apache DolphinScheduler：从概述到部署运维与选型。浏览器可视化交互演示，不依赖真实集群。',
     link: '/dolphin-scheduler/',
-    chapters: 6,
     status: 'ready',
   },
 ]

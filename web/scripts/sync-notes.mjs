@@ -1,8 +1,16 @@
 /**
- * 将 notes/<主题>/notes/ 同步到 web/docs/<主题>/notes/，供 VitePress 渲染。
- * 学习内容统一放在仓库根目录 notes/ 下。
+ * 1) 将 notes/<主题>/notes/ 同步到 web/docs/<主题>/notes/
+ * 2) 按各主题 notes 下 .md 数量生成 topic-stats.generated.ts（首页章数自动）
  */
-import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, statSync } from 'node:fs'
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -10,6 +18,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const repoRoot = join(__dirname, '../..')
 const notesRoot = join(repoRoot, 'notes')
 const docsRoot = join(__dirname, '../docs')
+const statsFile = join(__dirname, '../docs/.vitepress/topic-stats.generated.ts')
 
 function listTopics() {
   if (!existsSync(notesRoot)) return []
@@ -18,6 +27,11 @@ function listTopics() {
     const chapterNotes = join(notesRoot, name, 'notes')
     return existsSync(chapterNotes) && statSync(chapterNotes).isDirectory()
   })
+}
+
+function countChapters(topic) {
+  const dir = join(notesRoot, topic, 'notes')
+  return readdirSync(dir).filter((f) => f.endsWith('.md') && !f.startsWith('.')).length
 }
 
 function syncTopic(topic) {
@@ -31,6 +45,15 @@ function syncTopic(topic) {
   console.log(`synced: notes/${topic}/notes -> docs/${topic}/notes`)
 }
 
-for (const topic of listTopics()) {
+const topics = listTopics()
+const stats = {}
+for (const topic of topics) {
   syncTopic(topic)
+  stats[topic] = countChapters(topic)
 }
+
+const body = `/** 由 web/scripts/sync-notes.mjs 自动生成，勿手改 */
+export default ${JSON.stringify(stats, null, 2)} as Record<string, number>
+`
+writeFileSync(statsFile, body, 'utf8')
+console.log(`stats: ${statsFile} -> ${JSON.stringify(stats)}`)

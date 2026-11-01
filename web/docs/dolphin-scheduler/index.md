@@ -1,48 +1,42 @@
 # 海豚调度（Apache DolphinScheduler）
 
-Apache DolphinScheduler 是一个分布式、可视化的 DAG 工作流调度平台，常用于大数据离线任务编排（数仓 ETL、报表、机器学习流水线等）。本主题用中文笔记 + Python 概念演示，帮你建立「是什么 → 怎么跑 → 怎么用」的完整图景。
+Apache DolphinScheduler 是一个分布式、可视化的 DAG 工作流调度平台，常用于大数据离线任务编排。本主题用中文笔记 + **浏览器可视化交互演示**，帮助快速理解概念与调度逻辑。
 
-> 版本参考：以社区 3.x 架构为主（Master / Worker / API / Alert + 注册中心）。演示不依赖真实集群，本地即可跑通概念。
+> 版本参考：社区 3.x。演示不连真实集群；默认打开 `demos/index.html`。
 
 ## 先决知识
 
-- 了解基本的「定时任务 / 批处理」概念（cron、依赖、失败重试）
-- 知道 DAG（有向无环图）是什么
-- 有一点大数据或数仓背景更佳（非必须）
+- 定时任务 / 批处理（cron、依赖、重试）
+- DAG（有向无环图）基本概念
+- 有数仓背景更佳，非必须
 
 ## 学习路径
 
-| 顺序 | 笔记 | 演示 | 内容 |
+| 顺序 | 笔记 | 交互演示 | 内容 |
 | --- | --- | --- | --- |
-| 1 | [01-概述与定位](./notes/01-概述与定位) | `01` | 解决什么问题、和 Airflow/Oozie 怎么选 |
-| 2 | [02-架构与组件](./notes/02-架构与组件) | `02` | Master / Worker / API / Alert / 注册中心 |
-| 3 | [03-核心概念](./notes/03-核心概念) | `03` | 项目、工作流、任务、实例、租户 |
-| 4 | [04-DAG与调度](./notes/04-DAG与调度) | `04` | 依赖、cron、补数、失败策略、优先级 |
-| 5 | [05-任务类型与资源](./notes/05-任务类型与资源) | `05` | Shell/SQL/Spark 等、资源中心、数据源 |
-| 6 | [06-运维实践与对比](./notes/06-运维实践与对比) | — | 部署形态、容错、和 Airflow 对照 |
+| 1 | [01-概述与定位](./notes/01-概述与定位) | `./start.sh 01` | crontab vs DAG、选型 |
+| 2 | [02-架构与组件](./notes/02-架构与组件) | `./start.sh 02` | 点选组件看职责 |
+| 3 | [03-核心概念](./notes/03-核心概念) | `./start.sh 03` | 定义 vs 实例 |
+| 4 | [04-DAG与调度](./notes/04-DAG与调度) | `./start.sh 04` | DAG 实验室（单步/失败策略） |
+| 5 | [05-任务类型详解](./notes/05-任务类型详解) | `./start.sh 05` | 点选任务类型 |
+| 6 | [06-参数传递与时间变量](./notes/06-参数传递与时间变量) | — | 时间变量与传参 |
+| 7 | [07-资源数据源与环境](./notes/07-资源数据源与环境) | — | 资源 / 数据源 / Worker 组 |
+| 8 | [08-部署与快速上手](./notes/08-部署与快速上手) | — | Docker 与最小闭环 |
+| 9 | [09-运维实践与故障排查](./notes/09-运维实践与故障排查) | — | 容错与排障 |
+| 10 | [10-生态对比与FAQ](./notes/10-生态对比与FAQ) | — | 选型与 FAQ |
 
-建议：先通读 01–04 并跑对应演示，再按需看 05–06。
+建议：01–05 边读边开对应交互章；08 起真实环境。
 
 ## 如何启动演示
 
-推荐一键脚本：
-
 ```bash
 cd notes/dolphin-scheduler
-./start.sh          # 菜单选择章节
-./start.sh 04       # 直达第 4 章演示
-./start.sh --help   # 查看用法
+./start.sh          # 浏览器可视化交互
+./start.sh 04       # 直达 DAG 实验室
+./start.sh --cli    # 备用终端文字版
 ```
 
-等价方式：
-
-```bash
-python3 notes/dolphin-scheduler/demos/main.py
-python3 notes/dolphin-scheduler/demos/main.py 04
-python3 main.py dolphin-scheduler 04
-```
-
-演示均为本地模拟，不连接真实 DolphinScheduler。有第三方依赖时，`./start.sh` 会自动处理 `.venv`。
+也可：`python3 main.py dolphin-scheduler` / `python3 main.py dolphin-scheduler 04`。
 
 ## 参考与官方文档
 

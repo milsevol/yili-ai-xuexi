@@ -19,11 +19,12 @@
 
 ```bash
 cd notes/dolphin-scheduler
-./start.sh              # 菜单选章节
-./start.sh 04           # 直达第 4 章
+./start.sh              # 浏览器可视化交互演示
+./start.sh 04           # 直达 DAG 实验室
+./start.sh --cli        # 备用终端版
 ```
 
-也可：`python3 main.py` / `python3 main.py dolphin-scheduler 04`。
+也可：`python3 main.py dolphin-scheduler`。
 
 打包：`./deploy.sh`（详见 [部署说明.md](./部署说明.md)）。
 
@@ -51,9 +52,9 @@ yili-ai-xuexi/
 
 ## 约定摘要
 
-- 主题只建在 `notes/` 下；Web 读、Python 跑演示。
-- 有 demos 必有 `start.sh`；章节写细（入门→精通）；主题/章节要有官方参考链接。
-- 大类可扩展；问答可沉淀。细节见 [agent.md](./agent.md)。
+- 主题只建在 `notes/` 下；有 demos 必有 `start.sh`；章节写细（入门→精通）；要有官方参考链接。
+- **Demo 选型**：概念/机制 → 可视化交互；真实框架（如 LangChain）→ Python 脚本或 Jupyter，用真库写例子（见 [agent.md](./agent.md)）。
+- 大类可扩展；问答可沉淀。
 
 ## 环境
 

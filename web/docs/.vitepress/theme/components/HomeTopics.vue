@@ -7,8 +7,11 @@ import {
   topics,
   type TopicCategory,
 } from '../../topics'
+import topicStats from '../../topic-stats.generated'
 
 const filter = ref<'全部' | TopicCategory>('全部')
+
+const chapterCount = (id: string) => topicStats[id] ?? 0
 
 const countIn = (cat: TopicCategory) => topics.filter((t) => t.category === cat).length
 
@@ -96,7 +99,7 @@ const activeHint = computed(() =>
               <div class="topic-row__body">
                 <div class="topic-row__top">
                   <h2 class="topic-row__title">{{ topic.title }}</h2>
-                  <span v-if="topic.chapters" class="topic-row__chapters">{{ topic.chapters }} 章</span>
+                  <span v-if="chapterCount(topic.id)" class="topic-row__chapters">{{ chapterCount(topic.id) }} 章</span>
                 </div>
                 <p class="topic-row__desc">{{ topic.description }}</p>
               </div>

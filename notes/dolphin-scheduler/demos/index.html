@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>海豚调度 · 交互式演示</title>
+  <style>
+    :root {
+      --bg: #f4f7f8;
+      --panel: #fff;
+      --ink: #14212b;
+      --muted: #5b6b76;
+      --line: rgba(20, 33, 43, 0.1);
+      --brand: #0f766e;
+      --brand-soft: rgba(15, 118, 110, 0.12);
+      --ok: #15803d;
+      --fail: #b91c1c;
+      --run: #0369a1;
+      --pend: #94a3b8;
+      --kill: #a16207;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", "PingFang SC", "Noto Sans SC", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 70% 40% at 0% 0%, var(--brand-soft), transparent 55%),
+        var(--bg);
+      min-height: 100vh;
+    }
+    .app {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 20px 16px 48px;
+      display: grid;
+      gap: 16px;
+    }
+    @media (min-width: 880px) {
+      .app { grid-template-columns: 200px 1fr; align-items: start; }
+    }
+    .brand h1 {
+      margin: 0;
+      font-size: 1.25rem;
+      font-family: "Noto Serif SC", "Songti SC", serif;
+    }
+    .brand p { margin: 4px 0 0; color: var(--muted); font-size: 0.85rem; line-height: 1.5; }
+    .nav {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+    @media (min-width: 880px) {
+      .nav {
+        flex-direction: column;
+        position: sticky;
+        top: 12px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 10px;
+      }
+    }
+    .nav button {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 999px;
+      padding: 0.45rem 0.85rem;
+      font-size: 0.86rem;
+      cursor: pointer;
+      text-align: left;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    @media (min-width: 880px) {
+      .nav button {
+        width: 100%;
+        border-radius: 10px;
+        border-color: transparent;
+        background: transparent;
+      }
+      .nav button:hover { background: #eef3f4; }
+    }
+    .nav button.active {
+      background: var(--brand-soft);
+      border-color: var(--brand);
+      color: var(--brand);
+      font-weight: 600;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 18px 18px 22px;
+      min-height: 420px;
+    }
+    .panel h2 { margin: 0 0 6px; font-size: 1.2rem; }
+    .lead { margin: 0 0 16px; color: var(--muted); font-size: 0.9rem; line-height: 1.6; }
+    .grid2 {
+      display: grid;
+      gap: 12px;
+    }
+    @media (min-width: 700px) {
+      .grid2 { grid-template-columns: 1fr 1fr; }
+    }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      background: #fafbfc;
+    }
+    .card h3 { margin: 0 0 8px; font-size: 0.95rem; }
+    .card ul { margin: 0; padding-left: 1.1rem; color: var(--muted); font-size: 0.86rem; line-height: 1.55; }
+    .bad { border-color: rgba(185, 28, 28, 0.25); background: #fff7f7; }
+    .good { border-color: rgba(15, 118, 110, 0.25); background: #f3fbf9; }
+    .flow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin: 12px 0;
+    }
+    .chip {
+      border-radius: 999px;
+      padding: 0.35rem 0.75rem;
+      background: var(--brand-soft);
+      color: var(--brand);
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+    .chip.ghost { background: #eef2f4; color: var(--muted); font-weight: 500; }
+    .arrow { color: var(--muted); }
+    .arch {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      margin-top: 8px;
+    }
+    .arch-item {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      cursor: pointer;
+      transition: border-color .2s, transform .2s;
+      background: #fff;
+    }
+    .arch-item:hover, .arch-item.on {
+      border-color: var(--brand);
+      transform: translateY(-1px);
+    }
+    .arch-item strong { display: block; margin-bottom: 4px; }
+    .arch-item span { font-size: 0.8rem; color: var(--muted); line-height: 1.4; }
+    .detail {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: var(--brand-soft);
+      color: var(--ink);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      min-height: 3.2em;
+    }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin: 10px 0 14px;
+    }
+    .toolbar button, .toolbar label {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 8px;
+      padding: 0.4rem 0.75rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+    .toolbar button.primary {
+      background: var(--brand);
+      border-color: var(--brand);
+      color: #fff;
+      font-weight: 600;
+    }
+    .toolbar select {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0.35rem 0.5rem;
+      font-size: 0.85rem;
+    }
+    svg.dag { width: 100%; height: auto; display: block; background: #fafbfc; border-radius: 12px; border: 1px solid var(--line); }
+    .node rect { stroke-width: 2; }
+    .node text { font-size: 13px; font-weight: 600; fill: var(--ink); }
+    .edge { stroke: #94a3b8; stroke-width: 2; fill: none; marker-end: url(#arrow); }
+    .log {
+      margin-top: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.78rem;
+      line-height: 1.5;
+      background: #0f172a;
+      color: #e2e8f0;
+      border-radius: 10px;
+      padding: 10px 12px;
+      max-height: 160px;
+      overflow: auto;
+      white-space: pre-wrap;
+    }
+    .task-grid {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+    .task-card {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      cursor: pointer;
+      background: #fff;
+    }
+    .task-card.on { border-color: var(--brand); background: var(--brand-soft); }
+    .task-card b { display: block; margin-bottom: 4px; font-size: 0.9rem; }
+    .task-card span { font-size: 0.78rem; color: var(--muted); line-height: 1.4; }
+    .hint { font-size: 0.8rem; color: var(--muted); margin-top: 8px; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <div class="brand" style="margin-bottom:12px">
+        <h1>海豚调度演示</h1>
+        <p>可视化 · 交互式学习。点左侧章节，动手看概念。</p>
+      </div>
+      <nav class="nav" id="nav"></nav>
+    </aside>
+    <main class="panel" id="panel"></main>
+  </div>
+
+  <script>
+    const chapters = [
+      { id: '01', title: '01 概述与定位' },
+      { id: '02', title: '02 架构与组件' },
+      { id: '03', title: '03 核心概念' },
+      { id: '04', title: '04 DAG 与调度' },
+      { id: '05', title: '05 任务类型' },
+    ]
+
+    const params = new URLSearchParams(location.search)
+    let current = (params.get('c') || '01').padStart(2, '0')
+
+    const nav = document.getElementById('nav')
+    const panel = document.getElementById('panel')
+
+    chapters.forEach((c) => {
+      const b = document.createElement('button')
+      b.textContent = c.title
+      b.dataset.id = c.id
+      b.onclick = () => show(c.id)
+      nav.appendChild(b)
+    })
+
+    function show(id) {
+      current = id
+      nav.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.id === id))
+      history.replaceState(null, '', `?c=${id}`)
+      const render = renders[id]
+      panel.innerHTML = ''
+      render(panel)
+    }
+
+    const renders = {
+      '01': render01,
+      '02': render02,
+      '03': render03,
+      '04': render04,
+      '05': render05,
+    }
+
+    function render01(el) {
+      el.innerHTML = `
+        <h2>为什么需要工作流调度？</h2>
+        <p class="lead">同一件数仓日批：左边靠 crontab「赌时间」，右边用 DAG「声明依赖」。点对比块，看问题出在哪。</p>
+        <div class="grid2">
+          <div class="card bad" id="cronCard" tabindex="0">
+            <h3>坏味道 · 裸 crontab</h3>
+            <ul>
+              <li>02:00 extract</li>
+              <li>02:30 transform（赌上游已完）</li>
+              <li>03:30 aggregate</li>
+              <li>04:00 publish</li>
+            </ul>
+          </div>
+          <div class="card good" id="dagCard" tabindex="0">
+            <h3>海豚思路 · DAG</h3>
+            <ul>
+              <li>extract → transform → aggregate → publish</li>
+              <li>前驱成功才跑后继</li>
+              <li>失败可重试 / 从失败点恢复</li>
+              <li>可按业务日期补数</li>
+            </ul>
+          </div>
+        </div>
+        <div class="detail" id="cmpDetail">点击左侧或右侧卡片，查看对照说明。</div>
+        <p class="lead" style="margin-top:18px">一条主线（可逐步点亮）：</p>
+        <div class="flow" id="pipeline"></div>
+        <p class="hint">选型一句：数仓可视化协作偏海豚；Python「DAG 即代码」偏 Airflow。</p>
+      `
+      const tips = {
+        cron: '问题：上游一慢就脏读；失败要人工找从哪重跑；补历史更痛苦。时间间隔 ≠ 依赖保证。',
+        dag: '引擎认的是依赖边，不是时钟。定义一次模板，实例按天跑；失败路径可策略化。',
+      }
+      const detail = el.querySelector('#cmpDetail')
+      el.querySelector('#cronCard').onclick = () => { detail.textContent = tips.cron }
+      el.querySelector('#dagCard').onclick = () => { detail.textContent = tips.dag }
+      const steps = [
+        ['定义', '项目里配置工作流模板 Definition'],
+        ['上线', '上线后定时/手动才按该版本跑'],
+        ['触发', 'cron / 手动 / API / 补数 → 实例'],
+        ['执行', 'Master 拆任务，Worker 执行'],
+        ['运维', '日志、告警、重跑、失败恢复'],
+      ]
+      const pipe = el.querySelector('#pipeline')
+      steps.forEach(([t, d], i) => {
+        if (i) {
+          const a = document.createElement('span')
+          a.className = 'arrow'
+          a.textContent = '→'
+          pipe.appendChild(a)
+        }
+        const chip = document.createElement('button')
+        chip.className = 'chip ghost'
+        chip.type = 'button'
+        chip.textContent = `${i + 1}. ${t}`
+        chip.onclick = () => {
+          pipe.querySelectorAll('.chip').forEach((x) => x.classList.add('ghost'))
+          chip.classList.remove('ghost')
+          detail.textContent = `${t}：${d}`
+        }
+        pipe.appendChild(chip)
+      })
+    }
+
+    function render02(el) {
+      const items = [
+        { name: 'Master', desc: '调度大脑', tip: '负责任务拆分、下发、状态决策、容错恢复。不直接跑业务脚本。' },
+        { name: 'Worker', desc: '执行肌肉', tip: '拉取任务、起进程执行、回传日志与状态。可按组划分（spark/gpu…）。' },
+        { name: 'API Server', desc: '门面', tip: 'UI/第三方调用的入口：提交、查询、运维操作都经它。' },
+        { name: 'Alert', desc: '告警', tip: '失败/超时等事件通知钉钉、邮件、Webhook 等。' },
+        { name: '注册中心', desc: '协调', tip: '服务发现与心跳；Master/Worker 靠它感知彼此。挂了会影响协调。' },
+        { name: '元数据库', desc: '真相源', tip: '存定义与实例状态。Worker 理想上不直连库，由 Master/API 侧访问。' },
+      ]
+      el.innerHTML = `
+        <h2>架构与组件</h2>
+        <p class="lead">点组件看职责。记住：Master 调度，Worker 执行，状态回流。</p>
+        <div class="arch" id="arch"></div>
+        <div class="detail" id="archDetail">点击上方组件。</div>
+        <p class="hint">简化链路：触发 → Master 生成任务实例 → 分发到 Worker 组 → 成功解锁后继 / 失败走策略与告警。</p>
+      `
+      const box = el.querySelector('#arch')
+      const detail = el.querySelector('#archDetail')
+      items.forEach((it) => {
+        const d = document.createElement('div')
+        d.className = 'arch-item'
+        d.innerHTML = `<strong>${it.name}</strong><span>${it.desc}</span>`
+        d.onclick = () => {
+          box.querySelectorAll('.arch-item').forEach((x) => x.classList.remove('on'))
+          d.classList.add('on')
+          detail.textContent = `${it.name}：${it.tip}`
+        }
+        box.appendChild(d)
+      })
+    }
+
+    function render03(el) {
+      el.innerHTML = `
+        <h2>核心概念：定义 vs 实例</h2>
+        <p class="lead">点「生成今日实例」，看模板如何变成一次真实运行。</p>
+        <div class="grid2">
+          <div class="card">
+            <h3>工作流定义 Definition</h3>
+            <ul>
+              <li>模板：DAG 拓扑 + 任务配置</li>
+              <li>改定义 ≠ 立刻改正在跑的实例</li>
+              <li>上线后新触发才用新版本</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>工作流实例 Instance</h3>
+            <ul id="instList">
+              <li class="muted">尚未生成</li>
+            </ul>
+          </div>
+        </div>
+        <div class="toolbar">
+          <button class="primary" id="spawnBtn" type="button">生成今日实例</button>
+          <button type="button" id="clearBtn">清空实例</button>
+        </div>
+        <div class="detail" id="conceptDetail">租户隔离系统账号；项目隔离业务空间；调度（Schedule）挂在已上线的定义上。</div>
+      `
+      const list = el.querySelector('#instList')
+      const detail = el.querySelector('#conceptDetail')
+      let n = 0
+      el.querySelector('#spawnBtn').onclick = () => {
+        n += 1
+        if (list.querySelector('.muted')) list.innerHTML = ''
+        const li = document.createElement('li')
+        const day = new Date().toISOString().slice(0, 10)
+        li.textContent = `实例 #${n} · 业务日 ${day} · 状态 RUNNING→…`
+        list.appendChild(li)
+        detail.textContent = '每次触发产生新实例。运维对象通常是实例（重跑、从失败节点恢复），不是去改历史那天的「定义快照」误解。'
+      }
+      el.querySelector('#clearBtn').onclick = () => {
+        n = 0
+        list.innerHTML = '<li class="muted">尚未生成</li>'
+        detail.textContent = '定义是模板；实例是某次运行。先分清这两个词，后面的补数/重跑才不混。'
+      }
+    }
+
+    function render04(el) {
+      el.innerHTML = `
+        <h2>DAG 执行实验室</h2>
+        <p class="lead">下面是可并行分支的小 DAG。选失败策略，点「单步」或「自动播放」，观察颜色与日志。</p>
+        <div class="toolbar">
+          <label>失败策略
+            <select id="strategy">
+              <option value="end">结束（失败则终止）</option>
+              <option value="continue">继续（尽量跑完可跑分支）</option>
+            </select>
+          </label>
+          <label><input type="checkbox" id="failDq" /> 让 dq 第一次失败</label>
+          <button class="primary" id="stepBtn" type="button">单步执行</button>
+          <button type="button" id="playBtn">自动播放</button>
+          <button type="button" id="resetBtn">重置</button>
+        </div>
+        <svg class="dag" viewBox="0 0 640 220" id="dagSvg">
+          <defs>
+            <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#94a3b8" />
+            </marker>
+          </defs>
+        </svg>
+        <div class="log" id="dagLog"></div>
+        <p class="hint">颜色：灰=等待 · 蓝=运行 · 绿=成功 · 红=失败 · 琥珀=终止。并行组同一波次一起就绪。</p>
+      `
+      initDagLab(el)
+    }
+
+    function render05(el) {
+      const tasks = [
+        { name: 'SHELL', tip: '通用脚本、巡检、拉数。生产逻辑建议放 Git，任务里只调入口。' },
+        { name: 'SQL', tip: '连数据源跑 SQL；适合质检、简单转换。注意超时与数据源账号。' },
+        { name: 'Spark / Flink', tip: '重计算。任务要落到有客户端/权限的 Worker 组。' },
+        { name: 'HTTP', tip: '调内部 API、触发下游系统。关注重试与幂等。' },
+        { name: 'Dependent', tip: '跨流程依赖：等别的工作流/任务成功，再往下走。' },
+        { name: 'SubWorkflow', tip: '子流程复用：把一段 DAG 封装后再被多处引用。' },
+      ]
+      el.innerHTML = `
+        <h2>任务类型与资源</h2>
+        <p class="lead">点类型看用途。资源中心管文件/UDF；数据源中心管连接；Worker 组决定「跑在哪类机器」。</p>
+        <div class="task-grid" id="tasks"></div>
+        <div class="detail" id="taskDetail">点击任务类型。</div>
+        <p class="hint">最小数仓日批素描：Dependent/SHELL 拉数 → SQL/Spark 分层 → SQL 质检 → 通知。</p>
+      `
+      const box = el.querySelector('#tasks')
+      const detail = el.querySelector('#taskDetail')
+      tasks.forEach((t) => {
+        const d = document.createElement('div')
+        d.className = 'task-card'
+        d.innerHTML = `<b>${t.name}</b><span>点击查看</span>`
+        d.onclick = () => {
+          box.querySelectorAll('.task-card').forEach((x) => x.classList.remove('on'))
+          d.classList.add('on')
+          detail.textContent = t.tip
+        }
+        box.appendChild(d)
+      })
+    }
+
+    function initDagLab(root) {
+      const nodes = [
+        { id: 'extract', x: 40, y: 80 },
+        { id: 'dwd', x: 200, y: 80 },
+        { id: 'dq', x: 360, y: 30 },
+        { id: 'ads', x: 360, y: 130 },
+        { id: 'notify', x: 520, y: 80 },
+      ]
+      const edges = [
+        ['extract', 'dwd'],
+        ['dwd', 'dq'],
+        ['dwd', 'ads'],
+        ['dq', 'notify'],
+        ['ads', 'notify'],
+      ]
+      const svg = root.querySelector('#dagSvg')
+      const logEl = root.querySelector('#dagLog')
+      const colors = {
+        pending: '#e2e8f0',
+        running: '#bae6fd',
+        success: '#bbf7d0',
+        failed: '#fecaca',
+        killed: '#fde68a',
+      }
+      const stroke = {
+        pending: '#94a3b8',
+        running: '#0369a1',
+        success: '#15803d',
+        failed: '#b91c1c',
+        killed: '#a16207',
+      }
+
+      edges.forEach(([a, b]) => {
+        const A = nodes.find((n) => n.id === a)
+        const B = nodes.find((n) => n.id === b)
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+        path.setAttribute('class', 'edge')
+        const x1 = A.x + 100, y1 = A.y + 28, x2 = B.x, y2 = B.y + 28
+        path.setAttribute('d', `M${x1},${y1} C${(x1 + x2) / 2},${y1} ${(x1 + x2) / 2},${y2} ${x2},${y2}`)
+        svg.appendChild(path)
+      })
+
+      const nodeEls = {}
+      nodes.forEach((n) => {
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+        g.setAttribute('class', 'node')
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+        rect.setAttribute('x', n.x)
+        rect.setAttribute('y', n.y)
+        rect.setAttribute('rx', 10)
+        rect.setAttribute('width', 100)
+        rect.setAttribute('height', 56)
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text')
+        text.setAttribute('x', n.x + 50)
+        text.setAttribute('y', n.y + 33)
+        text.setAttribute('text-anchor', 'middle')
+        text.textContent = n.id
+        g.appendChild(rect)
+        g.appendChild(text)
+        svg.appendChild(g)
+        nodeEls[n.id] = { rect, status: 'pending' }
+      })
+
+      function paint() {
+        Object.entries(nodeEls).forEach(([id, o]) => {
+          o.rect.setAttribute('fill', colors[o.status])
+          o.rect.setAttribute('stroke', stroke[o.status])
+        })
+      }
+
+      function log(msg) {
+        logEl.textContent += msg + '\n'
+        logEl.scrollTop = logEl.scrollHeight
+      }
+
+      let state = null
+      let timer = null
+
+      function reset() {
+        if (timer) clearInterval(timer)
+        timer = null
+        Object.values(nodeEls).forEach((o) => { o.status = 'pending' })
+        paint()
+        logEl.textContent = ''
+        const failFirst = root.querySelector('#failDq').checked
+        const pred = { extract: 0, dwd: 1, dq: 1, ads: 1, notify: 2 }
+        state = {
+          pred: { ...pred },
+          ready: ['extract'],
+          wave: [],
+          aborted: false,
+          failFirst,
+          dqAttempts: 0,
+          strategy: root.querySelector('#strategy').value,
+          done: false,
+        }
+        log('重置。失败策略=' + state.strategy + (failFirst ? '；dq 将首次失败' : ''))
+      }
+
+      function runOne(name) {
+        const o = nodeEls[name]
+        o.status = 'running'
+        paint()
+        log('→ 运行 ' + name)
+        let ok = true
+        if (name === 'dq' && state.failFirst && state.dqAttempts === 0) {
+          state.dqAttempts = 1
+          ok = false
+          o.status = 'failed'
+          log('✕ dq 失败（模拟）')
+        } else {
+          o.status = 'success'
+          log('✓ ' + name + ' 成功')
+        }
+        paint()
+        return ok
+      }
+
+      function step() {
+        if (!state || state.done) return
+        if (!state.wave.length) {
+          if (!state.ready.length) {
+            state.done = true
+            log('结束。')
+            return
+          }
+          state.wave = state.ready.slice()
+          state.ready = []
+          log('就绪并行组: ' + state.wave.join(', '))
+        }
+        const name = state.wave.shift()
+        if (state.aborted) {
+          if (nodeEls[name].status === 'pending') {
+            nodeEls[name].status = 'killed'
+            paint()
+            log('!! 终止 ' + name)
+          }
+          if (!state.wave.length && !state.ready.length) state.done = true
+          return
+        }
+        const ok = runOne(name)
+        if (ok) {
+          edges.filter(([a]) => a === name).forEach(([, b]) => {
+            state.pred[b] -= 1
+            if (state.pred[b] === 0) state.ready.push(b)
+          })
+        } else if (state.strategy === 'end') {
+          state.aborted = true
+          ;[...state.wave, ...Object.keys(nodeEls)].forEach((n) => {
+            if (nodeEls[n].status === 'pending') {
+              nodeEls[n].status = 'killed'
+              log('!! 失败策略=结束，杀掉 ' + n)
+            }
+          })
+          state.wave = []
+          state.ready = []
+          paint()
+          state.done = true
+        } else {
+          log('.. 失败策略=继续，不解锁失败分支的后继')
+        }
+        if (!state.wave.length && !state.ready.length && !state.aborted) {
+          // 可能还有因失败而未解锁的节点
+          const pending = Object.keys(nodeEls).filter((n) => nodeEls[n].status === 'pending')
+          if (pending.length) {
+            pending.forEach((n) => { nodeEls[n].status = 'killed'; log('未解锁而收尾: ' + n) })
+            paint()
+          }
+          state.done = true
+          log('结束。')
+        }
+      }
+
+      root.querySelector('#resetBtn').onclick = reset
+      root.querySelector('#stepBtn').onclick = step
+      root.querySelector('#playBtn').onclick = () => {
+        if (timer) return
+        timer = setInterval(() => {
+          if (!state || state.done) {
+            clearInterval(timer)
+            timer = null
+            return
+          }
+          step()
+        }, 700)
+      }
+      root.querySelector('#strategy').onchange = reset
+      root.querySelector('#failDq').onchange = reset
+      reset()
+    }
+
+    show(current)
+  </script>
+</body>
+</html>
