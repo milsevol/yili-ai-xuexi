@@ -47,4 +47,22 @@ export const topics: Topic[] = [
     link: '/dolphin-scheduler/',
     status: 'ready',
   },
+  {
+    id: 'hadoop',
+    title: 'Hadoop',
+    category: '大数据',
+    description:
+      'Apache Hadoop：HDFS、YARN、MapReduce 与生态组件。10 章笔记 + 浏览器可视化交互演示，不依赖真实集群。',
+    link: '/hadoop/',
+    status: 'ready',
+  },
+  {
+    id: 'spark',
+    title: 'Spark',
+    category: '大数据',
+    description:
+      'Apache Spark：PySpark 从 RDD/SQL 到 Shuffle、调优、流处理。10 章笔记 + 浏览器可视化交互演示，不依赖真实集群。',
+    link: '/spark/',
+    status: 'ready',
+  },
 ]

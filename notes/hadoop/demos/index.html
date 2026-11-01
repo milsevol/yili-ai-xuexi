@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Apache Hadoop · 交互式演示</title>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --panel: #fff;
+      --ink: #16202e;
+      --muted: #5f6b7a;
+      --line: rgba(22, 32, 46, 0.11);
+      --brand: #1d4ed8;
+      --brand-soft: rgba(37, 99, 235, 0.1);
+      --ok: #15803d;
+      --fail: #b91c1c;
+      --run: #0369a1;
+      --warn: #a16207;
+      --c0: #1d4ed8; --c1: #0f766e; --c2: #15803d; --c3: #7c3aed; --c4: #a16207;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", "PingFang SC", "Noto Sans SC", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 70% 40% at 0% 0%, var(--brand-soft), transparent 55%),
+        var(--bg);
+      min-height: 100vh;
+    }
+    .app {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 20px 16px 48px;
+      display: grid;
+      gap: 16px;
+    }
+    @media (min-width: 880px) {
+      .app { grid-template-columns: 210px 1fr; align-items: start; }
+    }
+    .brand h1 { margin: 0; font-size: 1.25rem; font-family: "Noto Serif SC", "Songti SC", serif; }
+    .brand p { margin: 4px 0 0; color: var(--muted); font-size: 0.85rem; line-height: 1.5; }
+    .nav { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+    @media (min-width: 880px) {
+      .nav {
+        flex-direction: column;
+        position: sticky; top: 12px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 10px;
+      }
+    }
+    .nav button {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 999px;
+      padding: 0.45rem 0.85rem;
+      font-size: 0.86rem;
+      cursor: pointer;
+      text-align: left;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    @media (min-width: 880px) {
+      .nav button { width: 100%; border-radius: 10px; border-color: transparent; background: transparent; }
+      .nav button:hover { background: #f1f5fb; }
+    }
+    .nav button.active { background: var(--brand-soft); border-color: var(--brand); color: var(--brand); font-weight: 600; }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 18px 18px 22px;
+      min-height: 440px;
+    }
+    .panel h2 { margin: 0 0 6px; font-size: 1.2rem; }
+    .panel h4 { margin: 18px 0 8px; font-size: 0.95rem; }
+    .lead { margin: 0 0 16px; color: var(--muted); font-size: 0.9rem; line-height: 1.6; }
+    .grid2 { display: grid; gap: 12px; }
+    @media (min-width: 700px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      background: #fafcff;
+    }
+    .card h3 { margin: 0 0 8px; font-size: 0.95rem; }
+    .card ul { margin: 0; padding-left: 1.1rem; color: var(--muted); font-size: 0.86rem; line-height: 1.55; }
+    .card.click { cursor: pointer; transition: border-color .2s, transform .2s; }
+    .card.click:hover { border-color: var(--brand); transform: translateY(-1px); }
+    .arch { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-top: 8px; }
+    .arch-item {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      cursor: pointer;
+      transition: border-color .2s, transform .2s;
+      background: #fff;
+    }
+    .arch-item:hover, .arch-item.on { border-color: var(--brand); transform: translateY(-1px); }
+    .arch-item strong { display: block; margin-bottom: 4px; }
+    .arch-item span { font-size: 0.8rem; color: var(--muted); line-height: 1.4; }
+    .detail {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: var(--brand-soft);
+      color: var(--ink);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      min-height: 3.2em;
+    }
+    .flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0; }
+    .chip {
+      border: none;
+      border-radius: 999px;
+      padding: 0.35rem 0.75rem;
+      background: var(--brand-soft);
+      color: var(--brand);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .chip.ghost { background: #eef2f8; color: var(--muted); font-weight: 500; }
+    .chip:hover { filter: brightness(0.97); }
+    .arrow { color: var(--muted); }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0 14px; }
+    .toolbar button, .toolbar label {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 8px;
+      padding: 0.4rem 0.75rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+    .toolbar button.primary { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600; }
+    .toolbar input[type=range] { accent-color: var(--brand); }
+    .toolbar .val { font-family: ui-monospace, Menlo, monospace; font-size: 0.85rem; color: var(--brand); font-weight: 700; min-width: 3.5em; }
+    .log {
+      margin-top: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      background: #16202e;
+      color: #e5eaf1;
+      border-radius: 10px;
+      padding: 10px 12px;
+      max-height: 220px;
+      overflow: auto;
+      white-space: pre-wrap;
+    }
+    .log .hot { color: #fb923c; }
+    .log .ok { color: #86efac; }
+    .hint { font-size: 0.8rem; color: var(--muted); margin-top: 8px; }
+    .hidden { display: none !important; }
+    table.tbl { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 8px; }
+    table.tbl th, table.tbl td { border-bottom: 1px solid var(--line); padding: 0.42rem 0.5rem; text-align: left; vertical-align: top; }
+    table.tbl th { color: var(--muted); font-weight: 600; }
+    .code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      background: #f4f6fa;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      overflow-x: auto;
+      white-space: pre;
+    }
+    .bar-row { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; font-family: ui-monospace, Menlo, monospace; margin-top: 4px; }
+    .bar-row .lbl { width: 64px; color: var(--muted); flex: none; }
+    .bar-track { flex: 1; background: #eaeef5; border-radius: 6px; height: 17px; overflow: hidden; }
+    .bar-fill { height: 100%; background: var(--run); border-radius: 6px; transition: width .5s ease; }
+    .bar-fill.hot { background: var(--fail); }
+    .bar-fill.good { background: var(--ok); }
+    .bar-val { width: 90px; flex: none; color: var(--muted); }
+    .faq-q {
+      width: 100%;
+      text-align: left;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.88rem;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .faq-q:hover { border-color: var(--brand); }
+    .faq-a {
+      margin: 4px 0 4px;
+      padding: 8px 12px;
+      border-left: 3px solid var(--brand);
+      background: var(--brand-soft);
+      border-radius: 0 8px 8px 0;
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+    .slider-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; font-size: 0.85rem; }
+    .slider-row .name { width: 160px; color: var(--muted); flex: none; }
+    .slider-row input { flex: 1; accent-color: var(--brand); }
+    .slider-row .val { width: 100px; font-family: ui-monospace, Menlo, monospace; color: var(--brand); font-weight: 700; }
+    .verdict { margin-top: 10px; padding: 10px 14px; border-radius: 10px; font-size: 0.88rem; line-height: 1.6; }
+    .verdict.ok { background: #f0fdf4; border: 1px solid rgba(21,128,61,.3); }
+    .verdict.warn { background: #fffbeb; border: 1px solid rgba(161,98,7,.35); }
+    .verdict.bad { background: #fef2f2; border: 1px solid rgba(185,28,28,.3); }
+    .kv { font-size: 0.85rem; line-height: 1.85; }
+    .kv b { color: var(--brand); font-family: ui-monospace, Menlo, monospace; }
+    .rack { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; margin-top: 10px; }
+    .rack-box { border: 1px dashed var(--line); border-radius: 12px; padding: 10px; background: #fafcff; }
+    .rack-box h5 { margin: 0 0 8px; font-size: 0.82rem; color: var(--muted); font-weight: 600; }
+    .host {
+      display: flex; align-items: center; justify-content: space-between;
+      border: 1.5px solid var(--line); border-radius: 9px; padding: 7px 10px;
+      font-size: 0.8rem; background: #fff; margin-top: 6px;
+      font-family: ui-monospace, Menlo, monospace;
+    }
+    .host.on { border-color: var(--brand); background: var(--brand-soft); color: var(--brand); font-weight: 700; }
+    .pill { display: inline-block; border-radius: 999px; padding: 0.1rem 0.55rem; font-size: 0.75rem; background: #eef2f8; color: var(--muted); }
+    .pill.ok { background: #dcfce7; color: var(--ok); }
+    .pill.bad { background: #fee2e2; color: var(--fail); }
+    .steps { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .step-dot {
+      border: 1px solid var(--line); background: #fff; border-radius: 8px;
+      padding: 0.35rem 0.6rem; font-size: 0.76rem; color: var(--muted);
+    }
+    .step-dot.on { border-color: var(--brand); background: var(--brand-soft); color: var(--brand); font-weight: 700; }
+    .matrix td, .matrix th { border: 1px solid var(--line); padding: 7px; text-align: center; font-size: 0.8rem; }
+    .matrix td { background: #fff; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <div class="brand" style="margin-bottom:12px">
+        <h1>Hadoop 交互演示</h1>
+        <p>HDFS · YARN · MapReduce。点左侧章节，动手玩概念。</p>
+      </div>
+      <nav class="nav" id="nav"></nav>
+    </aside>
+    <main class="panel" id="panel"></main>
+  </div>
+
+  <script>
+    const chapters = [
+      { id: '01', title: '01 概述与定位' },
+      { id: '02', title: '02 HDFS 架构与原理' },
+      { id: '03', title: '03 HDFS 实践与运维' },
+      { id: '04', title: '04 MapReduce 原理' },
+      { id: '05', title: '05 MapReduce 进阶' },
+      { id: '06', title: '06 YARN 资源管理' },
+      { id: '07', title: '07 Hadoop 生态' },
+      { id: '08', title: '08 部署与集群规划' },
+      { id: '09', title: '09 运维与故障排查' },
+      { id: '10', title: '10 生态对比与 FAQ' },
+    ]
+
+    const params = new URLSearchParams(location.search)
+    let current = (params.get('c') || '01').padStart(2, '0')
+    const nav = document.getElementById('nav')
+    const panel = document.getElementById('panel')
+
+    chapters.forEach((c) => {
+      const b = document.createElement('button')
+      b.textContent = c.title
+      b.dataset.id = c.id
+      b.onclick = () => show(c.id)
+      nav.appendChild(b)
+    })
+
+    function show(id) {
+      current = id
+      nav.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.id === id))
+      history.replaceState(null, '', `?c=${id}`)
+      panel.innerHTML = ''
+      renders[id](panel)
+    }
+
+    /* ============ 01 概述与定位 ============ */
+    function render01(el) {
+      el.innerHTML = `
+        <h2>Hadoop 的三件套与边界</h2>
+        <p class="lead">点卡片看职责。记住：<b>HDFS 存、YARN 管资源、MapReduce 算</b>，三者可被组合替换。</p>
+        <div class="arch" id="trio"></div>
+        <div class="detail" id="trioD">点击上方组件。</div>
+        <h4>生态组件（点击了解）</h4>
+        <div class="flow" id="eco"></div>
+        <div class="detail" id="ecoD" style="min-height:2.8em">点击上方组件。</div>
+        <h4>这个场景还需要 Hadoop 吗？</h4>
+        <div class="flow" id="decide"></div>
+        <div class="detail" id="decideD" style="min-height:2.8em">点一个场景。</div>
+      `
+      const roles = [
+        ['HDFS', '分布式文件系统：文件切块、多副本、跨机存放。NameNode 管元数据，DataNode 存块。不做计算，不支持任意位置改写。'],
+        ['YARN', '集群资源管理器：把内存/CPU 切成 Container。RM 分资源、NM 管本机、AM 管单个作业。Spark/Flink/Tez 都能跑。'],
+        ['MapReduce', '第一代分布式批处理模型：Map → Shuffle → Reduce。适合海量离线批处理，不擅长迭代、交互与实时。'],
+      ]
+      const trio = el.querySelector('#trio'), td = el.querySelector('#trioD')
+      roles.forEach(([n, d]) => {
+        const div = document.createElement('div')
+        div.className = 'arch-item'
+        div.innerHTML = `<strong>${n}</strong><span>${d.slice(0, 24)}…</span>`
+        div.onclick = () => {
+          trio.querySelectorAll('.arch-item').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); td.innerHTML = `<b>${n}</b>：${d}`
+        }
+        trio.appendChild(div)
+      })
+
+      const ecos = [
+        ['Hive', 'SQL 数仓：把 SQL 翻译成 MR/Tez/Spark 作业，元数据放 Metastore，数据在 HDFS。'],
+        ['HBase', '分布式 KV 数据库：LSM 存储，强依赖 ZooKeeper，适合随机点查与高并发写。'],
+        ['ZooKeeper', '分布式协调：选主、锁、配置、Watch。HDFS HA 的 ZKFC 依赖它。'],
+        ['Tez', 'DAG 执行引擎，Hive on Tez 的常见选择，比 MR 少落盘。'],
+        ['Sqoop / DataX', '关系库 ↔ HDFS 批量同步。Sqoop 已退役，新项目多用 DataX/SeaTunnel。'],
+        ['Flume / Kafka', '采集与缓冲：Flume 采日志到 HDFS，Kafka 做实时链路的入口。'],
+        ['Ozone', 'Hadoop 的对象存储，缓解 HDFS 小文件与 NN 内存压力。'],
+      ]
+      const eco = el.querySelector('#eco'), ed = el.querySelector('#ecoD')
+      ecos.forEach(([n, d]) => {
+        const c = document.createElement('button')
+        c.className = 'chip ghost'; c.type = 'button'; c.textContent = n
+        c.onclick = () => {
+          eco.querySelectorAll('.chip').forEach(x => x.classList.add('ghost'))
+          c.classList.remove('ghost')
+          ed.innerHTML = `<b>${n}</b>：${d}`
+        }
+        eco.appendChild(c)
+      })
+
+      const cases = [
+        ['存量 HDFS/Hive/HBase 集群', '要学：历史数据、元数据与权限都还在 HDFS 上，迁移不是一朝一夕。', 'ok'],
+        ['自建冷数据、预算有限', '可考虑：HDFS + 纠删码在自建机房仍便宜；但小文件多时先评估对象存储。', 'ok'],
+        ['云上新项目、对象存储 + K8s', '可少学：HDFS/YARN 可被对象存储与 K8s 替代，但数据本地性/小文件概念仍要懂。', 'warn'],
+        ['只做亚秒级实时', '别用 MR：选 Flink；Hadoop 只作为存储或历史底座。', 'bad'],
+      ]
+      const decide = el.querySelector('#decide'), dd = el.querySelector('#decideD')
+      cases.forEach(([q, a, cls]) => {
+        const b = document.createElement('button')
+        b.className = 'chip ghost'; b.type = 'button'; b.textContent = q
+        b.onclick = () => {
+          decide.querySelectorAll('.chip').forEach(x => x.classList.add('ghost'))
+          b.classList.remove('ghost')
+          dd.className = 'detail ' + cls
+          dd.textContent = a
+        }
+        decide.appendChild(b)
+      })
+    }
+
+    /* ============ 02 HDFS 架构与原理 ============ */
+    function render02(el) {
+      el.innerHTML = `
+        <h2>HDFS：元数据与数据分离</h2>
+        <p class="lead">点角色看职责；再单步走一遍写流程；最后调整副本数看机架感知放置。</p>
+        <div class="arch" id="hRoles"></div>
+        <div class="detail" id="hRoleD">点击上方角色。</div>
+
+        <h4>写文件：从 create 到 close</h4>
+        <div class="toolbar">
+          <button class="primary" id="wNext">下一步</button>
+          <button id="wReset">重置</button>
+          <span class="pill" id="wPhase">未开始</span>
+        </div>
+        <div class="steps" id="wSteps"></div>
+        <div class="log" id="wLog">点击「下一步」开始。</div>
+
+        <h4>副本放置：机架感知</h4>
+        <div class="slider-row"><span class="name">副本数</span><input type="range" id="rep" min="1" max="3" value="3"><span class="val" id="repV">3</span></div>
+        <div class="rack" id="rack"></div>
+        <div class="verdict ok" id="repVerdict"></div>
+        <p class="hint">默认策略：第 1 副本本机 → 第 2 副本另一机架 → 第 3 副本与第 2 副本同机架的另一台。跨机架保证机架级故障仍可读。</p>
+      `
+      const roles = [
+        ['NameNode', '管元数据：目录树、文件→块映射、块→DataNode 位置。所有 RPC 都打到这里，是内存与单点核心。'],
+        ['DataNode', '存真实数据块：负责读写、校验和、块报告、定期心跳。磁盘坏了就少一个副本。'],
+        ['JournalNode ×3', 'HA 时共享 EditLog：写成功过半（2/3）即算提交，Standby 持续同步。'],
+        ['ZKFC', '运行在 NN 节点上，监控 NN 健康、抢 ZooKeeper 锁、做 fencing，实现自动主备切换。'],
+        ['Client', '读写 HDFS 的进程：先问 NN 要块位置，再直连 DN 传数据（数据面不经过 NN）。'],
+      ]
+      const hr = el.querySelector('#hRoles'), hd = el.querySelector('#hRoleD')
+      roles.forEach(([n, d]) => {
+        const div = document.createElement('div')
+        div.className = 'arch-item'
+        div.innerHTML = `<strong>${n}</strong><span>${d.slice(0, 22)}…</span>`
+        div.onclick = () => {
+          hr.querySelectorAll('.arch-item').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); hd.innerHTML = `<b>${n}</b>：${d}`
+        }
+        hr.appendChild(div)
+      })
+
+      const steps = [
+        ['create', 'Client 调 create() → NN 校验权限/父目录，创建 INode，返回 DFSOutputStream，并记一条租约（lease）。'],
+        ['addBlock', 'NN 选一组 DataNode（默认 3 副本，按机架感知），返回 LocatedBlock 与版本号。'],
+        ['pipeline', 'Client 把数据切成 packet（默认约 64KB），写入 DN1；DN1 转发 DN2，DN2 转发 DN3，形成写管道。'],
+        ['ack', 'DN3 写完向 DN2 回 ack，逐级回传；Client 收到全部 ack 才认为该 packet 成功。'],
+        ['hflush / hsync', 'hflush：数据到达所有 DN 的内存/管道；hsync：还要 fsync 到磁盘。两者都不保证 NN 元数据已持久化。'],
+        ['close', '全部 packet 发完 → close() → NN 把文件置为 closed，块副本状态 finalize；租约释放。'],
+      ]
+      const wl = el.querySelector('#wLog'), wSteps = el.querySelector('#wSteps'), wPhase = el.querySelector('#wPhase')
+      steps.forEach(([n]) => {
+        const s = document.createElement('span')
+        s.className = 'step-dot'; s.textContent = n; wSteps.appendChild(s)
+      })
+      let wi = -1
+      el.querySelector('#wNext').onclick = () => {
+        wi = Math.min(wi + 1, steps.length - 1)
+        wSteps.querySelectorAll('.step-dot').forEach((x, i) => x.classList.toggle('on', i <= wi))
+        wPhase.textContent = steps[wi][0]
+        wl.innerHTML = wi === 0 ? '' : wl.innerHTML
+        wl.innerHTML += (wi ? '\n' : '') + `<span class="${wi >= 2 ? 'hot' : ''}">[${wi + 1}] ${steps[wi][0]}</span>\n${steps[wi][1]}`
+      }
+      el.querySelector('#wReset').onclick = () => {
+        wi = -1; wPhase.textContent = '未开始'; wl.textContent = '点击「下一步」开始。'
+        wSteps.querySelectorAll('.step-dot').forEach(x => x.classList.remove('on'))
+      }
+
+      const rackHosts = [
+        { rack: 'rack1', hosts: ['dn1', 'dn2'] },
+        { rack: 'rack2', hosts: ['dn3', 'dn4'] },
+      ]
+      const rep = el.querySelector('#rep'), repV = el.querySelector('#repV')
+      function drawRack() {
+        const r = +rep.value
+        repV.textContent = r
+        const chosen = r === 1 ? ['dn1'] : r === 2 ? ['dn1', 'dn3'] : ['dn1', 'dn3', 'dn4']
+        el.querySelector('#rack').innerHTML = rackHosts.map((rk, ri) => `
+          <div class="rack-box">
+            <h5>${rk.rack}${ri === 0 ? '（客户端所在机架）' : ''}</h5>
+            ${rk.hosts.map(h => `<div class="host ${chosen.includes(h) ? 'on' : ''}">${h}<span>${chosen.includes(h) ? '副本 ' + (chosen.indexOf(h) + 1) : '—'}</span></div>`).join('')}
+          </div>`).join('')
+        const msg = r === 1
+          ? '1 副本：没有冗余，任何一台机器坏掉就丢数据（仅测试环境使用）。'
+          : r === 2
+            ? '2 副本：跨机架放置，能扛单机故障与整机架断电，但存储利用率只有 50%。'
+            : '3 副本：默认。1 份本机 + 1 份异机架 + 1 份与异机架副本同机架的另一台；扛单机与单机架故障，利用率 33%。'
+        el.querySelector('#repVerdict').textContent = msg
+      }
+      rep.oninput = drawRack
+      drawRack()
+    }
+
+    /* ============ 03 HDFS 实践与运维 ============ */
+    function render03(el) {
+      el.innerHTML = `
+        <h2>HDFS 日常：命令与小文件</h2>
+        <p class="lead">先点命令分类速查，再拖动滑块感受「小文件如何吃掉 NameNode 内存」。</p>
+        <h4>命令速查</h4>
+        <div class="flow" id="cmdCats"></div>
+        <div id="cmdTable"></div>
+
+        <h4>小文件元数据计算器</h4>
+        <div class="slider-row"><span class="name">文件数量</span><input type="range" id="nf" min="1" max="200" value="50"><span class="val" id="nfV">5000 万</span></div>
+        <div class="slider-row"><span class="name">NameNode 堆内存</span><input type="range" id="heap" min="8" max="128" value="32" step="4"><span class="val" id="heapV">32 GB</span></div>
+        <div class="kv" id="sfOut"></div>
+        <p class="hint">经验值：NN 每个文件/目录/块对象约 150 字节（含副本位置还要更多）。1 亿小文件 ≈ 15–20GB 堆，还会拖慢 fsimage 加载与 RPC。</p>
+
+        <h4>关键配置（点击查看）</h4>
+        <div class="flow" id="cfgs"></div>
+        <div class="detail" id="cfgD" style="min-height:2.8em">点击配置项。</div>
+      `
+      const cats = {
+        '文件操作': [
+          ['hdfs dfs -ls /path', '列目录'],
+          ['hdfs dfs -mkdir -p /path', '建目录'],
+          ['hdfs dfs -put local /hdfs', '上传'],
+          ['hdfs dfs -get /hdfs local', '下载'],
+          ['hdfs dfs -cat /path/file', '查看内容'],
+          ['hdfs dfs -du -h /path', '看占用（含副本）'],
+          ['hdfs dfs -count /path', '目录/文件/字节数'],
+          ['hdfs dfs -rm -r /path', '删除（进回收站）'],
+        ],
+        '集群运维': [
+          ['hdfs dfsadmin -report', '集群容量与节点状态'],
+          ['hdfs dfsadmin -safemode enter/leave', '进入/退出安全模式'],
+          ['hdfs fsck /path -files -blocks -locations', '检查块与副本'],
+          ['hdfs balancer -threshold 10', '跨节点均衡'],
+          ['hdfs dfsadmin -refreshNodes', '刷新白/黑名单'],
+          ['hdfs dfs -expunge', '清空回收站'],
+        ],
+        '副本与校验': [
+          ['hdfs dfs -setrep 3 /path', '改副本数'],
+          ['hdfs dfs -getfacl /path', '查看 ACL'],
+          ['hdfs dfs -chmod 750 /path', '改权限'],
+          ['hdfs dfs -checksum /path/file', '查看校验和'],
+          ['hdfs dfsadmin -fetchImage', '拉取最新 fsimage'],
+        ],
+      }
+      const catBox = el.querySelector('#cmdCats'), tbl = el.querySelector('#cmdTable')
+      function showCat(name) {
+        catBox.querySelectorAll('.chip').forEach(x => x.classList.toggle('ghost', x.textContent !== name))
+        tbl.innerHTML = '<table class="tbl"><tr><th>命令</th><th>用途</th></tr>' +
+          cats[name].map(([c, d]) => `<tr><td><code>${c}</code></td><td>${d}</td></tr>`).join('') + '</table>'
+      }
+      Object.keys(cats).forEach((name, i) => {
+        const b = document.createElement('button')
+        b.className = 'chip' + (i ? ' ghost' : ''); b.type = 'button'; b.textContent = name
+        b.onclick = () => showCat(name)
+        catBox.appendChild(b)
+      })
+      showCat('文件操作')
+
+      const nf = el.querySelector('#nf'), heap = el.querySelector('#heap')
+      function calcSF() {
+        const filesM = +nf.value // 单位：百万
+        const heapGB = +heap.value
+        const objects = filesM * 1e6 * 2 // 每个小文件 = 1 inode + 1 block
+        const bytes = objects * 150
+        const gb = bytes / 1024 ** 3
+        const pct = gb / heapGB * 100
+        el.querySelector('#nfV').textContent = filesM >= 10 ? `${filesM / 10} 千万` : `${filesM * 100} 万`
+        el.querySelector('#heapV').textContent = `${heapGB} GB`
+        el.querySelector('#sfOut').innerHTML =
+          `对象数 ≈ 文件数 × 2（inode + block）= <b>${(objects / 1e8).toFixed(1)} 亿</b><br>` +
+          `元数据估算 ≈ <b>${gb.toFixed(1)} GB</b>（按 150B/对象）<br>` +
+          `占 ${heapGB}GB 堆的 <b>${pct.toFixed(0)}%</b>` +
+          (pct > 70 ? ' <span class="pill bad">危险：GC 与启动都会出问题</span>' : pct > 40 ? ' <span class="pill">偏高，建议治理</span>' : ' <span class="pill ok">尚可</span>') +
+          `<br>下游 MapReduce 还会因每文件一个 Split 产生 ${filesM} 百万级 map task，调度开销巨大。`
+      }
+      nf.oninput = calcSF; heap.oninput = calcSF
+      calcSF()
+
+      const cfgs = [
+        ['dfs.blocksize', '128MB（默认）。大文件调大减少块数，小文件调大无意义。'],
+        ['dfs.replication', '3（默认）。冷数据可降为 2 或用纠删码。'],
+        ['dfs.namenode.handler.count', 'NN RPC 处理线程数，默认 10，大集群可调到 100 左右（结合堆与 CPU）。'],
+        ['dfs.datanode.max.transfer.threads', 'DN 传输线程，默认 4096，高并发读时观察是否打满。'],
+        ['dfs.datanode.du.reserved', '每块磁盘预留空间（如 10GB），避免磁盘 100% 拖垮 DN。'],
+        ['dfs.namenode.checkpoint.period', 'Checkpoint 周期，默认 3600 秒；与 edits 大小配合。'],
+        ['dfs.client.write.packet.size', '写 packet 大小，默认 64KB；高延迟网络可适当增大。'],
+        ['fs.trash.interval', '回收站保留分钟数，默认 0（关闭）；生产建议 1440。'],
+      ]
+      const cfgBox = el.querySelector('#cfgs'), cd = el.querySelector('#cfgD')
+      cfgs.forEach(([n, d]) => {
+        const c = document.createElement('button')
+        c.className = 'chip ghost'; c.type = 'button'; c.textContent = n
+        c.onclick = () => {
+          cfgBox.querySelectorAll('.chip').forEach(x => x.classList.add('ghost'))
+          c.classList.remove('ghost'); cd.innerHTML = `<b>${n}</b>：${d}`
+        }
+        cfgBox.appendChild(c)
+      })
+    }
+
+    /* ============ 04 MapReduce 原理 ============ */
+    function render04(el) {
+      el.innerHTML = `
+        <h2>一个 WordCount 的完整旅程</h2>
+        <p class="lead">点「运行」看 Split → Map → Spill → Shuffle → Reduce 的日志；再调参看 Spill 次数。</p>
+        <div class="toolbar">
+          <button class="primary" id="mrRun">运行 WordCount</button>
+          <button id="mrReset">重置</button>
+        </div>
+        <div class="log" id="mrLog">等待运行……</div>
+
+        <h4>Spill 次数计算器</h4>
+        <div class="slider-row"><span class="name">Map 输出数据量</span><input type="range" id="outmb" min="100" max="4000" value="1000" step="50"><span class="val" id="outmbV">1000 MB</span></div>
+        <div class="slider-row"><span class="name">io.sort.mb</span><input type="range" id="sortmb" min="50" max="500" value="100" step="10"><span class="val" id="sortmbV">100 MB</span></div>
+        <div class="slider-row"><span class="name">Spill 阈值</span><input type="range" id="spillpct" min="50" max="95" value="80"><span class="val" id="spillpctV">80%</span></div>
+        <div class="kv" id="spillOut"></div>
+        <p class="hint">单次 flush 上限 = io.sort.mb × spill 阈值；Spill 越多，磁盘 IO 与后续 Merge 越多。Combiner 能在 Spill 前把输出压小。</p>
+
+        <h4>Combiner 对 Shuffle 量的影响</h4>
+        <div class="toolbar"><label><input type="checkbox" id="useComb"> 启用 Combiner</label></div>
+        <div id="combBars"></div>
+      `
+      const logs = [
+        ['[1] InputFormat', '按 128MB 块切 Split（可大于块，见 split size 公式），每个 Split 一个 map task。'],
+        ['[2] Map', '逐行读取，emit(word, 1)。输出先写进环形缓冲区（默认 100MB）。'],
+        ['[3] Spill', '缓冲区到 80% 触发溢写：分区 → 排序 → （可选 Combiner）→ 写本地磁盘。'],
+        ['[4] Merge', '多个 spill 文件归并成一个大文件，仍按分区有序。'],
+        ['[5] Shuffle', 'Reduce 通过 HTTP 拉取自己分区的数据（fetch），可能触发内存/磁盘合并。'],
+        ['[6] Sort/Group', '按 key 排序、按分组比较器聚合，形成 key → Iterable<value>。'],
+        ['[7] Reduce', '执行 reduce 逻辑（如 sum），输出经 OutputFormat 写 HDFS。'],
+        ['[8] Commit', 'OutputCommitter 把结果从 _temporary 移到最终目录，成功后清理。'],
+      ]
+      let running = false
+      el.querySelector('#mrRun').onclick = () => {
+        if (running) return
+        running = true
+        const log = el.querySelector('#mrLog')
+        log.innerHTML = ''
+        let i = 0
+        const timer = setInterval(() => {
+          if (i >= logs.length) {
+            clearInterval(timer); running = false
+            log.innerHTML += '\n<span class="ok">Job succeeded. Counters: Map input records=1000, Map output records=5000, Reduce input records=5000, Reduce output records=8</span>'
+            return
+          }
+          log.innerHTML += (i ? '\n' : '') + `<span class="${i === 2 || i === 4 ? 'hot' : ''}">${logs[i][0]}</span>\n${logs[i][1]}`
+          i++
+        }, 550)
+      }
+      el.querySelector('#mrReset').onclick = () => {
+        running = false; el.querySelector('#mrLog').textContent = '等待运行……'
+      }
+
+      const out = el.querySelector('#outmb'), sm = el.querySelector('#sortmb'), sp = el.querySelector('#spillpct')
+      function calcSpill() {
+        const o = +out.value, s = +sm.value, p = +sp.value / 100
+        el.querySelector('#outmbV').textContent = `${o} MB`
+        el.querySelector('#sortmbV').textContent = `${s} MB`
+        el.querySelector('#spillpctV').textContent = `${sp.value}%`
+        const cap = s * p
+        const spills = Math.ceil(o / cap)
+        el.querySelector('#spillOut').innerHTML =
+          `单次 flush 上限 = <b>${s} × ${p.toFixed(2)} = ${cap.toFixed(0)} MB</b><br>` +
+          `Spill 次数 = ceil(${o} / ${cap.toFixed(0)}) = <b>${spills} 次</b><br>` +
+          (spills > 8 ? 'Spill 偏多：考虑调大 io.sort.mb 或加 Combiner 减少数据量。' : '处于合理范围，重点是避免最终只产生大量小文件。')
+      }
+      ;[out, sm, sp].forEach(x => x.oninput = calcSpill)
+      calcSpill()
+
+      el.querySelector('#useComb').onchange = () => drawComb()
+      function drawComb() {
+        const on = el.querySelector('#useComb').checked
+        const rows = on
+          ? [['Map 输出', 100, ''], ['Spill 后', 100, ''], ['Shuffle 量', 35, 'good'], ['Reduce 输入', 35, 'good']]
+          : [['Map 输出', 100, ''], ['Spill 后', 100, ''], ['Shuffle 量', 100, 'hot'], ['Reduce 输入', 100, 'hot']]
+        el.querySelector('#combBars').innerHTML = rows.map(([n, v, cls]) =>
+          `<div class="bar-row"><span class="lbl">${n}</span><span class="bar-track"><span class="bar-fill ${cls}" style="width:${v}%"></span></span><span class="bar-val">${v}%</span></div>`
+        ).join('') + `<p class="hint">Combiner 相当于「本地预聚合」，网络传输可降到 1/3 左右；但它必须满足结合律/交换律（sum、max 可以，平均值要传 sum+count）。</p>`
+      }
+      drawComb()
+    }
+
+    /* ============ 05 MapReduce 进阶 ============ */
+    function render05(el) {
+      el.innerHTML = `
+        <h2>数据倾斜与 Join 策略</h2>
+        <p class="lead">先看倾斜：一个热点 key 把某个 Reduce 压垮。再勾选「加盐」看分布变化。</p>
+        <div class="toolbar"><label><input type="checkbox" id="salt"> 对热点 key 加盐（两阶段聚合）</label></div>
+        <div id="skewBars"></div>
+        <div class="verdict bad" id="skewVerdict"></div>
+
+        <h4>Join 策略选择器</h4>
+        <div class="slider-row"><span class="name">小表大小</span><input type="range" id="small" min="1" max="1000" value="20" step="1"><span class="val" id="smallV">20 MB</span></div>
+        <div class="slider-row"><span class="name">大表大小</span><input type="range" id="big" min="1" max="2000" value="500" step="10"><span class="val" id="bigV">500 GB</span></div>
+        <div class="slider-row"><span class="name">可用广播内存</span><input type="range" id="bmem" min="100" max="2000" value="800" step="50"><span class="val" id="bmemV">800 MB</span></div>
+        <div class="verdict" id="joinVerdict"></div>
+        <p class="hint">经验阈值：小表 ≤ 广播内存的 70% → map-side join；再大就只能 reduce-side，并处理倾斜。</p>
+      `
+      const before = [5, 6, 4, 60, 5, 6, 4, 5, 6, 4]
+      const after = [5, 6, 4, 20, 20, 6, 4, 5, 6, 20]
+      function drawSkew() {
+        const on = el.querySelector('#salt').checked
+        const arr = on ? after : before
+        const max = Math.max(...arr)
+        const total = arr.reduce((a, b) => a + b, 0)
+        el.querySelector('#skewBars').innerHTML = arr.map((v, i) =>
+          `<div class="bar-row"><span class="lbl">Reduce ${i}</span><span class="bar-track"><span class="bar-fill ${v >= 20 ? 'hot' : (on ? 'good' : '')}" style="width:${(v / max) * 100}%"></span></span><span class="bar-val">${v}%</span></div>`
+        ).join('')
+        const maxShare = Math.max(...arr) / total
+        el.querySelector('#skewVerdict').className = 'verdict ' + (maxShare > 0.25 ? 'bad' : 'ok')
+        el.querySelector('#skewVerdict').textContent = on
+          ? `加盐后最大分区占比约 ${(maxShare * 100).toFixed(0)}%，倾斜明显缓解；代价是第一阶段多一次聚合、key 要还原。`
+          : `未处理时最大分区占比约 ${(maxShare * 100).toFixed(0)}%，一个 Reduce 干了几个人的活，整体被它拖到最后一个完成。`
+      }
+      el.querySelector('#salt').onchange = drawSkew
+      drawSkew()
+
+      const small = el.querySelector('#small'), big = el.querySelector('#big'), bmem = el.querySelector('#bmem')
+      function calcJoin() {
+        const s = +small.value, b = +big.value, m = +bmem.value
+        el.querySelector('#smallV').textContent = `${s} MB`
+        el.querySelector('#bigV').textContent = `${b} GB`
+        el.querySelector('#bmemV').textContent = `${m} MB`
+        const limit = m * 0.7
+        let cls, txt
+        if (s <= limit) {
+          cls = 'ok'
+          txt = `建议 <b>Map-side Join（广播小表）</b>：${s}MB ≤ ${limit.toFixed(0)}MB。把小表放 DistributedCache，每个 map 在内存里做 join，完全消灭 Shuffle。注意每个容器都会持有一份，别把 Executor 撑爆。`
+        } else if (s / (b * 1024) < 0.02) {
+          cls = 'warn'
+          txt = `小表 ${s}MB 略大于广播阈值，可考虑 <b>Semi Join</b>：先抽出小表的 join key 集合（去重后通常很小）广播，map 阶段只过滤大表；仍需一次 reduce-side 汇总。`
+        } else {
+          cls = 'bad'
+          txt = `建议 <b>Reduce-side Join</b>：两表都按 join key shuffle 到同一分区后归并。必须处理倾斜（热点 key 加盐/拆分），并注意 reduce 并发与内存。`
+        }
+        const v = el.querySelector('#joinVerdict')
+        v.className = 'verdict ' + cls
+        v.innerHTML = txt
+      }
+      ;[small, big, bmem].forEach(x => x.oninput = calcJoin)
+      calcJoin()
+    }
+
+    /* ============ 06 YARN 资源管理 ============ */
+    function render06(el) {
+      el.innerHTML = `
+        <h2>YARN：把集群切成 Container</h2>
+        <p class="lead">调节点规模与队列占比，看能跑多少个容器、AM 能占多少；再点调度器看差异。</p>
+        <div class="slider-row"><span class="name">NodeManager 数量</span><input type="range" id="nnodes" min="1" max="100" value="10"><span class="val" id="nnodesV">10 台</span></div>
+        <div class="slider-row"><span class="name">单节点内存</span><input type="range" id="nmem" min="16" max="256" value="64" step="8"><span class="val" id="nmemV">64 GB</span></div>
+        <div class="slider-row"><span class="name">单节点 vcore</span><input type="range" id="ncpu" min="4" max="64" value="16" step="4"><span class="val" id="ncpuV">16</span></div>
+        <div class="slider-row"><span class="name">队列容量占比</span><input type="range" id="qcap" min="10" max="100" value="60" step="5"><span class="val" id="qcapV">60%</span></div>
+        <div class="slider-row"><span class="name">AM 资源上限占比</span><input type="range" id="amcap" min="5" max="40" value="10" step="1"><span class="val" id="amcapV">10%</span></div>
+        <div class="kv" id="yarnOut"></div>
+        <p class="hint">NM 可用内存建议留 20% 给系统与 DN/HBase 等进程；vcore 可超配（1 物理核 : 2~3 vcore），但内存不建议超卖。</p>
+
+        <h4>三种调度器</h4>
+        <div class="arch" id="sched"></div>
+        <div class="detail" id="schedD">点击调度器。</div>
+      `
+      const nodes = el.querySelector('#nnodes'), mem = el.querySelector('#nmem'), cpu = el.querySelector('#ncpu'), qcap = el.querySelector('#qcap'), amcap = el.querySelector('#amcap')
+      function calcYarn() {
+        const n = +nodes.value, m = +mem.value, c = +cpu.value, q = +qcap.value / 100, am = +amcap.value / 100
+        el.querySelector('#nnodesV').textContent = `${n} 台`
+        el.querySelector('#nmemV').textContent = `${m} GB`
+        el.querySelector('#ncpuV').textContent = `${c}`
+        el.querySelector('#qcapV').textContent = `${qcap.value}%`
+        el.querySelector('#amcapV').textContent = `${amcap.value}%`
+        const nmMem = Math.floor(m * 0.8)
+        const totalMem = nmMem * n
+        const totalVcore = c * n
+        const queueMem = totalMem * q
+        const containerMem = 4 // GB，示例
+        const maxContainers = Math.floor(queueMem / containerMem)
+        const amMem = Math.floor(queueMem * am)
+        const amCount = Math.floor(amMem / 2) // AM 默认 2GB 示例
+        el.querySelector('#yarnOut').innerHTML =
+          `单 NM 可用内存 ≈ ${m} × 80% = <b>${nmMem} GB</b>；集群总内存 <b>${totalMem} GB</b>，总 vcore <b>${totalVcore}</b><br>` +
+          `队列可用内存 ≈ <b>${queueMem.toFixed(0)} GB</b>（${qcap.value}%）<br>` +
+          `按 4GB/容器算，最多 <b>${maxContainers}</b> 个容器；其中 AM 最多占 <b>${amMem} GB</b> ≈ <b>${amCount}</b> 个 2GB AM<br>` +
+          `若都按 16 核节点满配，vcore 会先于内存成为瓶颈时，考虑调整 <b>yarn.nodemanager.resource.cpu-vcores</b>（可超配）。`
+      }
+      ;[nodes, mem, cpu, qcap, amcap].forEach(x => x.oninput = calcYarn)
+      calcYarn()
+
+      const scheds = [
+        ['FIFO', '单队列先进先出，大作业会堵住后面所有作业。仅适合单团队/测试，生产基本不用。'],
+        ['CapacityScheduler', '默认调度器。多队列、按容量比例分配、支持弹性借用与抢占，适合多部门多租户。'],
+        ['FairScheduler', '按权重公平分配，活跃队列优先，适合批处理与交互式混合、需要快速响应小作业的场景。'],
+      ]
+      const sb = el.querySelector('#sched'), sd = el.querySelector('#schedD')
+      scheds.forEach(([n, d]) => {
+        const div = document.createElement('div')
+        div.className = 'arch-item'
+        div.innerHTML = `<strong>${n}</strong><span>${d.slice(0, 24)}…</span>`
+        div.onclick = () => {
+          sb.querySelectorAll('.arch-item').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); sd.innerHTML = `<b>${n}</b>：${d}`
+        }
+        sb.appendChild(div)
+      })
+    }
+
+    /* ============ 07 Hadoop 生态 ============ */
+    function render07(el) {
+      el.innerHTML = `
+        <h2>需求 → 组件</h2>
+        <p class="lead">点一个需求，给出推荐组件与理由；再点下方组件看定位。</p>
+        <div class="flow" id="needs"></div>
+        <div class="verdict ok" id="needD">点上方需求。</div>
+        <h4>组件定位</h4>
+        <div class="arch" id="comp"></div>
+        <div class="detail" id="compD">点击组件。</div>
+      `
+      const needs = [
+        ['按主键随机点查、高并发写', 'HBase', 'HBase 基于 LSM-Tree，RowKey 点查是毫秒级；但它不擅长多表 join 与全表扫描，复杂分析仍走 Hive/Spark。'],
+        ['交互式 SQL、数仓建模', 'Hive / Spark SQL', 'Hive 提供 Metastore 与 SQL 层，执行引擎可换 Tez/Spark；追求低延迟用 Spark SQL/Trino，Hive 更适合离线 ETL。'],
+        ['关系库 ↔ HDFS 批量同步', 'DataX / SeaTunnel', 'Sqoop 已退役。DataX 适合离线批量；需要实时增量则用 Flink CDC。'],
+        ['日志采集进 HDFS', 'Flume', 'Flume 按行/批量采集并落 HDFS，适合日志；实时链路通常先进 Kafka，再落地。'],
+        ['任务依赖编排、定时调度', 'DolphinScheduler / Airflow', 'Oozie 已进 Attic；DolphinScheduler 在国内数仓场景更常见，Airflow 生态与 Python 扩展更强。'],
+        ['配置管理、选主、分布式锁', 'ZooKeeper', 'HDFS HA 的 ZKFC、HBase 的 RegionServer 协调都依赖它；Kafka 老版本也强依赖。'],
+        ['海量小文件、想减轻 NN 压力', 'Ozone / 对象存储', 'Ozone 提供对象语义；或直接把冷数据放 S3/OSS，计算侧用 Spark/Flink 读。'],
+      ]
+      const needBox = el.querySelector('#needs'), nd = el.querySelector('#needD')
+      needs.forEach(([q, comp, why]) => {
+        const b = document.createElement('button')
+        b.className = 'chip ghost'; b.type = 'button'; b.textContent = q
+        b.onclick = () => {
+          needBox.querySelectorAll('.chip').forEach(x => x.classList.add('ghost'))
+          b.classList.remove('ghost')
+          nd.innerHTML = `推荐 <b>${comp}</b>：${why}`
+        }
+        needBox.appendChild(b)
+      })
+
+      const comps = [
+        ['Hive', 'SQL 数仓：Metastore 存元数据，数据在 HDFS；SQL 翻译为 MR/Tez/Spark 作业。分区/分桶/ORC 是性能关键。'],
+        ['HBase', '列式 KV 数据库：Region/RegionServer/HMaster，强依赖 ZK。RowKey 设计决定是否热点（加盐/散列/长度）。'],
+        ['ZooKeeper', '协调服务：ZAB 协议、临时节点、Watch。HA 的选主与锁都靠它，奇数台部署。'],
+        ['Tez', 'DAG 执行引擎：把多个 MR 作业合成一个有向无环图，减少中间落盘，Hive on Tez 常用。'],
+        ['Oozie', '老牌工作流调度，XML 配置，已进 Apache Attic；新项目不推荐。'],
+        ['Ranger', '统一权限与审计：表/列/行级策略，弥补 HDFS ACL 的表达力不足。'],
+      ]
+      const compBox = el.querySelector('#comp'), cd = el.querySelector('#compD')
+      comps.forEach(([n, d]) => {
+        const div = document.createElement('div')
+        div.className = 'arch-item'
+        div.innerHTML = `<strong>${n}</strong><span>${d.slice(0, 24)}…</span>`
+        div.onclick = () => {
+          compBox.querySelectorAll('.arch-item').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); cd.innerHTML = `<b>${n}</b>：${d}`
+        }
+        compBox.appendChild(div)
+      })
+    }
+
+    /* ============ 08 部署与集群规划 ============ */
+    function render08(el) {
+      el.innerHTML = `
+        <h2>集群规划：从规模到参数</h2>
+        <p class="lead">拖动节点与磁盘规模，得到一份「建议参数 + 配置片段」。</p>
+        <div class="slider-row"><span class="name">DataNode 数量</span><input type="range" id="pdn" min="3" max="100" value="10"><span class="val" id="pdnV">10 台</span></div>
+        <div class="slider-row"><span class="name">单节点数据盘</span><input type="range" id="pdisk" min="2" max="24" value="8"><span class="val" id="pdiskV">8 块</span></div>
+        <div class="slider-row"><span class="name">单盘容量</span><input type="range" id="pcapa" min="1" max="20" value="4"><span class="val" id="pcapaV">4 TB</span></div>
+        <div class="slider-row"><span class="name">单节点内存</span><input type="range" id="pram" min="32" max="256" value="64" step="8"><span class="val" id="pramV">64 GB</span></div>
+        <div class="kv" id="planOut"></div>
+        <h4>配置片段（点击切换文件）</h4>
+        <div class="flow" id="xmlTabs"></div>
+        <div class="code" id="xmlView"></div>
+        <p class="hint">format 只能做一次；HA 需要 3 台 JournalNode（2F+1）与独立 ZooKeeper 集群。生产务必先小规模验证再扩。</p>
+      `
+      const dn = el.querySelector('#pdn'), disk = el.querySelector('#pdisk'), capa = el.querySelector('#pcapa'), ram = el.querySelector('#pram')
+      function plan() {
+        const n = +dn.value, d = +disk.value, c = +capa.value, r = +ram.value
+        el.querySelector('#pdnV').textContent = `${n} 台`
+        el.querySelector('#pdiskV').textContent = `${d} 块`
+        el.querySelector('#pcapaV').textContent = `${c} TB`
+        el.querySelector('#pramV').textContent = `${r} GB`
+        const raw = n * d * c
+        const usable = raw / 3
+        const nmMem = Math.floor(r * 0.8)
+        const nmVcore = Math.min(32, Math.max(8, Math.floor(r / 4)))
+        el.querySelector('#planOut').innerHTML =
+          `裸容量 = ${n} × ${d} × ${c}TB = <b>${raw} TB</b>；3 副本可用 ≈ <b>${usable.toFixed(0)} TB</b>（纠删码可到 ~2/3）<br>` +
+          `建议 NM 可用内存 <b>${nmMem} GB</b>、vcore <b>${nmVcore}</b>（预留 20% 给系统/DN）<br>` +
+          `JournalNode 至少 <b>3</b> 台（奇数，2F+1）；NameNode 堆建议 <b>${n <= 10 ? '8–16' : n <= 40 ? '16–32' : '32–64'} GB</b>，按文件对象数复核<br>` +
+          `副本 3、块 128MB；数据盘用 JBOD 不做 RAID，坏盘靠副本恢复。`
+      }
+      ;[dn, disk, capa, ram].forEach(x => x.oninput = plan)
+      plan()
+
+      const xmls = {
+        'core-site.xml': `<configuration>
+  <property>
+    <name>fs.defaultFS</name>
+    <value>hdfs://nameservice1</value>
+  </property>
+  <property>
+    <name>hadoop.tmp.dir</name>
+    <value>/data/hadoop/tmp</value>
+  </property>
+  <property>
+    <name>ha.zookeeper.quorum</name>
+    <value>zk1:2181,zk2:2181,zk3:2181</value>
+  </property>
+</configuration>`,
+        'hdfs-site.xml': `<configuration>
+  <property><name>dfs.replication</name><value>3</value></property>
+  <property><name>dfs.blocksize</name><value>134217728</value></property>
+  <property><name>dfs.nameservices</name><value>nameservice1</value></property>
+  <property><name>dfs.ha.namenodes.nameservice1</name><value>nn1,nn2</value></property>
+  <property><name>dfs.namenode.shared.edits.dir</name>
+    <value>qjournal://jn1:8485;jn2:8485;jn3:8485/nameservice1</value></property>
+  <property><name>dfs.ha.automatic-failover.enabled</name><value>true</value></property>
+  <property><name>dfs.client.failover.proxy.provider.nameservice1</name>
+    <value>org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider</value></property>
+</configuration>`,
+        'yarn-site.xml': `<configuration>
+  <property><name>yarn.nodemanager.aux-services</name>
+    <value>mapreduce_shuffle</value></property>
+  <property><name>yarn.resourcemanager.ha.enabled</name><value>true</value></property>
+  <property><name>yarn.nodemanager.resource.memory-mb</name><value>51200</value></property>
+  <property><name>yarn.nodemanager.resource.cpu-vcores</name><value>16</value></property>
+  <property><name>yarn.scheduler.maximum-allocation-mb</name><value>32768</value></property>
+  <property><name>yarn.log-aggregation-enable</name><value>true</value></property>
+</configuration>`,
+        'mapred-site.xml': `<configuration>
+  <property><name>mapreduce.framework.name</name><value>yarn</value></property>
+  <property><name>mapreduce.jobhistory.address</name>
+    <value>history:10020</value></property>
+  <property><name>mapreduce.jobhistory.webapp.address</name>
+    <value>history:19888</value></property>
+  <property><name>yarn.app.mapreduce.am.resource.mb</name><value>2048</value></property>
+</configuration>`,
+      }
+      const tabs = el.querySelector('#xmlTabs'), view = el.querySelector('#xmlView')
+      Object.keys(xmls).forEach((name, i) => {
+        const b = document.createElement('button')
+        b.className = 'chip' + (i ? ' ghost' : ''); b.type = 'button'; b.textContent = name
+        b.onclick = () => {
+          tabs.querySelectorAll('.chip').forEach(x => x.classList.toggle('ghost', x.textContent !== name))
+          view.textContent = xmls[name]
+        }
+        tabs.appendChild(b)
+      })
+      view.textContent = xmls['core-site.xml']
+    }
+
+    /* ============ 09 运维与故障排查 ============ */
+    function render09(el) {
+      el.innerHTML = `
+        <h2>症状 → 原因 → 动作</h2>
+        <p class="lead">点一个症状，给出最可能的根因、排查命令与处理方向。</p>
+        <div class="flow" id="symptoms"></div>
+        <div class="verdict bad" id="symD" style="min-height:4.5em">点上方症状。</div>
+        <h4>排障动线</h4>
+        <div class="steps" id="flowSteps"></div>
+        <div class="code" id="flowCode">客户端 → RM/AM → NM → DN，先定位「哪一跳」慢/死，再看该跳的日志与指标。</div>
+        <h4>关键指标</h4>
+        <div id="metrics"></div>
+      `
+      const symptoms = [
+        ['作业一直 ACCEPTED / PENDING', '队列资源不足、AM 资源占比太小、调度器未分配。查 RM UI 队列使用率、yarn.scheduler.capacity.maximum-am-resource-percent，必要时调整队列或等待。'],
+        ['NN 进入安全模式，无法写', 'DN 块报告未达阈值（默认 99.9%）或刚重启。查 hdfs dfsadmin -report 与 NN 日志，确认 DN 存活后等待退出；不要急于强制 leave。'],
+        ['NN OOM / GC 频繁', '小文件过多、对象数超堆预算、fsimage 过大。查对象数与堆指标，优先治理小文件、扩堆、拆分 Federation。'],
+        ['DN 磁盘满 / 变只读', '预留空间不足、日志写满、坏盘。查 df -h、DN 日志与 volume failure，清理/更换磁盘后 refreshVolumes。'],
+        ['读文件报 Could not obtain block', '副本所在 DN 掉线、块损坏、网络分区。用 fsck 定位块与副本，等待自动恢复或从备份/上游重灌。'],
+        ['写 pipeline 超时 / 慢', '某台 DN 慢盘、网络抖动、packet 太小。看 DN 日志与磁盘 await，排除慢盘后调 packet 与超时参数。'],
+        ['Container 被 kill（超内存）', '物理内存/虚拟内存超限，或超出队列最大资源。看 AM 日志中的 killed 原因，调大 container 内存或修代码内存泄漏。'],
+        ['Shuffle fetch 失败', 'NM 磁盘/网络异常、map 输出丢失、重试耗尽。查 NM 日志与 Shuffle 服务，必要时开启磁盘健康检查。'],
+        ['主机名 / DNS 不一致', 'hosts 写错、多网卡绑定错、容器内解析不到。统一 hostname 与 /etc/hosts，确认 DataNode 注册地址。'],
+        ['Kerberos 认证失败', '时间偏差超过 5 分钟、keytab 过期、principal 写错。用 kinit 验证、校准 chrony、重新导出 keytab。'],
+      ]
+      const symBox = el.querySelector('#symptoms'), sd = el.querySelector('#symD')
+      symptoms.forEach(([q, a]) => {
+        const b = document.createElement('button')
+        b.className = 'chip ghost'; b.type = 'button'; b.textContent = q
+        b.onclick = () => {
+          symBox.querySelectorAll('.chip').forEach(x => x.classList.add('ghost'))
+          b.classList.remove('ghost')
+          sd.textContent = a
+        }
+        symBox.appendChild(b)
+      })
+
+      const steps = ['客户端报错', 'RM / AM', 'NM / Container', 'DN / 磁盘', '日志与指标']
+      el.querySelector('#flowSteps').innerHTML = steps.map((s, i) => `<span class="step-dot ${i === 0 ? 'on' : ''}">${i + 1}.${s}</span>`).join('<span class="arrow">→</span>')
+
+      const metrics = [
+        ['NN 堆使用 / Full GC 次数', '超过 80% 或频繁 Full GC 就要治理对象数或扩堆'],
+        ['NN 对象数（文件+块）', '对照堆预算，提前做小文件治理'],
+        ['HDFS missing / corrupt blocks', '非 0 立即 fsck 定位，别等副本全丢'],
+        ['DN 磁盘使用率 / 坏卷数', '单盘 > 85% 影响写入，坏卷要尽快替换'],
+        ['YARN 队列使用率 / pending 容器', '持续 100% 说明容量不足或大作业独占'],
+        ['AM 失败率 / Container 超时', '突增通常指向资源超配、镜像/环境问题'],
+      ]
+      el.querySelector('#metrics').innerHTML = '<table class="tbl"><tr><th>指标</th><th>看什么</th></tr>' +
+        metrics.map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join('') + '</table>'
+    }
+
+    /* ============ 10 生态对比与 FAQ ============ */
+    function render10(el) {
+      el.innerHTML = `
+        <h2>三层对比：存储、资源、计算</h2>
+        <p class="lead">先看三张对比表，再展开高频问题。</p>
+        <h4>存储层：HDFS vs 对象存储</h4>
+        <table class="tbl matrix" id="t1"></table>
+        <h4>资源层：YARN vs Kubernetes</h4>
+        <table class="tbl matrix" id="t2"></table>
+        <h4>计算层：MapReduce vs Spark vs Flink vs Tez</h4>
+        <table class="tbl matrix" id="t3"></table>
+        <h4>高频问题（点击展开）</h4>
+        <div id="faq"></div>
+      `
+      const t1 = [
+        ['维度', 'HDFS', '对象存储（S3/OSS）'],
+        ['一致性', '强一致（单 NN 命名空间）', '通常最终一致，rename/list 有延迟'],
+        ['rename / 目录', '原生支持，适合表提交', '昂贵或需复制，表格式用清单文件规避'],
+        ['小文件', '吃 NN 内存，需治理', '按对象计费，小文件成本更敏感'],
+        ['计算本地性', '与 YARN 同集群，本地读', '存算分离，靠缓存与高带宽'],
+        ['运维成本', '自建机柜、磁盘、NN HA', '按量付费，免运维'],
+      ]
+      const t2 = [
+        ['维度', 'YARN', 'Kubernetes'],
+        ['调度单位', 'Container（内存/vcore）', 'Pod（CPU/内存/镜像）'],
+        ['强项', '大数据多租户、队列容量、数据本地性', '通用工作负载、弹性、生态与发布'],
+        ['典型负载', 'MR/Spark/Flink/Hive', '微服务、批任务、流任务（Flink K8s Operator）'],
+        ['趋势', '存量仍多，新集群减少', '新平台默认，Spark on K8s 成熟'],
+      ]
+      const t3 = [
+        ['维度', 'MapReduce', 'Spark', 'Flink', 'Tez'],
+        ['模型', 'Map/Reduce 两段', 'DAG + 内存', '原生流', 'DAG'],
+        ['延迟', '分钟级', '秒级~分钟', '毫秒~秒', '秒级~分钟'],
+        ['迭代/ML', '差', '强', '一般', '一般'],
+        ['状态', '基本退场', '批/SQL 主力', '实时主力', 'Hive 可选引擎'],
+      ]
+      const fill = (id, rows) => {
+        const box = el.querySelector('#' + id)
+        box.innerHTML = rows.map((r, i) => `<tr>${r.map(c => i ? `<td>${c}</td>` : `<th>${c}</th>`).join('')}</tr>`).join('')
+      }
+      fill('t1', t1); fill('t2', t2); fill('t3', t3)
+
+      const faqs = [
+        ['HDFS 写文件的完整流程？', 'create → NN 建 INode/租约 → addBlock 选 DN（机架感知）→ packet 沿 pipeline 写 → ack 逐级回传 → close → NN finalize。数据面不经过 NN。'],
+        ['SecondaryNameNode 是 NameNode 的热备吗？', '不是。它只周期性合并 FsImage + EditLog，减轻 NN 启动时间；不能接管服务。HA 要靠 QJM + Standby NN + ZKFC。'],
+        ['为什么默认块大小是 128MB？', '让单块传输时间显著大于寻址/调度开销，提高磁盘流式读效率；块太小会让 NN 元数据与 map task 数量爆炸。'],
+        ['3 副本怎么放？', '第 1 副本本机（或客户端所在机架），第 2 副本另一机架，第 3 副本与第 2 同机架的另一台；兼顾可靠性与写带宽。'],
+        ['小文件为什么伤害集群？', '每个文件/块都占 NN 内存（约 150B/对象），且每个文件一个 Split/map task，RPC 与调度开销大；优先在上游合并或改用支持小文件的存储。'],
+        ['HDFS HA 的 QJM 是什么？', '用 2F+1 台 JournalNode 共享 EditLog，写入过半即成功；Standby 持续同步，ZKFC 负责选主与 fencing。'],
+        ['YARN 提交作业的链路？', 'Client → RM → 分配 AM 容器 → AM 启动 → 向 RM 申请资源 → NM 起 Container → 任务执行 → AM 汇报 → RM 清理。'],
+        ['CapacityScheduler 与 FairScheduler 怎么选？', '多部门、按比例保障容量 → Capacity（默认）；批与交互混合、要快速响应 → Fair。两者都支持队列层级与抢占。'],
+        ['Combiner 和 Reducer 有什么区别？', 'Combiner 在 map 端本地预聚合，减少 Shuffle 数据量；它必须满足结合律/交换律，且输入输出类型要与 map 输出一致。'],
+        ['数据倾斜怎么处理？', '先看 Reduce 输入分布确认；再广播小表、热点 key 加盐两阶段聚合、自定义 Partitioner、拆分热点，或改用 Spark AQE。'],
+        ['压缩格式怎么选？', '中间数据优先 Snappy/LZO（可切分或快）；最终冷数据可用 Gzip/Zstd 省空间；Bzip2 可切分但慢。注意可切分性影响 Split 数。'],
+        ['Hadoop 和 Spark 是什么关系？', 'Hadoop 是存储（HDFS）+ 资源（YARN）+ 老计算（MR）；Spark 是跑在其上的计算引擎。上了 Spark 不等于不要 HDFS/YARN，除非已用对象存储 + K8s。'],
+        ['「Hadoop 已死」怎么理解？', '分层看：MR 基本退场、YARN 被 K8s 蚕食、HDFS 存量仍大且冷数据便宜；Hadoop 从「唯一答案」变成「底座之一」，概念仍然重要。'],
+      ]
+      const fb = el.querySelector('#faq')
+      faqs.forEach(([q, a]) => {
+        const btn = document.createElement('button')
+        btn.className = 'faq-q'; btn.textContent = 'Q：' + q
+        const ans = document.createElement('div')
+        ans.className = 'faq-a hidden'; ans.textContent = 'A：' + a
+        btn.onclick = () => ans.classList.toggle('hidden')
+        fb.appendChild(btn); fb.appendChild(ans)
+      })
+    }
+
+    const renders = {
+      '01': render01, '02': render02, '03': render03, '04': render04, '05': render05,
+      '06': render06, '07': render07, '08': render08, '09': render09, '10': render10,
+    }
+
+    show(current in renders ? current : '01')
+  </script>
+</body>
+</html>

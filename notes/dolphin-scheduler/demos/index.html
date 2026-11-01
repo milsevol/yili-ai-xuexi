@@ -222,6 +222,54 @@
     .task-card span { font-size: 0.78rem; color: var(--muted); line-height: 1.4; }
     .hint { font-size: 0.8rem; color: var(--muted); margin-top: 8px; }
     .hidden { display: none !important; }
+    .tv-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 8px; }
+    .tv-table th, .tv-table td {
+      border-bottom: 1px solid var(--line);
+      padding: 0.4rem 0.5rem;
+      text-align: left;
+    }
+    .tv-table th { color: var(--muted); font-weight: 600; }
+    .tv-table td code { color: var(--brand); font-size: 0.82rem; }
+    .steps { display: grid; gap: 8px; margin-top: 8px; }
+    .step-item {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      cursor: pointer;
+      background: #fff;
+      font-size: 0.88rem;
+      display: flex;
+      gap: 8px;
+      align-items: baseline;
+    }
+    .step-item.done { border-color: var(--brand); background: var(--brand-soft); }
+    .step-item.warn { border-color: rgba(185, 28, 28, 0.35); }
+    .step-item .no { font-weight: 700; color: var(--brand); }
+    .faq-q {
+      width: 100%;
+      text-align: left;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.88rem;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .faq-q:hover { border-color: var(--brand); }
+    .faq-a {
+      margin: 4px 0 4px;
+      padding: 8px 12px;
+      border-left: 3px solid var(--brand);
+      background: var(--brand-soft);
+      border-radius: 0 8px 8px 0;
+      font-size: 0.85rem;
+      color: var(--ink);
+      line-height: 1.6;
+    }
+    .bar-row { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; font-family: ui-monospace, Menlo, monospace; }
+    .bar { height: 12px; background: var(--brand); border-radius: 3px; }
+    .bar.spike { background: var(--fail); }
   </style>
 </head>
 <body>
@@ -243,6 +291,11 @@
       { id: '03', title: '03 核心概念' },
       { id: '04', title: '04 DAG 与调度' },
       { id: '05', title: '05 任务类型' },
+      { id: '06', title: '06 参数与时间变量' },
+      { id: '07', title: '07 资源·数据源·环境' },
+      { id: '08', title: '08 部署与上手' },
+      { id: '09', title: '09 运维与排障' },
+      { id: '10', title: '10 生态对比与 FAQ' },
     ]
 
     const params = new URLSearchParams(location.search)
@@ -274,6 +327,11 @@
       '03': render03,
       '04': render04,
       '05': render05,
+      '06': render06,
+      '07': render07,
+      '08': render08,
+      '09': render09,
+      '10': render10,
     }
 
     function render01(el) {
@@ -473,6 +531,329 @@
           detail.textContent = t.tip
         }
         box.appendChild(d)
+      })
+    }
+
+    // ---- 06 章用：$[...] 时间变量解析（演示简化版） ----
+    function fmtDate(dt, fmt) {
+      const pad = (n) => String(n).padStart(2, '0')
+      return fmt
+        .replace(/yyyy/g, String(dt.getFullYear()))
+        .replace(/MM/g, pad(dt.getMonth() + 1))
+        .replace(/dd/g, pad(dt.getDate()))
+        .replace(/HH/g, pad(dt.getHours()))
+        .replace(/mm/g, pad(dt.getMinutes()))
+        .replace(/ss/g, pad(dt.getSeconds()))
+    }
+
+    function evalTimeVar(expr, schedule) {
+      const m = expr.match(/^\$\[(.+)\]$/)
+      if (!m) return expr
+      let body = m[1]
+      const fn = body.match(/^add_(months|years)\((.+),([+-]?\d+)\)$/)
+      if (fn) {
+        const d = new Date(schedule)
+        const n = parseInt(fn[3], 10)
+        if (fn[1] === 'months') d.setMonth(d.getMonth() + n)
+        else d.setFullYear(d.getFullYear() + n)
+        return fmtDate(d, fn[2])
+      }
+      // 尾部偏移：±N 天、±N/24 小时、±N/(24*60) 分钟（偏移不允许前导零，故 yyyy-MM-01 的 01 是字面量）
+      const off = body.match(/([+-](?:0|[1-9]\d*)(?:\/24|\/\(24\*60\))?)$/)
+      const d = new Date(schedule)
+      if (off) {
+        const o = off[1]
+        body = body.slice(0, body.length - o.length)
+        if (o.endsWith('/24')) d.setHours(d.getHours() + parseInt(o, 10))
+        else if (o.endsWith('/(24*60)')) d.setMinutes(d.getMinutes() + parseInt(o, 10))
+        else d.setDate(d.getDate() + parseInt(o, 10))
+      }
+      return fmtDate(d, body)
+    }
+
+    function render06(el) {
+      const exprs = [
+        ['$[yyyy-MM-dd]', '当天'],
+        ['$[yyyyMMdd]', '当天（紧凑）'],
+        ['$[yyyy-MM-dd HH:mm:ss]', '精确到秒'],
+        ['$[yyyy-MM-dd-1]', '前一天（T+1 业务日期）'],
+        ['$[yyyy-MM-01]', '本月 1 号'],
+        ['$[add_months(yyyy-MM-dd,-1)]', '上个月同日'],
+        ['$[yyyy-MM-dd HH:mm:ss-2/24]', '前 2 小时'],
+      ]
+      el.innerHTML = `
+        <h2>参数与时间变量实验室</h2>
+        <p class="lead">改「调度时间」看各 $[...] 表达式实时取值；再点「模拟补数」，对比内置变量与 date -d yesterday。</p>
+        <div class="toolbar">
+          <label>调度时间 <input type="datetime-local" id="schedInput" value="2026-11-01T02:00"></label>
+          <button type="button" id="backfillBtn">模拟补数 2026-10 整月</button>
+        </div>
+        <table class="tv-table">
+          <thead><tr><th>表达式</th><th>含义</th><th>取值</th></tr></thead>
+          <tbody id="tvBody"></tbody>
+        </table>
+        <div class="log hidden" id="bfLog"></div>
+        <p class="hint">规则：格式后 ±N=天；±N/24=小时；±N/(24*60)=分钟；月/年用 add_months/add_years。MM=月 mm=分，写错不报错只拿错值。参数优先级：本地 &gt; 上游出参 &gt; 全局。</p>
+      `
+      const input = el.querySelector('#schedInput')
+      const body = el.querySelector('#tvBody')
+      const bfLog = el.querySelector('#bfLog')
+      function paintTable() {
+        const sched = new Date(input.value)
+        body.innerHTML = ''
+        exprs.forEach(([expr, meaning]) => {
+          const tr = document.createElement('tr')
+          tr.innerHTML = `<td><code>${expr}</code></td><td>${meaning}</td><td>${evalTimeVar(expr, sched)}</td>`
+          body.appendChild(tr)
+        })
+      }
+      input.onchange = paintTable
+      paintTable()
+      el.querySelector('#backfillBtn').onclick = () => {
+        bfLog.classList.remove('hidden')
+        const lines = ['补数 2026-10：31 个实例，调度时间 10-02 ~ 11-01 的 02:00']
+        for (let i = 0; i < 31; i++) {
+          const sched = new Date(2026, 9, 2 + i, 2, 0, 0)
+          if ([0, 1, 2, 30].includes(i)) {
+            lines.push(`  实例#${i + 1} 调度 ${fmtDate(sched, 'yyyy-MM-dd HH:mm')} → $[yyyy-MM-dd-1] = ${evalTimeVar('$[yyyy-MM-dd-1]', sched)}`)
+          } else if (i === 3) {
+            lines.push('  …')
+          }
+        }
+        const today = fmtDate(new Date(), 'yyyy-MM-dd')
+        lines.push(`反例 date -d yesterday：31 个实例全算成「今天 ${today} 的前一天」→ 补数全跑到同一天！`)
+        lines.push('结论：执行时刻 ≠ 调度时间；补数务必用内置时间变量。')
+        bfLog.textContent = lines.join('\n')
+      }
+    }
+
+    function render07(el) {
+      el.innerHTML = `
+        <h2>资源 · 数据源 · Worker 组与环境</h2>
+        <p class="lead">任务指定 Worker 组选执行机；组名打错是「任务一直不运行」的最高频原因。选组提交试试。</p>
+        <div class="arch" id="workers"></div>
+        <div class="toolbar">
+          <label>任务组
+            <select id="grp">
+              <option value="default">default</option>
+              <option value="spark">spark</option>
+              <option value="python-ml">python-ml</option>
+              <option value="sparck">sparck（手滑打错）</option>
+            </select>
+          </label>
+          <label><input type="checkbox" id="useEnv" checked> 选环境 spark3-env</label>
+          <button class="primary" type="button" id="submitBtn">提交任务</button>
+        </div>
+        <div class="log" id="wLog"></div>
+        <p class="hint">环境 = 执行前 source 的 export 集合，绑定 Worker 组；资源中心管文件下发（生产用 HDFS/S3），数据源中心管连接（密码不落脚本）。</p>
+      `
+      const workers = [
+        { name: 'worker-a', group: 'default', desc: '基础环境：Shell/SQL/HTTP' },
+        { name: 'worker-b', group: 'spark', desc: 'Spark 客户端 + Yarn 权限' },
+        { name: 'worker-c', group: 'python-ml', desc: 'GPU + Python 科学栈' },
+      ]
+      const box = el.querySelector('#workers')
+      const logEl = el.querySelector('#wLog')
+      workers.forEach((w) => {
+        const d = document.createElement('div')
+        d.className = 'arch-item'
+        d.dataset.group = w.group
+        d.innerHTML = `<strong>${w.name}</strong><span>组=${w.group} · ${w.desc}</span>`
+        box.appendChild(d)
+      })
+      el.querySelector('#submitBtn').onclick = () => {
+        const grp = el.querySelector('#grp').value
+        const useEnv = el.querySelector('#useEnv').checked
+        box.querySelectorAll('.arch-item').forEach((x) => x.classList.remove('on'))
+        const lines = [`提交任务 → 请求 Worker 组 [${grp}]`]
+        const hit = workers.find((w) => w.group === grp)
+        if (!hit) {
+          lines.push(`!! 没有组 [${grp}] 的在线 Worker → 任务一直「提交成功」不运行（组名打错最高频）`)
+          logEl.textContent = lines.join('\n')
+          return
+        }
+        ;[...box.children].find((c) => c.dataset.group === grp).classList.add('on')
+        lines.push('资源中心下载: user-etl-1.3.0.jar → 执行目录')
+        if (useEnv && grp === 'spark') {
+          lines.push('source 环境 [spark3-env]:')
+          lines.push('  export JAVA_HOME=/usr/lib/jvm/java-8')
+          lines.push('  export SPARK_HOME=/opt/spark3')
+        } else if (useEnv) {
+          lines.push(`注意: spark3-env 只绑定 spark 组，当前组 ${grp} 不生效`)
+        }
+        lines.push(`${hit.name}[${grp}] 执行完成 ✓`)
+        logEl.textContent = lines.join('\n')
+      }
+    }
+
+    function render08(el) {
+      const steps = [
+        { t: '安全中心：建租户 + 建用户绑租户', d: '租户对应 Worker 上的 Linux 用户，决定以什么系统身份跑任务。', warn: false },
+        { t: '数据源中心：建 MySQL / Hive 数据源', d: '连接集中托管，密码不落脚本；换库只改一处。', warn: false },
+        { t: '项目管理：建项目 demo', d: '项目是业务空间 + 授权单元。', warn: false },
+        { t: '工作流定义：Shell 任务 echo "bizdate=$[yyyy-MM-dd-1]" → 保存 → 上线', d: '★ 上线开关 #1：定义不上线，定时和手动都不会跑。', warn: true },
+        { t: '定时调度：cron 0 0 2 * * ? → 调度上线', d: '★ 上线开关 #2：调度是独立开关！两个都上线 cron 才触发。', warn: true },
+        { t: '手动运行 → 实例列表看状态 → 任务实例看日志', d: '80% 的问题在任务日志这步定位。', warn: false },
+        { t: '脚本改 exit 1 → 重跑 → 观察失败告警与「从失败节点恢复」', d: '故意失败一次，验证告警通道真的能到人。', warn: false },
+      ]
+      el.innerHTML = `
+        <h2>部署形态 + 首次使用最小闭环</h2>
+        <p class="lead">学习用 Docker Compose 一键拉起（点形态看定位）。下面 7 步闭环逐个点，红框是最容易漏的两个「上线」。</p>
+        <div class="toolbar" id="forms"></div>
+        <div class="steps" id="loopSteps"></div>
+        <div class="detail" id="stepDetail">点击步骤查看说明。</div>
+      `
+      const forms = [
+        ['Standalone', '单进程起所有角色，内置注册与存储，勿用于生产'],
+        ['Docker Compose', '一键拉起 PG + ZK + Master/Worker/API/Alert，学习推荐'],
+        ['伪集群', '一台机器多进程，接近真实角色划分，预发验证'],
+        ['集群', '生产：多 Master + 多 Worker + 外部 DB + 注册中心 + HDFS/S3 资源'],
+        ['Kubernetes', '官方 Helm Chart，云原生'],
+      ]
+      const fbox = el.querySelector('#forms')
+      const detail = el.querySelector('#stepDetail')
+      forms.forEach(([name, tip]) => {
+        const b = document.createElement('button')
+        b.type = 'button'
+        b.textContent = name
+        b.onclick = () => { detail.textContent = `${name}：${tip}` }
+        fbox.appendChild(b)
+      })
+      const sbox = el.querySelector('#loopSteps')
+      steps.forEach((s, i) => {
+        const d = document.createElement('div')
+        d.className = 'step-item' + (s.warn ? ' warn' : '')
+        d.innerHTML = `<span class="no">${i + 1}</span><span>${s.t}</span>`
+        d.onclick = () => {
+          d.classList.toggle('done')
+          detail.textContent = s.d
+        }
+        sbox.appendChild(d)
+      })
+    }
+
+    function render09(el) {
+      const symptoms = {
+        '任务一直「提交成功」不运行': ['Worker 组名打错 → 没有匹配组的在线 Worker（最常见）', 'Worker 负载超阈值（CPU/内存保护）→ 看 Worker 日志', 'Master 线程池打满 → 看 master.exec-threads 与命令积压'],
+        '调度没触发': ['工作流未上线 或 调度未上线（两个开关）', 'cron 写错（Quartz 方言，秒开头）', '时区错乱：Server 与预期时区不一致'],
+        'UI 看日志失败': ['对应 Worker 已下线 / 日志已清理', 'API 到 Worker 网络不通'],
+        '实例表膨胀、页面卡': ['定期归档/清理历史实例（按时间删除或转储）', '监控表大小与慢查询', '大规模补数后主动检查一轮'],
+      }
+      el.innerHTML = `
+        <h2>运维：排障动线 + Master failover</h2>
+        <p class="lead">上半：选症状看排查动线。下半：点「master-1 宕机」看容错接管。</p>
+        <div class="toolbar">
+          <label>症状 <select id="sym">${Object.keys(symptoms).map((s) => `<option>${s}</option>`).join('')}</select></label>
+          <button class="primary" type="button" id="diagBtn">开始排查</button>
+        </div>
+        <div class="steps" id="diagSteps"></div>
+        <hr style="border:none;border-top:1px solid var(--line);margin:18px 0">
+        <div class="grid2">
+          <div class="card" id="m1"><h3>master-1</h3><ul><li>实例#1024（运行中）</li><li>实例#1025（运行中）</li></ul></div>
+          <div class="card" id="m2"><h3>master-2</h3><ul><li>待命</li></ul></div>
+        </div>
+        <div class="toolbar">
+          <button type="button" id="killBtn" class="primary">模拟 master-1 宕机</button>
+          <button type="button" id="resetFo">重置</button>
+        </div>
+        <div class="log" id="foLog"></div>
+        <p class="hint">Worker 宕机：其上运行中任务标记失败 → 任务重试/人工恢复。failover 安全的前提是任务幂等。标准排障动线：UI 实例 → 任务日志（80% 在这定位）→ 区分调度/执行问题 → 角色 logs/。</p>
+      `
+      const stepsBox = el.querySelector('#diagSteps')
+      el.querySelector('#diagBtn').onclick = () => {
+        const sym = el.querySelector('#sym').value
+        stepsBox.innerHTML = ''
+        symptoms[sym].forEach((c, i) => {
+          const d = document.createElement('div')
+          d.className = 'step-item'
+          d.innerHTML = `<span class="no">${i + 1}</span><span>${c}</span>`
+          stepsBox.appendChild(d)
+        })
+      }
+      const foLog = el.querySelector('#foLog')
+      el.querySelector('#killBtn').onclick = () => {
+        const m1 = el.querySelector('#m1')
+        const m2 = el.querySelector('#m2')
+        m1.classList.add('bad')
+        m1.querySelector('h3').textContent = 'master-1（已宕机）'
+        m1.querySelector('ul').innerHTML = '<li>—</li>'
+        m2.classList.add('good')
+        m2.querySelector('h3').textContent = 'master-2（接管中）'
+        m2.querySelector('ul').innerHTML = '<li>实例#1024（容错接管）</li><li>实例#1025（容错接管）</li>'
+        foLog.textContent = [
+          '[ZK] master-1 心跳丢失，会话超时，临时节点消失',
+          '[master-2] 感知到 master-1 下线',
+          '[master-2] 生成容错命令 → 接管实例#1024、#1025，重新推进',
+          '[master-2] 接管完成，调度继续',
+        ].join('\n')
+      }
+      el.querySelector('#resetFo').onclick = () => render09(el)
+    }
+
+    function render10(el) {
+      el.innerHTML = `
+        <h2>选型决策树 + 高频 FAQ</h2>
+        <p class="lead">回答两个问题给出选型建议；下面 FAQ 点击展开。</p>
+        <div class="card">
+          <h3>Q1. 任务之间有复杂依赖吗？</h3>
+          <div class="toolbar" id="q1">
+            <button type="button" data-a="no">没有，只是分布式定时执行</button>
+            <button type="button" data-a="yes">有</button>
+          </div>
+          <div id="q2box" class="hidden">
+            <h3 style="margin-top:12px">Q2. 团队主要用什么协作？</h3>
+            <div class="toolbar" id="q2">
+              <button type="button" data-a="ui">UI 可视化 + 数仓同学为主</button>
+              <button type="button" data-a="python">Python 代码评审 + 工程化</button>
+              <button type="button" data-a="k8s">全 K8s + 容器化任务</button>
+            </div>
+          </div>
+          <div class="detail hidden" id="verdict"></div>
+        </div>
+        <div id="faqs"></div>
+        <p class="hint">常见组合：数仓日批可视化运维用海豚；复杂动态编排、ML 流水线用 Airflow 或自研——不是非此即彼。</p>
+      `
+      const verdict = el.querySelector('#verdict')
+      function say(text) {
+        verdict.classList.remove('hidden')
+        verdict.textContent = '建议：' + text
+      }
+      el.querySelector('#q1').addEventListener('click', (e) => {
+        if (e.target.dataset.a === 'no') {
+          el.querySelector('#q2box').classList.add('hidden')
+          say('XXL-JOB / crontab —— 无复杂 DAG，别上重型工作流平台')
+        } else if (e.target.dataset.a === 'yes') {
+          el.querySelector('#q2box').classList.remove('hidden')
+        }
+      })
+      el.querySelector('#q2').addEventListener('click', (e) => {
+        const map = {
+          ui: 'DolphinScheduler —— 可视化大数据工作流，数仓团队友好',
+          python: 'Airflow —— DAG as Code，pytest/CI 友好',
+          k8s: 'Argo Workflows —— K8s 原生，CI/ML 场景',
+        }
+        if (map[e.target.dataset.a]) say(map[e.target.dataset.a])
+      })
+      const faqs = [
+        ['改了工作流，为什么还按旧逻辑跑？', '定义改了要重新「上线」；运行中的实例用的是创建时的快照。'],
+        ['工作流上线了，定时就是不跑？', '检查调度是否单独「上线」；cron 方言（Quartz 秒开头）；时区。'],
+        ['补数会重复写数据吗？', '平台只按区间生成实例；是否重复写取决于任务是否幂等，分区覆盖写（INSERT OVERWRITE）是标准姿势。'],
+        ['任务日志在哪里？', 'Worker 本地执行目录，UI 查看时由 API 实时拉取；Worker 下线或清理后看不到。'],
+        ['海豚适合跑实时流任务吗？', '不适合。它是批调度平台；流任务用 Flink 平台/K8s，海豚只负责启停编排。'],
+        ['能用 API 触发工作流吗？', '可以。OpenAPI + Token（安全中心创建），第三方系统可编程触发、传参。'],
+      ]
+      const fbox = el.querySelector('#faqs')
+      faqs.forEach(([q, a]) => {
+        const b = document.createElement('button')
+        b.className = 'faq-q'
+        b.type = 'button'
+        b.textContent = 'Q: ' + q
+        const ans = document.createElement('div')
+        ans.className = 'faq-a hidden'
+        ans.textContent = 'A: ' + a
+        b.onclick = () => ans.classList.toggle('hidden')
+        fbox.appendChild(b)
+        fbox.appendChild(ans)
       })
     }
 

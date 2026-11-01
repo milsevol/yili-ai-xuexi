@@ -49,6 +49,8 @@ yili-ai-xuexi/
 | 主题 | 说明 |
 | --- | --- |
 | [海豚调度](./notes/dolphin-scheduler/) | Apache DolphinScheduler：DAG 调度概念与本地 Python 演示 |
+| [Spark](./notes/spark/) | Apache Spark：PySpark 10 章笔记 + 浏览器可视化交互演示 |
+| [Hadoop](./notes/hadoop/) | Apache Hadoop：HDFS / YARN / MapReduce 10 章笔记 + 浏览器可视化交互演示 |
 
 ## 约定摘要
 

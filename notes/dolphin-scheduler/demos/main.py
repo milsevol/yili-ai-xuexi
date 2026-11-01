@@ -18,6 +18,11 @@ CHAPTERS = [
     ("03", "核心概念", "chapters.03_concepts"),
     ("04", "DAG与调度", "chapters.04_dag_schedule"),
     ("05", "任务类型详解", "chapters.05_tasks_resources"),
+    ("06", "参数传递与时间变量", "chapters.06_params_timevars"),
+    ("07", "资源数据源与环境", "chapters.07_resources_env"),
+    ("08", "部署与快速上手", "chapters.08_deploy_quickstart"),
+    ("09", "运维实践与故障排查", "chapters.09_ops_troubleshoot"),
+    ("10", "生态对比与FAQ", "chapters.10_ecosystem_faq"),
 ]
 
 LAB = ROOT / "index.html"

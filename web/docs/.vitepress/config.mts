@@ -17,6 +17,8 @@ export default defineConfig({
     nav: [
       { text: '首页', link: '/' },
       { text: '海豚调度', link: '/dolphin-scheduler/' },
+      { text: 'Hadoop', link: '/hadoop/' },
+      { text: 'Spark', link: '/spark/' },
     ],
 
     sidebar: {
@@ -35,6 +37,42 @@ export default defineConfig({
             { text: '08 部署与快速上手', link: '/dolphin-scheduler/notes/08-部署与快速上手' },
             { text: '09 运维与故障排查', link: '/dolphin-scheduler/notes/09-运维实践与故障排查' },
             { text: '10 生态对比与 FAQ', link: '/dolphin-scheduler/notes/10-生态对比与FAQ' },
+          ],
+        },
+      ],
+      '/hadoop/': [
+        {
+          text: 'Hadoop',
+          items: [
+            { text: '主题入口', link: '/hadoop/' },
+            { text: '01 概述与定位', link: '/hadoop/notes/01-概述与定位' },
+            { text: '02 HDFS 架构与原理', link: '/hadoop/notes/02-HDFS架构与原理' },
+            { text: '03 HDFS 实践与运维', link: '/hadoop/notes/03-HDFS实践与运维' },
+            { text: '04 MapReduce 原理与执行', link: '/hadoop/notes/04-MapReduce原理与执行' },
+            { text: '05 MapReduce 进阶与优化', link: '/hadoop/notes/05-MapReduce进阶与优化' },
+            { text: '06 YARN 资源管理与调度', link: '/hadoop/notes/06-YARN资源管理与调度' },
+            { text: '07 Hadoop 生态组件', link: '/hadoop/notes/07-Hadoop生态组件' },
+            { text: '08 部署与集群规划', link: '/hadoop/notes/08-部署与集群规划' },
+            { text: '09 运维监控与故障排查', link: '/hadoop/notes/09-运维监控与故障排查' },
+            { text: '10 生态对比与 FAQ', link: '/hadoop/notes/10-生态对比与FAQ' },
+          ],
+        },
+      ],
+      '/spark/': [
+        {
+          text: 'Spark',
+          items: [
+            { text: '主题入口', link: '/spark/' },
+            { text: '01 概述与定位', link: '/spark/notes/01-概述与定位' },
+            { text: '02 架构与运行原理', link: '/spark/notes/02-架构与运行原理' },
+            { text: '03 RDD 核心抽象', link: '/spark/notes/03-RDD核心抽象' },
+            { text: '04 DataFrame 与 Dataset', link: '/spark/notes/04-DataFrame与Dataset' },
+            { text: '05 Spark SQL 与 Catalyst', link: '/spark/notes/05-SparkSQL与Catalyst' },
+            { text: '06 Shuffle 与执行计划', link: '/spark/notes/06-Shuffle与执行计划' },
+            { text: '07 部署与资源配置', link: '/spark/notes/07-部署与资源配置' },
+            { text: '08 性能调优实战', link: '/spark/notes/08-性能调优实战' },
+            { text: '09 Structured Streaming', link: '/spark/notes/09-StructuredStreaming' },
+            { text: '10 生态对比与 FAQ', link: '/spark/notes/10-生态对比与FAQ' },
           ],
         },
       ],

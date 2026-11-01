@@ -13,6 +13,8 @@ NOTES_ROOT = ROOT / "notes"
 # 新增主题时在此登记：(编号显示名, notes/ 下的主题目录名, 一句话说明)
 TOPICS = [
     ("1", "dolphin-scheduler", "海豚调度（DolphinScheduler）"),
+    ("2", "spark", "Apache Spark（PySpark）"),
+    ("3", "hadoop", "Apache Hadoop（HDFS / YARN / MapReduce）"),
 ]
 
 
