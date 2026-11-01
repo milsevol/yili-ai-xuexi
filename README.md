@@ -20,15 +20,19 @@ npm install
 npm run dev          # http://localhost:5173
 ```
 
-打包与部署：
+**在线阅读（已部署）**：https://milsevol.github.io/yili-ai-xuexi/
+
+更新代码后重新部署：推送到 `main` 即可（Actions 自动发布）。  
+详见 **[github-pages.md](./github-pages.md)**（含后续主题如何兼容 Pages）。
+
+本地打包：
 
 ```bash
 ./deploy.sh              # 本地打包（默认 GitHub Pages 路径）
 ./deploy.sh --preview    # 打包并预览产物
 ```
 
-**可以部署到 GitHub Pages**。推送到 `main`/`master` 后由 Actions 自动发布。  
-完整步骤见 [部署说明.md](./部署说明.md)。
+其它托管见 [部署说明.md](./部署说明.md)。
 
 **动手（Python 演示）**
 
@@ -61,7 +65,7 @@ yili-ai-xuexi/
       chapters/
 ```
 
-新增主题时：建主题目录与演示 → 在 `web/docs/` 增加主题页并改 `.vitepress/config.mts` 导航 → 登记根 `main.py` 的 `TOPICS`。
+新增主题时：建主题目录与演示 → 在 `web/docs/` 增加主题页并改 `.vitepress/config.mts` 导航 → 登记根 `main.py` 的 `TOPICS` → `git push origin main` 自动更新 Pages（清单见 github-pages.md）。
 
 ## 主题索引
 

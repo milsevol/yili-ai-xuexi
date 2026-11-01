@@ -1,0 +1,316 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;700&display=swap');
+
+:root {
+  --vp-font-family-base: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', sans-serif;
+  --vp-font-family-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --vp-c-brand-1: #0f766e;
+  --vp-c-brand-2: #0d9488;
+  --vp-c-brand-3: #115e59;
+  --vp-c-brand-soft: rgba(15, 118, 110, 0.12);
+
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: linear-gradient(115deg, #115e59 20%, #0369a1 85%);
+  --vp-home-hero-image-background-image: radial-gradient(
+      ellipse at 30% 40%,
+      rgba(13, 148, 136, 0.28),
+      transparent 55%
+    ),
+    radial-gradient(ellipse at 75% 30%, rgba(3, 105, 161, 0.22), transparent 50%);
+  --vp-home-hero-image-filter: blur(44px);
+
+  --home-ink: #14212b;
+  --home-muted: #5b6b76;
+  --home-panel: rgba(255, 255, 255, 0.72);
+  --home-line: rgba(20, 33, 43, 0.08);
+  --home-glow: rgba(13, 148, 136, 0.14);
+}
+
+.dark {
+  --home-ink: #e8eef2;
+  --home-muted: #9aadb8;
+  --home-panel: rgba(22, 30, 36, 0.72);
+  --home-line: rgba(232, 238, 242, 0.1);
+  --home-glow: rgba(45, 212, 191, 0.12);
+  --vp-c-brand-1: #2dd4bf;
+  --vp-c-brand-2: #5eead4;
+  --vp-c-brand-3: #14b8a6;
+  --vp-c-brand-soft: rgba(45, 212, 191, 0.14);
+  --vp-home-hero-name-background: linear-gradient(115deg, #5eead4 15%, #7dd3fc 90%);
+}
+
+/* —— Home hero —— */
+.VPHome {
+  padding-bottom: 0 !important;
+  background:
+    radial-gradient(ellipse 80% 50% at 10% -10%, var(--home-glow), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 100% 0%, rgba(3, 105, 161, 0.08), transparent 45%),
+    var(--vp-c-bg);
+}
+
+.VPHomeHero {
+  padding-top: 72px !important;
+  padding-bottom: 36px !important;
+}
+
+.VPHomeHero .name {
+  font-family: 'Noto Serif SC', 'Songti SC', serif;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.15;
+}
+
+.VPHomeHero .text {
+  font-family: 'Noto Serif SC', 'Songti SC', serif;
+  font-weight: 600;
+  max-width: 16em;
+  line-height: 1.25;
+}
+
+.VPHomeHero .tagline {
+  max-width: 34em;
+  color: var(--home-muted);
+  font-size: 1.05rem;
+  line-height: 1.65;
+}
+
+.VPHomeHero .actions {
+  padding-top: 1.5rem;
+}
+
+.VPHomeHero .action .VPButton.brand {
+  border-radius: 10px;
+  padding: 0 22px;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.VPHomeHero .action .VPButton.brand:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(15, 118, 110, 0.22);
+}
+
+.VPHomeHero .action .VPButton.alt {
+  border-radius: 10px;
+}
+
+/* 关掉默认 features 区（主题列表用自定义组件） */
+.VPHomeFeatures {
+  display: none !important;
+}
+
+/* —— Topic directory —— */
+.home-topics {
+  position: relative;
+  padding: 12px 24px 96px;
+  animation: home-rise 0.7s ease both;
+  animation-delay: 0.12s;
+}
+
+.home-topics__inner {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.home-topics__header {
+  margin-bottom: 1.75rem;
+}
+
+.home-topics__eyebrow {
+  margin: 0 0 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--vp-c-brand-1);
+}
+
+.home-topics__title {
+  margin: 0;
+  font-family: 'Noto Serif SC', 'Songti SC', serif;
+  font-size: clamp(1.6rem, 2.4vw, 2rem);
+  font-weight: 700;
+  color: var(--home-ink);
+  letter-spacing: 0.01em;
+}
+
+.home-topics__lead {
+  margin: 0.65rem 0 0;
+  max-width: 40rem;
+  color: var(--home-muted);
+  line-height: 1.7;
+  font-size: 0.98rem;
+}
+
+.home-topics__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.home-topics__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid var(--home-line);
+  background: var(--home-panel);
+  color: var(--home-ink);
+  border-radius: 999px;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.86rem;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.home-topics__chip:hover {
+  border-color: var(--vp-c-brand-1);
+}
+
+.home-topics__chip.is-active {
+  background: var(--vp-c-brand-soft);
+  border-color: var(--vp-c-brand-1);
+  color: var(--vp-c-brand-1);
+  font-weight: 600;
+}
+
+.home-topics__count {
+  font-size: 0.75rem;
+  opacity: 0.75;
+}
+
+.home-topics__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .home-topics__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 960px) {
+  .home-topics__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.topic-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  min-height: 100%;
+  padding: 1.25rem 1.3rem 1.35rem;
+  border: 1px solid var(--home-line);
+  border-radius: 16px;
+  background: var(--home-panel);
+  backdrop-filter: blur(10px);
+  text-decoration: none !important;
+  color: inherit;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) inset;
+  transition: transform 0.28s ease, border-color 0.28s ease, box-shadow 0.28s ease;
+  animation: home-rise 0.55s ease both;
+}
+
+.topic-card:nth-child(1) {
+  animation-delay: 0.08s;
+}
+.topic-card:nth-child(2) {
+  animation-delay: 0.14s;
+}
+.topic-card:nth-child(3) {
+  animation-delay: 0.2s;
+}
+.topic-card:nth-child(n + 4) {
+  animation-delay: 0.24s;
+}
+
+a.topic-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(15, 118, 110, 0.35);
+  box-shadow: 0 14px 36px rgba(20, 33, 43, 0.08);
+}
+
+.topic-card.is-coming {
+  opacity: 0.72;
+  cursor: default;
+}
+
+.topic-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.topic-card__cat,
+.topic-card__chapters,
+.topic-card__badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+}
+
+.topic-card__cat {
+  color: var(--vp-c-brand-1);
+  background: var(--vp-c-brand-soft);
+}
+
+.topic-card__chapters {
+  color: var(--home-muted);
+  background: transparent;
+  border: 1px solid var(--home-line);
+}
+
+.topic-card__badge {
+  color: var(--home-muted);
+  background: rgba(91, 107, 118, 0.12);
+}
+
+.topic-card__title {
+  margin: 0.15rem 0 0;
+  font-family: 'Noto Serif SC', 'Songti SC', serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--home-ink);
+  line-height: 1.35;
+}
+
+.topic-card__desc {
+  margin: 0;
+  flex: 1;
+  color: var(--home-muted);
+  font-size: 0.92rem;
+  line-height: 1.65;
+}
+
+.topic-card__cta {
+  margin-top: 0.35rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--vp-c-brand-1);
+}
+
+@keyframes home-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-topics,
+  .topic-card,
+  .VPHomeHero .action .VPButton.brand {
+    animation: none !important;
+    transition: none !important;
+  }
+}
