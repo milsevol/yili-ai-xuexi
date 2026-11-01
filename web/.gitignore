@@ -1,0 +1,5 @@
+# 与根目录 .gitignore 保持一致；在此再写一份，避免只在 web/ 下操作时漏忽略
+node_modules/
+docs/.vitepress/dist/
+docs/.vitepress/cache/
+docs/*/notes/

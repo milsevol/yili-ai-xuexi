@@ -1,0 +1,14 @@
+{
+  "name": "yili-ai-xuexi-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "sync": "node scripts/sync-notes.mjs",
+    "dev": "npm run sync && vitepress dev docs",
+    "build": "npm run sync && vitepress build docs",
+    "preview": "vitepress preview docs"
+  },
+  "devDependencies": {
+    "vitepress": "^1.6.4"
+  }
+}

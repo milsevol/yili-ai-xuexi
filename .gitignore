@@ -1,0 +1,45 @@
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- IDE / 编辑器 ---
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# --- 环境与密钥 ---
+.env
+.env.*
+!.env.example
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+.venv/
+venv/
+.env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.log
+
+# --- Node / VitePress (web/) ---
+node_modules/
+web/docs/.vitepress/dist/
+web/docs/.vitepress/cache/
+# 由 web/scripts/sync-notes.mjs 从各主题 notes/ 同步而来
+web/docs/*/notes/
+
+# --- 其他 ---
+*.tmp
+*.bak
+.cache/
