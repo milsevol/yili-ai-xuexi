@@ -100,6 +100,11 @@ extract_ods ──► transform_dwd ──► aggregate_dws ──► publish_ad
 无剩余任务 → 流程成功或失败收尾
 ```
 
+## 参考与官方文档
+
+- [工作流定义](https://dolphinscheduler.apache.org/zh-cn/docs/latest/user_doc/guide/project/workflow-definition.html)：DAG 编排、依赖与上线
+- [工作流实例 / 定时调度](https://dolphinscheduler.apache.org/zh-cn/docs/latest/user_doc/guide/project/workflow-instance.html)：实例、补数与调度相关操作（路径以官网当前版菜单为准）
+
 ## 自测
 
 1. 为什么说补数要求任务幂等？

@@ -25,19 +25,29 @@ Apache DolphinScheduler 是一个分布式、可视化的 DAG 工作流调度平
 
 ## 如何启动演示
 
+推荐一键脚本（主题目录下）：
+
 ```bash
-cd dolphin-scheduler
-python3 -m venv .venv
-source .venv/bin/activate
-# 本主题无第三方依赖，可直接跑
-python3 demos/main.py          # 菜单选择
-python3 demos/main.py 04       # 直达第 4 章演示
+cd notes/dolphin-scheduler
+./start.sh          # 菜单选择章节
+./start.sh 04       # 直达第 4 章演示
+./start.sh --help   # 查看用法
 ```
+
+等价手动命令：
+
+```bash
+python3 demos/main.py          # 菜单
+python3 demos/main.py 04       # 直达第 4 章
+```
+
+本主题无第三方依赖，一般不必建 venv；若以后 `demos/requirements.txt` 有包，`./start.sh` 会自动创建 `.venv` 并安装。
 
 演示均为本地模拟：用 Python 表达 DAG 拓扑执行、Master/Worker 分工、补数与失败策略等，不连接真实 DolphinScheduler。
 
-## 官方资料
+## 参考与官方文档
 
-- 官网文档：https://dolphinscheduler.apache.org/zh-cn/docs/latest/user_doc/about/introduction.html
+- 官网文档（介绍）：https://dolphinscheduler.apache.org/zh-cn/docs/latest/user_doc/about/introduction.html
+- 快速开始：https://dolphinscheduler.apache.org/zh-cn/docs/latest/user_doc/guide/start/quick-start.html
 - GitHub：https://github.com/apache/dolphinscheduler
-- 架构设计（中文）：仓库内 `docs/docs/zh/contribute/architecture-design.md`
+- 架构设计（仓库内中文）：`docs/docs/zh/contribute/architecture-design.md`

@@ -8,8 +8,9 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
+NOTES_ROOT = ROOT / "notes"
 
-# 新增主题时在此登记：(编号显示名, 主题目录名, 一句话说明)
+# 新增主题时在此登记：(编号显示名, notes/ 下的主题目录名, 一句话说明)
 TOPICS = [
     ("1", "dolphin-scheduler", "海豚调度（DolphinScheduler）"),
 ]
@@ -23,9 +24,15 @@ def load_topic_main(topic_dir: Path) -> Path:
 
 
 def enter_topic(topic_dir_name: str, chapter_args: list[str]) -> None:
-    topic_dir = ROOT / topic_dir_name
+    topic_dir = NOTES_ROOT / topic_dir_name
+    if not topic_dir.is_dir():
+        # 兼容误传 notes/xxx
+        alt = ROOT / topic_dir_name
+        if alt.is_dir() and (alt / "demos" / "main.py").is_file():
+            topic_dir = alt
+        else:
+            raise FileNotFoundError(f"主题目录不存在: {NOTES_ROOT / topic_dir_name}")
     main_py = load_topic_main(topic_dir)
-    # 把主题 demos 目录放入 path，便于 chapters 相对导入
     demos_dir = str(topic_dir / "demos")
     if demos_dir not in sys.path:
         sys.path.insert(0, demos_dir)
@@ -39,12 +46,11 @@ def print_menu() -> None:
         print("（暂无主题。新增主题后在 main.py 的 TOPICS 中登记。）")
         return
     for num, dirname, desc in TOPICS:
-        print(f"  {num}. {desc}  [{dirname}]")
+        print(f"  {num}. {desc}  [notes/{dirname}]")
     print("  q. 退出")
 
 
 def main() -> None:
-    # 支持直达：python3 main.py <主题目录名> [章节参数...]
     if len(sys.argv) >= 2 and sys.argv[1] not in {"-h", "--help"}:
         enter_topic(sys.argv[1], sys.argv[2:])
         return

@@ -25,26 +25,28 @@ Apache DolphinScheduler 是一个分布式、可视化的 DAG 工作流调度平
 
 ## 如何启动演示
 
-在仓库根目录：
+推荐一键脚本：
 
 ```bash
-cd dolphin-scheduler
-python3 -m venv .venv
-source .venv/bin/activate
-python3 demos/main.py          # 菜单选择
-python3 demos/main.py 04       # 直达第 4 章演示
+cd notes/dolphin-scheduler
+./start.sh          # 菜单选择章节
+./start.sh 04       # 直达第 4 章演示
+./start.sh --help   # 查看用法
 ```
 
-或从仓库总 CLI：
+等价方式：
 
 ```bash
-python3 main.py dolphin-scheduler
+python3 notes/dolphin-scheduler/demos/main.py
+python3 notes/dolphin-scheduler/demos/main.py 04
 python3 main.py dolphin-scheduler 04
 ```
 
-演示均为本地模拟，不连接真实 DolphinScheduler。
+演示均为本地模拟，不连接真实 DolphinScheduler。有第三方依赖时，`./start.sh` 会自动处理 `.venv`。
 
-## 官方资料
+## 参考与官方文档
 
-- [官网文档](https://dolphinscheduler.apache.org/zh-cn/docs/latest/user_doc/about/introduction.html)
+- [官网文档（介绍）](https://dolphinscheduler.apache.org/zh-cn/docs/latest/user_doc/about/introduction.html)
+- [快速开始](https://dolphinscheduler.apache.org/zh-cn/docs/latest/user_doc/guide/start/quick-start.html)
 - [GitHub](https://github.com/apache/dolphinscheduler)
+- 架构设计：上游仓库 `docs/docs/zh/contribute/architecture-design.md`
