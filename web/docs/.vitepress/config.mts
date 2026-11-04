@@ -16,20 +16,30 @@ export default defineConfig({
   themeConfig: {
     nav: [
       { text: '首页', link: '/' },
-      { text: 'Hadoop', link: '/hadoop/' },
-      { text: 'Hive', link: '/hive/' },
-      { text: 'Spark', link: '/spark/' },
-      { text: 'Flink', link: '/flink/' },
-      { text: 'Kafka', link: '/kafka/' },
-      { text: '湖仓一体', link: '/iceberg/' },
-      { text: 'HBase', link: '/hbase/' },
-      { text: 'ClickHouse', link: '/clickhouse/' },
-      { text: '海豚调度', link: '/dolphin-scheduler/' },
-      { text: '大模型原理', link: '/llm-foundations/' },
-      { text: '提示词工程', link: '/prompt-engineering/' },
-      { text: '向量数据库', link: '/vector-db/' },
-      { text: 'RAG', link: '/rag/' },
-      { text: 'Agent', link: '/agent/' },
+      {
+        text: '大数据',
+        items: [
+          { text: 'Hadoop', link: '/hadoop/' },
+          { text: 'Hive', link: '/hive/' },
+          { text: 'Spark', link: '/spark/' },
+          { text: 'Flink', link: '/flink/' },
+          { text: 'Kafka', link: '/kafka/' },
+          { text: '湖仓一体', link: '/iceberg/' },
+          { text: 'HBase', link: '/hbase/' },
+          { text: 'ClickHouse', link: '/clickhouse/' },
+          { text: '海豚调度', link: '/dolphin-scheduler/' },
+        ],
+      },
+      {
+        text: 'AI技术',
+        items: [
+          { text: '大模型原理', link: '/llm-foundations/' },
+          { text: '提示词工程', link: '/prompt-engineering/' },
+          { text: '向量数据库', link: '/vector-db/' },
+          { text: 'RAG', link: '/rag/' },
+          { text: 'Agent', link: '/agent/' },
+        ],
+      },
     ],
 
     sidebar: {
