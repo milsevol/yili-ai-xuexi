@@ -15,18 +15,21 @@ const chapterCount = (id: string) => topicStats[id] ?? 0
 
 const countIn = (cat: TopicCategory) => topics.filter((t) => t.category === cat).length
 
-/** topics.ts 原始下标（大数据类按此顺序 = 学习路线图顺序） */
+/** topics.ts 原始下标（大数据 / AI技术 类按此顺序 = 学习路线图顺序） */
 const topicIndex = topics.reduce<Record<string, number>>((acc, t, i) => {
   acc[t.id] = i
   return acc
 }, {})
 
+/** 按 topics.ts 顺序展示（即学习路线图顺序）的大类 */
+const routeCategories: TopicCategory[] = ['大数据', 'AI技术']
+
 const sortTopics = (list: typeof topics) =>
   [...list].sort((a, b) => {
     if (a.status === 'coming' && b.status !== 'coming') return 1
     if (b.status === 'coming' && a.status !== 'coming') return -1
-    // 大数据类按 topics.ts 顺序（即学习路线图）；其他类按拼音
-    if (a.category === '大数据' && b.category === '大数据') {
+    // 大数据 / AI技术 按 topics.ts 顺序（即学习路线图）；其他类按拼音
+    if (a.category === b.category && routeCategories.includes(a.category)) {
       return (topicIndex[a.id] ?? 0) - (topicIndex[b.id] ?? 0)
     }
     return a.title.localeCompare(b.title, 'zh-CN')
@@ -96,7 +99,7 @@ const activeHint = computed(() =>
           </div>
         </div>
 
-        <div v-if="filter === '全部' || filter === '大数据'" class="home-roadmap">
+        <div v-if="filter === '大数据'" class="home-roadmap">
           <div class="home-roadmap__title">📚 大数据学习路线图（建议从上到下依次学习）</div>
           <div class="home-roadmap__flow">
             <span class="home-roadmap__step">① Hadoop 底座</span>
@@ -112,6 +115,24 @@ const activeHint = computed(() =>
             <span class="home-roadmap__step">⑦ HBase / ⑧ ClickHouse 数据访问</span>
             <span class="home-roadmap__arrow">→</span>
             <span class="home-roadmap__step">⑨ 海豚调度编排</span>
+          </div>
+        </div>
+
+        <div v-if="filter === 'AI技术'" class="home-roadmap">
+          <div class="home-roadmap__title">🤖 AI 技术学习路线图（先懂模型 → 再改输入 → 再接知识 → 最后自主执行）</div>
+          <div class="home-roadmap__flow">
+            <span class="home-roadmap__step">① Transformer 大模型原理</span>
+            <span class="home-roadmap__arrow">→</span>
+            <span class="home-roadmap__step">② 提示词工程</span>
+            <span class="home-roadmap__arrow">→</span>
+            <span class="home-roadmap__step">③ 向量数据库</span>
+            <span class="home-roadmap__arrow">→</span>
+            <span class="home-roadmap__step">④ RAG 检索增强</span>
+            <span class="home-roadmap__arrow">→</span>
+            <span class="home-roadmap__step">⑤ Agent 智能体</span>
+          </div>
+          <div class="home-roadmap__note">
+            赶应用可走快速通道：② → ③ → ④ → ⑤，① 按需回补
           </div>
         </div>
 

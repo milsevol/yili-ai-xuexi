@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>RAG 检索增强生成 · 交互式演示</title>
+<style>
+  :root {
+    --bg: #f5f7fa;
+    --panel: #fff;
+    --ink: #16202e;
+    --muted: #5f6b7a;
+    --line: rgba(22, 32, 46, 0.11);
+    --brand: #7c3aed;
+    --brand-soft: rgba(124, 58, 237, 0.1);
+    --ok: #15803d;
+    --warn: #a16207;
+    --fail: #b91c1c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "IBM Plex Sans", "PingFang SC", "Noto Sans SC", sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    min-height: 100vh;
+  }
+  .app { max-width: 1120px; margin: 0 auto; padding: 20px 16px 48px; display: grid; gap: 16px; }
+  @media (min-width: 880px) { .app { grid-template-columns: 220px 1fr; align-items: start; } }
+  .brand h1 { margin: 0; font-size: 1.2rem; }
+  .brand p { margin: 4px 0 0; color: var(--muted); font-size: 0.85rem; line-height: 1.5; }
+  .nav { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+  @media (min-width: 880px) {
+    .nav { flex-direction: column; position: sticky; top: 12px; background: var(--panel);
+           border: 1px solid var(--line); border-radius: 14px; padding: 10px; }
+  }
+  .nav button {
+    border: 1px solid var(--line); background: var(--panel); border-radius: 999px;
+    padding: 0.45rem 0.85rem; font-size: 0.86rem; cursor: pointer; text-align: left;
+    color: var(--ink); white-space: nowrap;
+  }
+  @media (min-width: 880px) {
+    .nav button { width: 100%; border-radius: 10px; border-color: transparent; background: transparent; }
+    .nav button:hover { background: #f1f5fb; }
+  }
+  .nav button.active { background: var(--brand-soft); border-color: var(--brand); color: var(--brand); font-weight: 600; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px 18px 22px; min-height: 460px; }
+  .panel h2 { margin: 0 0 6px; font-size: 1.15rem; }
+  .lead { margin: 0 0 16px; color: var(--muted); font-size: 0.9rem; line-height: 1.65; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0 14px; }
+  .toolbar button, .toolbar label {
+    border: 1px solid var(--line); background: #fff; border-radius: 8px;
+    padding: 0.4rem 0.75rem; font-size: 0.84rem; cursor: pointer; color: var(--ink);
+  }
+  .toolbar button.primary { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600; }
+  .toolbar input[type=range] { accent-color: var(--brand); width: 170px; }
+  .val { font-family: ui-monospace, Menlo, monospace; font-size: 0.84rem; color: var(--brand); font-weight: 700; min-width: 4em; }
+  .grid2 { display: grid; gap: 12px; }
+  @media (min-width: 700px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+  .card { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; background: #fafcff; cursor: pointer; transition: border-color .15s, transform .15s; }
+  .card:hover, .card.on { border-color: var(--brand); transform: translateY(-1px); }
+  .card h3 { margin: 0 0 8px; font-size: 0.95rem; }
+  .card ul { margin: 0; padding-left: 1.1rem; color: var(--muted); font-size: 0.85rem; line-height: 1.55; }
+  .detail { margin-top: 12px; padding: 12px 14px; border-radius: 10px; background: var(--brand-soft); font-size: 0.88rem; line-height: 1.65; min-height: 3em; }
+  .chip { border: none; border-radius: 999px; padding: 0.35rem 0.75rem; background: var(--brand-soft); color: var(--brand); font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+  .mono { font-family: ui-monospace, Menlo, monospace; font-size: 0.8rem; color: var(--muted); }
+  .code {
+    margin-top: 10px; background: #16202e; color: #e5eaf1; border-radius: 10px;
+    padding: 12px 14px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.78rem; line-height: 1.7; white-space: pre-wrap;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 0.84rem; margin-top: 8px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 0.8rem; }
+  td.num { font-family: ui-monospace, Menlo, monospace; }
+  .note { margin-top: 14px; font-size: 0.83rem; color: var(--muted); line-height: 1.6; border-left: 3px solid var(--line); padding-left: 10px; }
+  .flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0; }
+  .step { border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-size: 0.84rem; background: #fff; cursor: pointer; }
+  .step.on { border-color: var(--brand); background: var(--brand-soft); color: var(--brand); font-weight: 600; }
+  .arrow { color: var(--muted); }
+  .bars { display: grid; gap: 6px; margin-top: 10px; }
+  .barrow { display: grid; grid-template-columns: 150px 1fr 62px; gap: 8px; align-items: center; font-size: 0.82rem; }
+  .track { height: 12px; background: #eef2f8; border-radius: 999px; overflow: hidden; }
+  .fill { height: 100%; background: var(--brand); border-radius: 999px; transition: width .2s; }
+  .chunk { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 0.84rem; line-height: 1.6; background: #fff; margin-top: 8px; }
+  .chunk.hit { border-color: var(--ok); background: rgba(21, 128, 61, 0.06); }
+  .chunk.cut { border-color: var(--fail); background: rgba(185, 28, 28, 0.05); }
+  .tag { font-size: 0.72rem; border-radius: 999px; padding: 2px 8px; background: #eef2f8; color: var(--muted); margin-left: 6px; }
+  .pass { color: var(--ok); font-weight: 600; }
+  .fail { color: var(--fail); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brand">
+      <h1>RAG 检索增强生成</h1>
+      <p>8 章交互演示 · 左侧选章节</p>
+    </div>
+    <nav class="nav" id="nav"></nav>
+  </aside>
+  <main class="panel">
+    <h2 id="title"></h2>
+    <p class="lead" id="lead"></p>
+    <div id="lab"></div>
+    <div class="note" id="note"></div>
+  </main>
+</div>
+<script>
+const CHAPTERS = [
+  {
+    code: "01", title: "概述与定位",
+    lead: "RAG 解决的是「模型不知道你的私有知识」和「会编」两个问题。它不是万能的：知识类需求给 RAG，风格类需求给微调。点卡片看判断依据。",
+    note: "记住分工：RAG 管「知道什么」，微调管「怎么表达」，Prompt 管「怎么组织」。",
+    render(el) {
+      const items = [
+        { k: "该用 RAG", v: ["企业制度/产品文档问答", "需要引用原文出处", "知识每周在变", "文档量 > 几十页"], d: "RAG 的知识可热更新、可溯源、可按权限过滤，是知识类需求的首选。" },
+        { k: "该用微调", v: ["固定输出风格与格式", "领域术语表达习惯", "超短延迟要求", "降低长 Prompt 成本"], d: "微调把「表达方式」固化进参数，省掉每次的长 Prompt，但知识更新要重训。" },
+        { k: "两者叠加", v: ["微调学风格 + RAG 供事实", "微调学工具调用格式", "RAG 负责时效与私有数据"], d: "工业界常见组合：底座微调出稳定的输出范式，RAG 提供当日事实。" },
+        { k: "都不该用", v: ["精确计算 → 用代码/工具", "严格事务 → 用规则引擎", "强合规审批 → 人工流程"], d: "别把确定性问题交给概率模型，否则永远无法保证 100% 正确。" }
+      ];
+      const wrap = document.createElement("div");
+      wrap.className = "grid2";
+      const detail = document.createElement("div");
+      detail.className = "detail";
+      detail.textContent = "点击卡片查看判断依据";
+      items.forEach((it) => {
+        const c = document.createElement("div");
+        c.className = "card";
+        c.innerHTML = `<h3>${it.k}</h3><ul>${it.v.map((x) => `<li>${x}</li>`).join("")}</ul>`;
+        c.onclick = () => {
+          wrap.querySelectorAll(".card").forEach((n) => n.classList.remove("on"));
+          c.classList.add("on");
+          detail.textContent = it.d;
+        };
+        wrap.appendChild(c);
+      });
+      el.append(wrap, detail);
+    }
+  },
+  {
+    code: "02", title: "RAG 核心流程",
+    lead: "RAG 分两个阶段：索引期（离线建库）与查询期（在线回答）。点步骤看每一环的输入输出与常见故障点。",
+    note: "索引期的问题只会在查询期暴露，所以「效果差」八成要先查离线切块与向量质量。",
+    render(el) {
+      const steps = [
+        { k: "① 解析", p: "索引期", d: "PDF/Word/HTML → 纯文本 + 结构。坑：双栏错行、表格散架、页眉页脚混入。" },
+        { k: "② 切块", p: "索引期", d: "按语义/长度切分并保留重叠。块太大噪声多，太小丢上下文。" },
+        { k: "③ 向量化", p: "索引期", d: "Embedding 模型编码为向量，务必 L2 归一化，并记录模型版本。" },
+        { k: "④ 入库", p: "索引期", d: "写入向量库，带元数据（来源、部门、生效日期、密级）供过滤。" },
+        { k: "⑤ 检索", p: "查询期", d: "问题向量化 → ANN 召回 Top-K（可加 BM25 混合），带权限过滤。" },
+        { k: "⑥ 重排", p: "查询期", d: "Cross-Encoder 精排 Top-20 → Top-5，精度提升的关键一步。" },
+        { k: "⑦ 拼装", p: "查询期", d: "把片段按编号装入 Prompt，明确「仅依据资料回答」。" },
+        { k: "⑧ 生成", p: "查询期", d: "LLM 产出答案并标注引用；无依据时走兜底话术。" }
+      ];
+      const flow = document.createElement("div");
+      flow.className = "flow";
+      const detail = document.createElement("div");
+      detail.className = "detail";
+      steps.forEach((s, i) => {
+        const b = document.createElement("div");
+        b.className = "step";
+        b.textContent = s.k;
+        b.onclick = () => {
+          flow.querySelectorAll(".step").forEach((n) => n.classList.remove("on"));
+          b.classList.add("on");
+          detail.innerHTML = `<b>${s.p}</b><br>${s.d}`;
+        };
+        flow.appendChild(b);
+        if (i < steps.length - 1) {
+          const a = document.createElement("span");
+          a.className = "arrow";
+          a.textContent = "→";
+          flow.appendChild(a);
+        }
+      });
+      el.append(flow, detail);
+      flow.querySelector(".step").click();
+    }
+  },
+  {
+    code: "03", title: "文档解析与 Chunking",
+    lead: "切块是 RAG 最容易被低估的环节。拖动块大小滑块，看同一段文档在不同切块下是否会把「答案」切断。",
+    note: "经验区间 300~500 字 + 10%~20% 重叠；表格与条款要按结构切，不能按字数硬切。",
+    render(el) {
+      const doc = "公司差旅制度第五章：员工出差前需在系统提交申请，经直属主管审批后方可订票。住宿标准按城市分级：一线城市每晚不超过 600 元，二线城市不超过 450 元。超标部分需自行承担，特殊情况须提前报备财务总监。报销时须附发票与行程单，审批通过后 5 个工作日内到账。";
+      const bar = document.createElement("div");
+      bar.className = "toolbar";
+      const range = document.createElement("input");
+      range.type = "range"; range.min = "30"; range.max = "200"; range.step = "10"; range.value = "120";
+      const label = document.createElement("label");
+      label.textContent = "块大小";
+      const val = document.createElement("span");
+      val.className = "val";
+      const out = document.createElement("div");
+      const draw = () => {
+        const size = Number(range.value);
+        val.textContent = size + " 字";
+        const chunks = [];
+        let i = 0;
+        while (i < doc.length) {
+          chunks.push(doc.slice(i, i + size));
+          if (i + size >= doc.length) break;
+          i += size - Math.round(size * 0.15);
+        }
+        out.innerHTML = chunks.map((c, idx) => {
+          const ok = c.includes("600") || c.includes("5 个工作日");
+          const broken = /不超过\s*$|报销时须附\s*$|5 个\s*$/.test(c);
+          const cls = broken ? "chunk cut" : ok ? "chunk hit" : "chunk";
+          const tag = broken ? '<span class="tag">关键句被切断</span>' : ok ? '<span class="tag">命中答案</span>' : "";
+          return `<div class="${cls}"><b>chunk ${idx + 1}</b>${tag}<br>${c}</div>`;
+        }).join("");
+      };
+      range.oninput = draw;
+      bar.append(label, range, val);
+      el.append(bar, out);
+      draw();
+    }
+  },
+  {
+    code: "04", title: "检索优化与多路召回",
+    lead: "向量召回懂语义但不认专有名词，BM25 认关键词但不懂同义。RRF（Reciprocal Rank Fusion）只用排名融合两路结果，无需调权重。",
+    note: "RRF 公式：score = Σ 1/(k + rank)，k 常取 60。它奖励「两路都靠前」的文档。",
+    render(el) {
+      const query = "差旅住宿标准 一线城市 600";
+      const vec = ["住宿标准分级说明", "一线城市 600 元/晚", "报销流程与时限", "出差申请审批"];
+      const bm25 = ["一线城市 600 元/晚", "差旅制度目录", "住宿标准分级说明", "发票开具指南"];
+      const k = 60;
+      const score = {};
+      vec.forEach((d, i) => { score[d] = (score[d] || 0) + 1 / (k + i + 1); });
+      bm25.forEach((d, i) => { score[d] = (score[d] || 0) + 1 / (k + i + 1); });
+      const ranked = Object.entries(score).sort((a, b) => b[1] - a[1]);
+      const max = ranked[0][1];
+      const wrap = document.createElement("div");
+      wrap.innerHTML = `<div class="mono">查询：${query}</div>
+        <div class="grid2" style="margin-top:10px">
+          <div class="card"><h3>向量召回 Top-4</h3><ul>${vec.map((d, i) => `<li>${i + 1}. ${d}</li>`).join("")}</ul></div>
+          <div class="card"><h3>BM25 召回 Top-4</h3><ul>${bm25.map((d, i) => `<li>${i + 1}. ${d}</li>`).join("")}</ul></div>
+        </div>`;
+      const bars = document.createElement("div");
+      bars.className = "bars";
+      bars.innerHTML = ranked.map(([d, s]) => `
+        <div class="barrow">
+          <span>${d}</span>
+          <div class="track"><div class="fill" style="width:${(s / max * 100).toFixed(1)}%"></div></div>
+          <span class="mono">${s.toFixed(4)}</span>
+        </div>`).join("");
+      const cap = document.createElement("div");
+      cap.className = "mono";
+      cap.style.marginTop = "10px";
+      cap.textContent = "RRF 融合后排序（两路都靠前的文档分数最高）";
+      el.append(wrap, cap, bars);
+    }
+  },
+  {
+    code: "05", title: "重排序 Rerank",
+    lead: "向量检索是 Bi-Encoder（问题和文档分开编码），精度有限；Rerank 用 Cross-Encoder 把二者拼起来过模型，逐对打分。看前后排序变化。",
+    note: "典型链路：召回 Top-20 → Rerank → 取 Top-5。Rerank 会把「关键词命中但语义无关」的噪声压下去。",
+    render(el) {
+      const before = [
+        { d: "差旅报销政策总览（含各类制度索引）", s: 0.82 },
+        { d: "住宿标准分级说明（一线 600/二线 450）", s: 0.80 },
+        { d: "员工出差申请流程", s: 0.78 },
+        { d: "发票开具与报销时限", s: 0.76 },
+        { d: "一线城市 600 元/晚，超标自理", s: 0.74 }
+      ];
+      const after = [
+        { d: "一线城市 600 元/晚，超标自理", s: 0.94 },
+        { d: "住宿标准分级说明（一线 600/二线 450）", s: 0.88 },
+        { d: "差旅报销政策总览（含各类制度索引）", s: 0.51 },
+        { d: "发票开具与报销时限", s: 0.33 },
+        { d: "员工出差申请流程", s: 0.21 }
+      ];
+      const render = (list, title) => {
+        const max = 1;
+        return `<div class="card" style="margin-top:10px"><h3>${title}</h3>
+          <div class="bars">${list.map((x, i) => `
+            <div class="barrow">
+              <span>${i + 1}. ${x.d}</span>
+              <div class="track"><div class="fill" style="width:${x.s * 100}%"></div></div>
+              <span class="mono">${x.s.toFixed(2)}</span>
+            </div>`).join("")}</div></div>`;
+      };
+      const wrap = document.createElement("div");
+      wrap.innerHTML = render(before, "Rerank 前（向量相似度）") + render(after, "Rerank 后（Cross-Encoder 相关性）");
+      el.appendChild(wrap);
+    }
+  },
+  {
+    code: "06", title: "RAG 评估 RAGAS",
+    lead: "RAG 出错要先分清是「没检索到」还是「检索到没用上」。RAGAS 用四个指标把链路拆开打分。点指标看定义与低了怎么改。",
+    note: "优化顺序：先把 Context Recall 拉到 0.85+，再用 Rerank 提 Context Precision，最后调 Prompt 提 Faithfulness。",
+    render(el) {
+      const metrics = [
+        { k: "Context Recall", v: 0.78, d: "标准答案需要的信息是否被召回。低 → 切块太大/太小、Embedding 不适配、Top-K 太小、缺查询改写。" },
+        { k: "Context Precision", v: 0.62, d: "有用片段是否排在前面。低 → 加 Rerank；或 Top-K 过大引入噪声。" },
+        { k: "Faithfulness", v: 0.91, d: "答案每句是否有上下文依据。低 → Prompt 未约束「只依据资料」；上下文过长导致中间内容被忽略。" },
+        { k: "Answer Relevancy", v: 0.86, d: "答案是否正面回答问题。低 → 问题有歧义、输出要求不明确、或答案跑题。" }
+      ];
+      const bars = document.createElement("div");
+      bars.className = "bars";
+      bars.innerHTML = metrics.map((m) => `
+        <div class="barrow">
+          <span>${m.k}</span>
+          <div class="track"><div class="fill" style="width:${m.v * 100}%;background:${m.v < 0.7 ? "#a16207" : "#15803d"}"></div></div>
+          <span class="mono">${m.v.toFixed(2)}</span>
+        </div>`).join("");
+      const detail = document.createElement("div");
+      detail.className = "detail";
+      detail.textContent = "点击指标名查看排查方向";
+      const chips = document.createElement("div");
+      chips.className = "toolbar";
+      metrics.forEach((m) => {
+        const b = document.createElement("button");
+        b.textContent = m.k;
+        b.onclick = () => { detail.textContent = `${m.k} = ${m.v.toFixed(2)} → ${m.d}`; };
+        chips.appendChild(b);
+      });
+      el.append(chips, bars, detail);
+    }
+  },
+  {
+    code: "07", title: "高级 RAG 架构",
+    lead: "基础 RAG 是「一次检索 + 一次生成」。遇到多跳、全局、实时类问题就得上进阶架构。选场景看推荐方案与代价。",
+    note: "原则：用 badcase 驱动升级，别一上来就 GraphRAG——建图成本可能是基础 RAG 的几十倍。",
+    render(el) {
+      const scenes = [
+        { k: "简单制度查询", rec: "基础 RAG + Rerank", cost: "1×", d: "Top-20 召回 → Rerank Top-5 就够。别过度设计。" },
+        { k: "多跳关系问题", rec: "GraphRAG", cost: "建图极高", d: "如「A 的子公司 B 的营收」。需要实体关系图 + 社区摘要。" },
+        { k: "全局总结问题", rec: "分层检索 + 社区摘要", cost: "2~3×", d: "如「这批合同的主要风险」。Top-K 覆盖不全，需要先章节摘要素描。" },
+        { k: "需要多次查询", rec: "迭代检索 / Self-RAG", cost: "3~5×", d: "检索→判断够不够→改写再查，最多 2~3 轮，必须设停止条件。" },
+        { k: "需要实时数据", rec: "Agentic RAG", cost: "3~10×", d: "检索只是工具之一，还要调行情/计算/搜索 API，由 Agent 规划。" }
+      ];
+      const bar = document.createElement("div");
+      bar.className = "toolbar";
+      const out = document.createElement("div");
+      const draw = (i) => {
+        const s = scenes[i];
+        out.innerHTML = `<div class="detail"><b>推荐方案：${s.rec}</b>　相对成本：${s.cost}<br>${s.d}</div>`;
+      };
+      scenes.forEach((s, i) => {
+        const b = document.createElement("button");
+        b.textContent = s.k;
+        b.onclick = () => {
+          bar.querySelectorAll("button").forEach((x) => x.classList.remove("primary"));
+          b.classList.add("primary");
+          draw(i);
+        };
+        bar.appendChild(b);
+        if (i === 0) b.classList.add("primary");
+      });
+      el.append(bar, out);
+      draw(0);
+    }
+  },
+  {
+    code: "08", title: "企业知识库实战与 FAQ",
+    lead: "点「运行」看一次真实查询的完整 trace：检索到了什么、重排后留下什么、最终 Prompt 与答案。这是排查效果问题最有效的手段。",
+    note: "生产四件事：权限过滤下推到检索、引用可溯源、无答案兜底、全链路日志。",
+    render(el) {
+      const bar = document.createElement("div");
+      bar.className = "toolbar";
+      const run = document.createElement("button");
+      run.className = "primary";
+      run.textContent = "运行一次查询";
+      bar.appendChild(run);
+      const out = document.createElement("div");
+      const trace = [
+        { k: "用户提问", v: "出差住一线城市，住宿费最多能报多少？" },
+        { k: "查询改写", v: "差旅 住宿标准 一线城市 报销上限" },
+        { k: "向量召回 Top-3", v: "[1] 住宿标准分级说明：一线不超过 600（0.81）\n[2] 差旅制度第五章全文（0.79）\n[3] 报销流程与时限（0.72）" },
+        { k: "Rerank 后 Top-2", v: "[1] 住宿标准分级说明：一线不超过 600（0.93）\n[2] 差旅制度第五章全文（0.71）" },
+        { k: "拼装 Prompt", v: "你是知识库助手，只能依据【参考资料】回答，每个结论标注 [编号]。" },
+        { k: "最终答案", v: "一线城市住宿费每晚不超过 600 元，超标部分需自行承担。[1]" }
+      ];
+      let i = 0;
+      const draw = () => {
+        out.innerHTML = trace.slice(0, i).map((t) => `
+          <div class="chunk"><b>${t.k}</b><br><span style="white-space:pre-wrap">${t.v}</span></div>`).join("");
+      };
+      run.onclick = () => {
+        i = 0;
+        draw();
+        const timer = setInterval(() => {
+          i += 1;
+          draw();
+          if (i >= trace.length) clearInterval(timer);
+        }, 320);
+      };
+      el.append(bar, out);
+      i = trace.length;
+      draw();
+    }
+  }
+];
+
+const nav = document.getElementById("nav");
+const titleEl = document.getElementById("title");
+const leadEl = document.getElementById("lead");
+const lab = document.getElementById("lab");
+const noteEl = document.getElementById("note");
+
+function show(code) {
+  const ch = CHAPTERS.find((c) => c.code === code) || CHAPTERS[0];
+  titleEl.textContent = `${ch.code} ${ch.title}`;
+  leadEl.textContent = ch.lead;
+  noteEl.textContent = ch.note;
+  lab.innerHTML = "";
+  ch.render(lab);
+  [...nav.children].forEach((b) => b.classList.toggle("active", b.dataset.code === ch.code));
+  if (history.replaceState) history.replaceState(null, "", `?c=${ch.code}`);
+}
+
+CHAPTERS.forEach((c) => {
+  const b = document.createElement("button");
+  b.textContent = `${c.code} ${c.title}`;
+  b.dataset.code = c.code;
+  b.onclick = () => show(c.code);
+  nav.appendChild(b);
+});
+
+show(new URLSearchParams(location.search).get("c") || "01");
+</script>
+</body>
+</html>

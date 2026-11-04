@@ -119,4 +119,49 @@ export const topics: Topic[] = [
     link: '/dolphin-scheduler/',
     status: 'ready',
   },
+  {
+    id: 'llm-foundations',
+    title: 'Transformer 与大模型原理',
+    category: 'AI技术',
+    description:
+      '大模型的地基：Self-Attention、位置编码、Tokenizer、预训练与 Scaling Law、SFT/RLHF/DPO 对齐、开源模型选型、采样与 KV Cache。8 章笔记 + 浏览器可视化交互演示。',
+    link: '/llm-foundations/',
+    status: 'ready',
+  },
+  {
+    id: 'prompt-engineering',
+    title: '提示词工程',
+    category: 'AI技术',
+    description:
+      '不训练模型、只改输入的那一层：Prompt 四要素、Few-shot、思维链与 ToT、结构化输出与 Function Calling、评估迭代与 Prompt 注入防护。6 章笔记 + 浏览器可视化交互演示。',
+    link: '/prompt-engineering/',
+    status: 'ready',
+  },
+  {
+    id: 'vector-db',
+    title: '向量数据库',
+    category: 'AI技术',
+    description:
+      '语义检索的底座：Embedding 原理与模型选型、HNSW/IVF/PQ 近似最近邻算法、FAISS 与 Milvus 实战、混合检索与参数调优。6 章笔记 + 浏览器可视化交互演示。',
+    link: '/vector-db/',
+    status: 'ready',
+  },
+  {
+    id: 'rag',
+    title: 'RAG 检索增强生成',
+    category: 'AI技术',
+    description:
+      '给大模型接私有知识：索引与查询两阶段、文档解析与 Chunking、多路召回、Rerank 重排、RAGAS 评估、GraphRAG 与 Agentic RAG。8 章笔记 + 浏览器可视化交互演示。',
+    link: '/rag/',
+    status: 'ready',
+  },
+  {
+    id: 'agent',
+    title: 'Agent 智能体',
+    category: 'AI技术',
+    description:
+      '让模型自己干活：规划/记忆/工具三要素、ReAct 循环、Function Calling 与 MCP、LangGraph 状态机、多 Agent 协作、投研助手实战。8 章笔记 + 浏览器可视化交互演示。',
+    link: '/agent/',
+    status: 'ready',
+  },
 ]

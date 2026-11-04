@@ -15,6 +15,11 @@ TOPICS = [
     ("1", "dolphin-scheduler", "海豚调度（DolphinScheduler）"),
     ("2", "spark", "Apache Spark（PySpark）"),
     ("3", "hadoop", "Apache Hadoop（HDFS / YARN / MapReduce）"),
+    ("4", "llm-foundations", "Transformer 与大模型原理"),
+    ("5", "prompt-engineering", "提示词工程"),
+    ("6", "vector-db", "向量数据库与 Embedding"),
+    ("7", "rag", "RAG 检索增强生成"),
+    ("8", "agent", "Agent 智能体"),
 ]
 
 

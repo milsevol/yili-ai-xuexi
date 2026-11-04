@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Agent 智能体 · 交互式演示</title>
+<style>
+  :root {
+    --bg: #f5f7fa;
+    --panel: #fff;
+    --ink: #16202e;
+    --muted: #5f6b7a;
+    --line: rgba(22, 32, 46, 0.11);
+    --brand: #0f766e;
+    --brand-soft: rgba(15, 118, 110, 0.1);
+    --ok: #15803d;
+    --warn: #a16207;
+    --fail: #b91c1c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "IBM Plex Sans", "PingFang SC", "Noto Sans SC", sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    min-height: 100vh;
+  }
+  .app { max-width: 1120px; margin: 0 auto; padding: 20px 16px 48px; display: grid; gap: 16px; }
+  @media (min-width: 880px) { .app { grid-template-columns: 220px 1fr; align-items: start; } }
+  .brand h1 { margin: 0; font-size: 1.2rem; }
+  .brand p { margin: 4px 0 0; color: var(--muted); font-size: 0.85rem; line-height: 1.5; }
+  .nav { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+  @media (min-width: 880px) {
+    .nav { flex-direction: column; position: sticky; top: 12px; background: var(--panel);
+           border: 1px solid var(--line); border-radius: 14px; padding: 10px; }
+  }
+  .nav button {
+    border: 1px solid var(--line); background: var(--panel); border-radius: 999px;
+    padding: 0.45rem 0.85rem; font-size: 0.86rem; cursor: pointer; text-align: left;
+    color: var(--ink); white-space: nowrap;
+  }
+  @media (min-width: 880px) {
+    .nav button { width: 100%; border-radius: 10px; border-color: transparent; background: transparent; }
+    .nav button:hover { background: #f1f5fb; }
+  }
+  .nav button.active { background: var(--brand-soft); border-color: var(--brand); color: var(--brand); font-weight: 600; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px 18px 22px; min-height: 460px; }
+  .panel h2 { margin: 0 0 6px; font-size: 1.15rem; }
+  .lead { margin: 0 0 16px; color: var(--muted); font-size: 0.9rem; line-height: 1.65; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0 14px; }
+  .toolbar button, .toolbar label {
+    border: 1px solid var(--line); background: #fff; border-radius: 8px;
+    padding: 0.4rem 0.75rem; font-size: 0.84rem; cursor: pointer; color: var(--ink);
+  }
+  .toolbar button.primary { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600; }
+  .toolbar input[type=range] { accent-color: var(--brand); width: 170px; }
+  .val { font-family: ui-monospace, Menlo, monospace; font-size: 0.84rem; color: var(--brand); font-weight: 700; min-width: 4em; }
+  .grid2 { display: grid; gap: 12px; }
+  @media (min-width: 700px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+  .card { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; background: #fafcff; cursor: pointer; transition: border-color .15s, transform .15s; }
+  .card:hover, .card.on { border-color: var(--brand); transform: translateY(-1px); }
+  .card h3 { margin: 0 0 8px; font-size: 0.95rem; }
+  .card ul { margin: 0; padding-left: 1.1rem; color: var(--muted); font-size: 0.85rem; line-height: 1.55; }
+  .detail { margin-top: 12px; padding: 12px 14px; border-radius: 10px; background: var(--brand-soft); font-size: 0.88rem; line-height: 1.65; min-height: 3em; }
+  .mono { font-family: ui-monospace, Menlo, monospace; font-size: 0.8rem; color: var(--muted); }
+  .code {
+    margin-top: 10px; background: #16202e; color: #e5eaf1; border-radius: 10px;
+    padding: 12px 14px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.78rem; line-height: 1.7; white-space: pre-wrap;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 0.84rem; margin-top: 8px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 0.8rem; }
+  td.num { font-family: ui-monospace, Menlo, monospace; }
+  .note { margin-top: 14px; font-size: 0.83rem; color: var(--muted); line-height: 1.6; border-left: 3px solid var(--line); padding-left: 10px; }
+  .flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0; }
+  .step { border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-size: 0.84rem; background: #fff; cursor: pointer; }
+  .step.on { border-color: var(--brand); background: var(--brand-soft); color: var(--brand); font-weight: 600; }
+  .arrow { color: var(--muted); }
+  .bars { display: grid; gap: 6px; margin-top: 10px; }
+  .barrow { display: grid; grid-template-columns: 140px 1fr 62px; gap: 8px; align-items: center; font-size: 0.82rem; }
+  .track { height: 12px; background: #eef2f8; border-radius: 999px; overflow: hidden; }
+  .fill { height: 100%; background: var(--brand); border-radius: 999px; transition: width .2s; }
+  .line {
+    border-left: 2px solid var(--line);
+    margin-left: 8px;
+    padding-left: 14px;
+    display: grid;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .msg { border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; font-size: 0.84rem; line-height: 1.6; background: #fff; }
+  .msg b { color: var(--brand); }
+  .msg.hide { display: none; }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brand">
+      <h1>Agent 智能体</h1>
+      <p>8 章交互演示 · 左侧选章节</p>
+    </div>
+    <nav class="nav" id="nav"></nav>
+  </aside>
+  <main class="panel">
+    <h2 id="title"></h2>
+    <p class="lead" id="lead"></p>
+    <div id="lab"></div>
+    <div class="note" id="note"></div>
+  </main>
+</div>
+<script>
+const CHAPTERS = [
+  {
+    code: "01", title: "概述与定位",
+    lead: "Agent = LLM + 工具 + 记忆 + 循环。能力演进四步：Prompt（会说）→ RAG（有知识）→ Agent（会动手）→ 多 Agent（会协作）。点节点看每层能力与代价。",
+    note: "Agent 不是越自主越好：能确定性流程化的任务就别交给模型自由发挥，可靠性优先。",
+    render(el) {
+      const stages = [
+        { k: "Prompt", d: "只改输入，模型单轮回答。零成本验证需求，但没有外部动作能力。" },
+        { k: "RAG", d: "把私有知识塞进上下文，可溯源。仍是被动回答，不能执行动作。" },
+        { k: "Agent", d: "模型自主规划并调用工具（检索/API/计算），多轮循环直到完成。" },
+        { k: "多 Agent", d: "多个角色分工协作（主管-工人、辩论、流水线），适合复杂长任务。" }
+      ];
+      const flow = document.createElement("div");
+      flow.className = "flow";
+      const detail = document.createElement("div");
+      detail.className = "detail";
+      stages.forEach((s, i) => {
+        const b = document.createElement("div");
+        b.className = "step";
+        b.textContent = s.k;
+        b.onclick = () => {
+          flow.querySelectorAll(".step").forEach((n) => n.classList.remove("on"));
+          b.classList.add("on");
+          detail.textContent = s.d;
+        };
+        flow.appendChild(b);
+        if (i < stages.length - 1) {
+          const a = document.createElement("span");
+          a.className = "arrow";
+          a.textContent = "→";
+          flow.appendChild(a);
+        }
+      });
+      el.append(flow, detail);
+      flow.querySelector(".step").click();
+    }
+  },
+  {
+    code: "02", title: "Agent 核心架构",
+    lead: "三要素：规划（Planning）、记忆（Memory）、工具（Tools）。点组件看职责与工程要点。",
+    note: "三要素里最容易低估的是「记忆」——上下文预算管理做不好，Agent 跑几轮就开始忘事。",
+    render(el) {
+      const parts = [
+        { k: "规划 Planning", d: "任务拆解、步骤排序、失败重规划。要点：给明确的子目标与终止条件，避免无限循环。" },
+        { k: "记忆 Memory", d: "短期=对话历史（截断/摘要）；长期=向量库或知识图谱。要点：什么该记、什么该压缩、什么该丢。" },
+        { k: "工具 Tools", d: "检索、API、计算器、代码执行。要点：工具描述写清「何时用」，参数强类型校验，失败要可读。" },
+        { k: "循环 Loop", d: "感知 → 决策 → 行动 → 观察 → 再决策。要点：最大步数、超时、重复动作检测、人工接管。" }
+      ];
+      const wrap = document.createElement("div");
+      wrap.className = "grid2";
+      const detail = document.createElement("div");
+      detail.className = "detail";
+      parts.forEach((p) => {
+        const c = document.createElement("div");
+        c.className = "card";
+        c.innerHTML = `<h3>${p.k}</h3><ul><li>${p.d}</li></ul>`;
+        c.onclick = () => {
+          wrap.querySelectorAll(".card").forEach((n) => n.classList.remove("on"));
+          c.classList.add("on");
+          detail.textContent = `${p.k}：${p.d}`;
+        };
+        wrap.appendChild(c);
+      });
+      el.append(wrap, detail);
+    }
+  },
+  {
+    code: "03", title: "ReAct 推理范式",
+    lead: "ReAct = Reason + Act：模型交替输出「思考」和「动作」，环境返回「观察」，直到得出最终答案。点「下一步」逐步播放一次真实 trace。",
+    note: "最常见的两种失败：死循环（重复同一动作）与幻觉工具（调用不存在的工具/参数）。必须设最大步数。",
+    render(el) {
+      const trace = [
+        { t: "Thought", v: "问题问的是某公司 2024 年营收，我需要先查财报数据。" },
+        { t: "Action", v: "search_financials(company=\"XX科技\", year=2024)" },
+        { t: "Observation", v: "找到 2024 年报：营业收入 128.6 亿元，同比 +18.2%。" },
+        { t: "Thought", v: "营收有了，但问题还问增速是否高于行业平均，需要行业数据。" },
+        { t: "Action", v: "search_industry(industry=\"半导体\", metric=\"revenue_growth\", year=2024)" },
+        { t: "Observation", v: "行业平均增速 11.4%。" },
+        { t: "Thought", v: "18.2% > 11.4%，可以回答：营收 128.6 亿元，增速高于行业平均 6.8 个百分点。" },
+        { t: "Final", v: "XX科技 2024 年营收 128.6 亿元（同比 +18.2%），高于行业平均增速 11.4%。" }
+      ];
+      const bar = document.createElement("div");
+      bar.className = "toolbar";
+      const next = document.createElement("button");
+      next.className = "primary";
+      next.textContent = "下一步";
+      const reset = document.createElement("button");
+      reset.textContent = "重播";
+      bar.append(next, reset);
+      const line = document.createElement("div");
+      line.className = "line";
+      trace.forEach((s) => {
+        const m = document.createElement("div");
+        m.className = "msg hide";
+        m.innerHTML = `<b>${s.t}</b>：${s.v}`;
+        line.appendChild(m);
+      });
+      let i = 0;
+      const draw = () => {
+        [...line.children].forEach((n, idx) => n.classList.toggle("hide", idx >= i));
+      };
+      next.onclick = () => { i = Math.min(i + 1, trace.length); draw(); };
+      reset.onclick = () => { i = 0; draw(); };
+      el.append(bar, line);
+      i = 1;
+      draw();
+    }
+  },
+  {
+    code: "04", title: "Function Calling 与 MCP",
+    lead: "工具调用的可靠性取决于三件事：schema 写得清、参数校验严、错误可恢复。MCP 则把「工具」标准化成可复用的服务协议。",
+    note: "工具设计三原则：原子性（一个工具做一件事）、幂等性（重复调用安全）、错误可读（模型能据此修正）。",
+    render(el) {
+      const tools = [
+        { k: "查询类", d: "get_stock_price / search_docs。必须幂等、有超时、返回结构化字段。", schema: "{\"name\":\"get_stock_price\",\"parameters\":{\"symbol\":\"string\",\"date\":\"string?\"}}" },
+        { k: "写入类", d: "create_report / send_email。必须二次确认 + 权限校验，禁止模型直接落库。", schema: "{\"name\":\"create_report\",\"parameters\":{\"title\":\"string\",\"body\":\"string\"},\"requires_confirmation\":true}" },
+        { k: "计算类", d: "calculator / code_exec。沙箱执行、限资源、限时长。", schema: "{\"name\":\"calculator\",\"parameters\":{\"expression\":\"string\"}}" },
+        { k: "MCP 服务", d: "把工具打包成标准服务（tools/resources/prompts），跨应用复用，权限与审计统一。", schema: "server: finance-mcp\n tools: [quote, fundamentals, news]\n transport: stdio | http+sse" }
+      ];
+      const bar = document.createElement("div");
+      bar.className = "toolbar";
+      const detail = document.createElement("div");
+      detail.className = "detail";
+      const code = document.createElement("div");
+      code.className = "code";
+      tools.forEach((t, i) => {
+        const b = document.createElement("button");
+        b.textContent = t.k;
+        b.onclick = () => {
+          bar.querySelectorAll("button").forEach((x) => x.classList.remove("primary"));
+          b.classList.add("primary");
+          detail.textContent = t.d;
+          code.textContent = t.schema;
+        };
+        bar.appendChild(b);
+        if (i === 0) b.classList.add("primary");
+      });
+      el.append(bar, detail, code);
+      detail.textContent = tools[0].d;
+      code.textContent = tools[0].schema;
+    }
+  },
+  {
+    code: "05", title: "LangGraph 状态机",
+    lead: "把 Agent 画成图：节点是动作，边是流转条件，State 在节点间传递。相比「一口气写 prompt」，图编排可中断、可重放、可人工介入。",
+    note: "关键能力是 checkpointer：每步落盘状态，失败可从断点续跑，也支持人工审批后继续。",
+    render(el) {
+      const nodes = [
+        { k: "START", d: "入口：接收用户问题，初始化 State（messages / plan / steps）。" },
+        { k: "plan", d: "规划节点：生成或更新待办计划，写入 State。" },
+        { k: "act", d: "执行节点：调用一个工具，结果追加到 messages。" },
+        { k: "check", d: "条件边：计划完成？有错误？步数超限？决定回 act 还是去 answer。" },
+        { k: "answer", d: "汇总节点：基于 State 组织最终答案与引用。" },
+        { k: "END", d: "结束：落盘 trace，供审计与评估。" }
+      ];
+      const flow = document.createElement("div");
+      flow.className = "flow";
+      const detail = document.createElement("div");
+      detail.className = "detail";
+      nodes.forEach((n, i) => {
+        const b = document.createElement("div");
+        b.className = "step";
+        b.textContent = n.k;
+        b.onclick = () => {
+          flow.querySelectorAll(".step").forEach((x) => x.classList.remove("on"));
+          b.classList.add("on");
+          detail.textContent = n.d;
+        };
+        flow.appendChild(b);
+        if (i < nodes.length - 1) {
+          const a = document.createElement("span");
+          a.className = "arrow";
+          a.textContent = "→";
+          flow.appendChild(a);
+        }
+      });
+      const code = document.createElement("div");
+      code.className = "code";
+      code.textContent = `graph = StateGraph(AgentState)
+graph.add_node("plan", plan_node)
+graph.add_node("act", act_node)
+graph.add_node("answer", answer_node)
+graph.add_edge(START, "plan")
+graph.add_edge("plan", "act")
+graph.add_conditional_edges("act", should_continue,
+    {"continue": "act", "answer": "answer"})
+graph.add_edge("answer", END)
+app = graph.compile(checkpointer=memory)`;
+      el.append(flow, detail, code);
+      flow.querySelector(".step").click();
+    }
+  },
+  {
+    code: "06", title: "多 Agent 协作",
+    lead: "多 Agent 不是越多越好：每多一个角色，就多一份 token 与一次可能的误解。先看协作模式再决定要不要拆。",
+    note: "判断标准：任务是否能被清晰切成独立子任务？如果是串行依赖强的任务，单 Agent + 好工具通常更稳。",
+    render(el) {
+      const modes = [
+        { k: "主管-工人", use: "任务可拆分、需要汇总", cost: "中", d: "一个主管 Agent 拆任务并分派，工人并行执行，主管汇总。注意：主管要能判断质量。" },
+        { k: "辩论", use: "需要提高结论可靠性", cost: "高", d: "多个角色从不同立场论证，再由裁判裁决。适合风控/投研分歧场景。" },
+        { k: "流水线", use: "阶段明确的流程", cost: "低", d: "抓取 → 分析 → 撰写 → 校对 各由一个 Agent 负责，顺序执行，接口即契约。" },
+        { k: "单 Agent", use: "串行依赖强、步骤少", cost: "最低", d: "工具齐全时，单 Agent 循环通常比多 Agent 更稳定、更便宜。" }
+      ];
+      const bar = document.createElement("div");
+      bar.className = "toolbar";
+      const out = document.createElement("div");
+      const draw = (i) => {
+        const m = modes[i];
+        out.innerHTML = `<table>
+          <tr><th>适用</th><td>${m.use}</td></tr>
+          <tr><th>相对成本</th><td class="num">${m.cost}</td></tr>
+          <tr><th>说明</th><td>${m.d}</td></tr>
+        </table>`;
+      };
+      modes.forEach((m, i) => {
+        const b = document.createElement("button");
+        b.textContent = m.k;
+        b.onclick = () => {
+          bar.querySelectorAll("button").forEach((x) => x.classList.remove("primary"));
+          b.classList.add("primary");
+          draw(i);
+        };
+        bar.appendChild(b);
+        if (i === 0) b.classList.add("primary");
+      });
+      el.append(bar, out);
+      draw(0);
+    }
+  },
+  {
+    code: "07", title: "记忆与上下文管理",
+    lead: "上下文窗口是有限预算：system、工具定义、历史对话、检索片段、工具结果都在抢。拖动滑块分配，看剩余空间与风险提示。",
+    note: "实践：工具结果要压缩（只留关键字段），历史要摘要（保留结论不保留过程），检索片段按相关性截断。",
+    render(el) {
+      const bar = document.createElement("div");
+      bar.className = "toolbar";
+      const range = document.createElement("input");
+      range.type = "range"; range.min = "10"; range.max = "60"; range.step = "5"; range.value = "30";
+      const label = document.createElement("label");
+      label.textContent = "历史对话占比";
+      const val = document.createElement("span");
+      val.className = "val";
+      const out = document.createElement("div");
+      const draw = () => {
+        const hist = Number(range.value);
+        val.textContent = hist + "%";
+        const parts = [
+          { k: "system + 工具定义", v: 15 },
+          { k: "历史对话", v: hist },
+          { k: "检索片段", v: 30 },
+          { k: "工具返回结果", v: 15 },
+          { k: "剩余（留给输出）", v: Math.max(0, 100 - 15 - hist - 30 - 15) }
+        ];
+        out.innerHTML = `<div class="bars">${parts.map((p) => `
+          <div class="barrow">
+            <span>${p.k}</span>
+            <div class="track"><div class="fill" style="width:${p.v}%;background:${p.k.includes("剩余") ? "#a16207" : "#0f766e"}"></div></div>
+            <span class="mono">${p.v}%</span>
+          </div>`).join("")}</div>
+          <div class="detail" style="margin-top:12px">${
+            hist > 45
+              ? "历史占比过高：模型会「忘」掉工具结果与检索内容，建议对历史做摘要压缩。"
+              : hist < 20
+                ? "历史占比过低：多轮任务容易丢失上下文，可能重复执行已完成的步骤。"
+                : "占比合理：保留近期对话 + 压缩早期历史，是较稳的配置。"
+          }</div>`;
+      };
+      range.oninput = draw;
+      bar.append(label, range, val);
+      el.append(bar, out);
+      draw();
+    }
+  },
+  {
+    code: "08", title: "投研助手实战与 FAQ",
+    lead: "一个真实的金融投研 Agent：工具包含行情、财报检索、新闻搜索、计算器；知识来自研报 RAG；输出必须带数据来源与时间戳。",
+    note: "金融场景红线：不得给出投资建议式表述、所有数字必须可溯源、时效数据必须带时间戳、异常必须显式说明。",
+    render(el) {
+      const parts = [
+        { k: "工具层", d: "get_quote（行情）、search_filings（公告/财报）、search_news（新闻）、calculator（估值计算）。全部幂等 + 超时 + 结构化返回。" },
+        { k: "知识层", d: "研报与公告走 RAG：切块带「公司/报告期/页码」元数据，检索时按公司与日期过滤，答案必须标注来源。" },
+        { k: "编排层", d: "LangGraph：plan → act（多工具并行）→ check（数据是否齐、是否矛盾）→ answer（带引用与时间戳）。" },
+        { k: "风控层", d: "输出规则校验：禁止「买入/卖出」措辞、数字必须能在工具结果中找到、缺数据时明确说「未获取到」。" }
+      ];
+      const wrap = document.createElement("div");
+      wrap.className = "grid2";
+      const detail = document.createElement("div");
+      detail.className = "detail";
+      parts.forEach((p) => {
+        const c = document.createElement("div");
+        c.className = "card";
+        c.innerHTML = `<h3>${p.k}</h3><ul><li>${p.d}</li></ul>`;
+        c.onclick = () => {
+          wrap.querySelectorAll(".card").forEach((n) => n.classList.remove("on"));
+          c.classList.add("on");
+          detail.textContent = `${p.k}：${p.d}`;
+        };
+        wrap.appendChild(c);
+      });
+      const code = document.createElement("div");
+      code.className = "code";
+      code.textContent = `问：XX科技 2024 年营收和增速怎么样？
+
+Agent trace:
+  Thought: 需要营收与增速，先取财报数据
+  Action:  search_filings(company="XX科技", period="2024")
+  Obs:     营业收入 128.6 亿元（同比 +18.2%）
+  Thought: 需要行业对比才有意义
+  Action:  search_industry(industry="半导体", metric="growth", year=2024)
+  Obs:     行业平均 11.4%
+  Final:   128.6 亿元（同比 +18.2%），高于行业均值 6.8pct
+           [来源：2024 年报 P42；行业数据 2025-03-01]`;
+      el.append(wrap, detail, code);
+    }
+  }
+];
+
+const nav = document.getElementById("nav");
+const titleEl = document.getElementById("title");
+const leadEl = document.getElementById("lead");
+const lab = document.getElementById("lab");
+const noteEl = document.getElementById("note");
+
+function show(code) {
+  const ch = CHAPTERS.find((c) => c.code === code) || CHAPTERS[0];
+  titleEl.textContent = `${ch.code} ${ch.title}`;
+  leadEl.textContent = ch.lead;
+  noteEl.textContent = ch.note;
+  lab.innerHTML = "";
+  ch.render(lab);
+  [...nav.children].forEach((b) => b.classList.toggle("active", b.dataset.code === ch.code));
+  if (history.replaceState) history.replaceState(null, "", `?c=${ch.code}`);
+}
+
+CHAPTERS.forEach((c) => {
+  const b = document.createElement("button");
+  b.textContent = `${c.code} ${c.title}`;
+  b.dataset.code = c.code;
+  b.onclick = () => show(c.code);
+  nav.appendChild(b);
+});
+
+show(new URLSearchParams(location.search).get("c") || "01");
+</script>
+</body>
+</html>

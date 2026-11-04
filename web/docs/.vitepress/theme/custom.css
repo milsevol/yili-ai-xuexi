@@ -286,6 +286,12 @@
   font-weight: 700;
 }
 
+.home-roadmap__note {
+  margin-top: 6px;
+  font-size: 0.75rem;
+  color: var(--vp-c-text-2);
+}
+
 .home-group__label {
   margin: 18px 0 8px;
   font-size: 0.78rem;

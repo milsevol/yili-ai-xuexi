@@ -25,6 +25,11 @@ export default defineConfig({
       { text: 'HBase', link: '/hbase/' },
       { text: 'ClickHouse', link: '/clickhouse/' },
       { text: '海豚调度', link: '/dolphin-scheduler/' },
+      { text: '大模型原理', link: '/llm-foundations/' },
+      { text: '提示词工程', link: '/prompt-engineering/' },
+      { text: '向量数据库', link: '/vector-db/' },
+      { text: 'RAG', link: '/rag/' },
+      { text: 'Agent', link: '/agent/' },
     ],
 
     sidebar: {
@@ -187,6 +192,82 @@ export default defineConfig({
             { text: '08 部署与快速上手', link: '/dolphin-scheduler/notes/08-部署与快速上手' },
             { text: '09 运维与故障排查', link: '/dolphin-scheduler/notes/09-运维实践与故障排查' },
             { text: '10 生态对比与 FAQ', link: '/dolphin-scheduler/notes/10-生态对比与FAQ' },
+          ],
+        },
+      ],
+      '/llm-foundations/': [
+        {
+          text: 'Transformer 与大模型原理',
+          items: [
+            { text: '主题入口', link: '/llm-foundations/' },
+            { text: '01 概述与定位', link: '/llm-foundations/notes/01-概述与定位' },
+            { text: '02 Transformer 架构详解', link: '/llm-foundations/notes/02-Transformer架构详解' },
+            { text: '03 Tokenizer 与 BPE', link: '/llm-foundations/notes/03-Tokenizer与BPE' },
+            { text: '04 预训练与 Scaling Law', link: '/llm-foundations/notes/04-预训练与ScalingLaw' },
+            { text: '05 对齐技术 SFT 与 RLHF', link: '/llm-foundations/notes/05-对齐技术SFT与RLHF' },
+            { text: '06 开源模型巡礼', link: '/llm-foundations/notes/06-开源模型巡礼' },
+            { text: '07 推理基础与采样', link: '/llm-foundations/notes/07-推理基础与采样' },
+            { text: '08 多模态与 FAQ', link: '/llm-foundations/notes/08-多模态与FAQ' },
+          ],
+        },
+      ],
+      '/prompt-engineering/': [
+        {
+          text: '提示词工程',
+          items: [
+            { text: '主题入口', link: '/prompt-engineering/' },
+            { text: '01 概述与定位', link: '/prompt-engineering/notes/01-概述与定位' },
+            { text: '02 Prompt 结构与 Few-shot', link: '/prompt-engineering/notes/02-Prompt结构与Few-shot' },
+            { text: '03 思维链 CoT 与推理增强', link: '/prompt-engineering/notes/03-思维链CoT与推理增强' },
+            { text: '04 结构化输出与 Function Calling', link: '/prompt-engineering/notes/04-结构化输出与FunctionCalling' },
+            { text: '05 评估迭代与安全防护', link: '/prompt-engineering/notes/05-评估迭代与安全防护' },
+            { text: '06 实战模板与 FAQ', link: '/prompt-engineering/notes/06-实战模板与FAQ' },
+          ],
+        },
+      ],
+      '/vector-db/': [
+        {
+          text: '向量数据库',
+          items: [
+            { text: '主题入口', link: '/vector-db/' },
+            { text: '01 概述与定位', link: '/vector-db/notes/01-概述与定位' },
+            { text: '02 Embedding 原理与模型', link: '/vector-db/notes/02-Embedding原理与模型' },
+            { text: '03 ANN 算法原理', link: '/vector-db/notes/03-ANN算法原理' },
+            { text: '04 FAISS 与 Milvus 实战', link: '/vector-db/notes/04-FAISS与Milvus实战' },
+            { text: '05 混合检索与调优', link: '/vector-db/notes/05-混合检索与调优' },
+            { text: '06 语义搜索实战与 FAQ', link: '/vector-db/notes/06-语义搜索实战与FAQ' },
+          ],
+        },
+      ],
+      '/rag/': [
+        {
+          text: 'RAG 检索增强生成',
+          items: [
+            { text: '主题入口', link: '/rag/' },
+            { text: '01 概述与定位', link: '/rag/notes/01-概述与定位' },
+            { text: '02 RAG 核心流程', link: '/rag/notes/02-RAG核心流程' },
+            { text: '03 文档解析与 Chunking', link: '/rag/notes/03-文档解析与Chunking' },
+            { text: '04 检索优化与多路召回', link: '/rag/notes/04-检索优化与多路召回' },
+            { text: '05 重排序 Rerank', link: '/rag/notes/05-重排序Rerank' },
+            { text: '06 RAG 评估 RAGAS', link: '/rag/notes/06-RAG评估RAGAS' },
+            { text: '07 高级 RAG 架构', link: '/rag/notes/07-高级RAG架构' },
+            { text: '08 企业知识库实战与 FAQ', link: '/rag/notes/08-企业知识库实战与FAQ' },
+          ],
+        },
+      ],
+      '/agent/': [
+        {
+          text: 'Agent 智能体',
+          items: [
+            { text: '主题入口', link: '/agent/' },
+            { text: '01 概述与定位', link: '/agent/notes/01-概述与定位' },
+            { text: '02 Agent 核心架构', link: '/agent/notes/02-Agent核心架构' },
+            { text: '03 ReAct 推理范式', link: '/agent/notes/03-ReAct推理范式' },
+            { text: '04 Function Calling 与 MCP', link: '/agent/notes/04-FunctionCalling与MCP' },
+            { text: '05 LangGraph 状态机', link: '/agent/notes/05-LangGraph状态机' },
+            { text: '06 多 Agent 协作', link: '/agent/notes/06-多Agent协作' },
+            { text: '07 记忆与上下文管理', link: '/agent/notes/07-记忆与上下文管理' },
+            { text: '08 投研助手实战与 FAQ', link: '/agent/notes/08-投研助手实战与FAQ' },
           ],
         },
       ],

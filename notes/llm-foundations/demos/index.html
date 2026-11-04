@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Transformer 与大模型原理 · 交互式演示</title>
+<style>
+  :root {
+    --bg: #f5f7fa;
+    --panel: #fff;
+    --ink: #16202e;
+    --muted: #5f6b7a;
+    --line: rgba(22, 32, 46, 0.11);
+    --brand: #0f766e;
+    --brand-soft: rgba(15, 118, 110, 0.1);
+    --ok: #15803d;
+    --warn: #a16207;
+    --fail: #b91c1c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "IBM Plex Sans", "PingFang SC", "Noto Sans SC", sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    min-height: 100vh;
+  }
+  .app {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 20px 16px 48px;
+    display: grid;
+    gap: 16px;
+  }
+  @media (min-width: 880px) {
+    .app { grid-template-columns: 220px 1fr; align-items: start; }
+  }
+  .brand h1 { margin: 0; font-size: 1.2rem; }
+  .brand p { margin: 4px 0 0; color: var(--muted); font-size: 0.85rem; line-height: 1.5; }
+  .nav { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+  @media (min-width: 880px) {
+    .nav {
+      flex-direction: column;
+      position: sticky; top: 12px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 10px;
+    }
+  }
+  .nav button {
+    border: 1px solid var(--line);
+    background: var(--panel);
+    border-radius: 999px;
+    padding: 0.45rem 0.85rem;
+    font-size: 0.86rem;
+    cursor: pointer;
+    text-align: left;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  @media (min-width: 880px) {
+    .nav button { width: 100%; border-radius: 10px; border-color: transparent; background: transparent; }
+    .nav button:hover { background: #f1f5fb; }
+  }
+  .nav button.active { background: var(--brand-soft); border-color: var(--brand); color: var(--brand); font-weight: 600; }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px 18px 22px;
+    min-height: 460px;
+  }
+  .panel h2 { margin: 0 0 6px; font-size: 1.15rem; }
+  .lead { margin: 0 0 16px; color: var(--muted); font-size: 0.9rem; line-height: 1.65; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0 14px; }
+  .toolbar button, .toolbar label {
+    border: 1px solid var(--line);
+    background: #fff;
+    border-radius: 8px;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.84rem;
+    cursor: pointer;
+    color: var(--ink);
+  }
+  .toolbar button.primary { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600; }
+  .toolbar input[type=range] { accent-color: var(--brand); width: 160px; }
+  .val { font-family: ui-monospace, Menlo, monospace; font-size: 0.84rem; color: var(--brand); font-weight: 700; min-width: 3.2em; }
+  .grid2 { display: grid; gap: 12px; }
+  @media (min-width: 700px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+  .card {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 14px;
+    background: #fafcff;
+    cursor: pointer;
+    transition: border-color .15s, transform .15s;
+  }
+  .card:hover, .card.on { border-color: var(--brand); transform: translateY(-1px); }
+  .card h3 { margin: 0 0 8px; font-size: 0.95rem; }
+  .card ul { margin: 0; padding-left: 1.1rem; color: var(--muted); font-size: 0.85rem; line-height: 1.55; }
+  .detail {
+    margin-top: 12px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: var(--brand-soft);
+    font-size: 0.88rem;
+    line-height: 1.65;
+    min-height: 3em;
+  }
+  .chip {
+    border: none;
+    border-radius: 999px;
+    padding: 0.35rem 0.75rem;
+    background: var(--brand-soft);
+    color: var(--brand);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .chip.ghost { background: #eef2f8; color: var(--muted); font-weight: 500; }
+  .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 10px 0; }
+  .tok {
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: 0.82rem;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 3px 7px;
+    background: #fff;
+  }
+  .tok.hot { border-color: var(--brand); background: var(--brand-soft); color: var(--brand); font-weight: 700; }
+  .bars { display: grid; gap: 6px; margin-top: 10px; }
+  .barrow { display: grid; grid-template-columns: 96px 1fr 56px; gap: 8px; align-items: center; font-size: 0.82rem; }
+  .track { height: 12px; background: #eef2f8; border-radius: 999px; overflow: hidden; }
+  .fill { height: 100%; background: var(--brand); border-radius: 999px; transition: width .2s; }
+  .mono { font-family: ui-monospace, Menlo, monospace; font-size: 0.8rem; color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.84rem; margin-top: 8px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; font-size: 0.8rem; }
+  td.num { font-family: ui-monospace, Menlo, monospace; }
+  .note {
+    margin-top: 14px;
+    font-size: 0.83rem;
+    color: var(--muted);
+    line-height: 1.6;
+    border-left: 3px solid var(--line);
+    padding-left: 10px;
+  }
+  .flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0; }
+  .step {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 0.84rem;
+    background: #fff;
+    cursor: pointer;
+  }
+  .step.on { border-color: var(--brand); background: var(--brand-soft); color: var(--brand); font-weight: 600; }
+  .arrow { color: var(--muted); }
+  .heat { display: inline-grid; gap: 3px; margin-top: 8px; }
+  .cell {
+    width: 42px; height: 30px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: 0.68rem;
+    border-radius: 4px;
+    color: #16202e;
+  }
+  .legend { display: flex; gap: 8px; align-items: center; font-size: 0.78rem; color: var(--muted); margin-top: 8px; }
+  .swatch { width: 100%; height: 10px; border-radius: 999px; background: linear-gradient(90deg, #e6f2f0, #0f766e); }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brand">
+      <h1>Transformer 与大模型原理</h1>
+      <p>8 章交互演示 · 左侧选章节</p>
+    </div>
+    <nav class="nav" id="nav"></nav>
+  </aside>
+  <main class="panel">
+    <h2 id="title"></h2>
+    <p class="lead" id="lead"></p>
+    <div id="lab"></div>
+    <div class="note" id="note"></div>
+  </main>
+</div>
+<script>
+const CHAPTERS = [
+  {
+    code: "01", title: "概述与定位",
+    lead: "大模型 = 海量文本预训练 + 指令对齐。它不是「数据库」也不是「搜索引擎」，而是「基于上下文的概率生成器」——这决定了它能做什么、会在哪里出错。",
+    note: "记住三条边界：知识有截止时间（要 RAG）、会一本正经编造（要校验）、不擅长精确计算（要工具）。",
+    render(el) {
+      const items = [
+        { k: "擅长", v: ["文本改写、摘要、翻译", "结构化抽取（配 schema）", "代码补全与解释", "多轮对话与角色扮演"], d: "这些任务的共同点：输出可以用「语言合理性」评判，不需要精确事实源。" },
+        { k: "不擅长", v: ["精确数值计算", "实时/私有知识", "长链条严格逻辑", "保证事实无幻觉"], d: "这些任务的共同点：需要外部事实源或确定性执行——用工具、RAG、代码解释器补。" },
+        { k: "范式差异", v: ["不再为每个任务训一个模型", "一个模型 + 不同 Prompt", "能力来自规模与数据", "评估靠业务样本而非准确率"], d: "传统 NLP：一任务一模型；LLM：一模型多任务，靠 Prompt/上下文切换。" }
+      ];
+      const wrap = document.createElement("div");
+      wrap.className = "grid2";
+      const detail = document.createElement("div");
+      detail.className = "detail";
+      detail.textContent = "点击卡片查看要点";
+      items.forEach((it) => {
+        const c = document.createElement("div");
+        c.className = "card";
+        c.innerHTML = `<h3>${it.k}</h3><ul>${it.v.map((x) => `<li>${x}</li>`).join("")}</ul>`;
+        c.onclick = () => {
+          [...wrap.children].forEach((n) => n.classList.remove("on"));
+          c.classList.add("on");
+          detail.textContent = it.d;
+        };
+        wrap.appendChild(c);
+      });
+      el.appendChild(wrap);
+      el.appendChild(detail);
+    }
+  },
+  {
+    code: "02", title: "Transformer 架构详解",
+    lead: "Self-Attention 让每个 token 都能「看见」其他 token，并按相关性加权取信息。下面用 4 个 token 的迷你例子演示注意力权重：点选一个 token，看它把注意力分给了谁。",
+    note: "Attention(Q,K,V) = softmax(QKᵀ/√d_k)V。除以 √d_k 是把点积方差拉回 1，避免 softmax 饱和导致梯度消失。",
+    render(el) {
+      const toks = ["今天", "天气", "真", "好"];
+      const W = [
+        [0.55, 0.25, 0.12, 0.08],
+        [0.30, 0.45, 0.15, 0.10],
+        [0.10, 0.50, 0.25, 0.15],
+        [0.08, 0.42, 0.35, 0.15]
+      ];
+      const row = document.createElement("div");
+      row.className = "row";
+      const out = document.createElement("div");
+      out.className = "bars";
+      const title = document.createElement("div");
+      title.className = "mono";
+      title.style.marginTop = "10px";
+      const pick = (i) => {
+        [...row.children].forEach((b, j) => b.classList.toggle("hot", i === j));
+        title.textContent = `query = 「${toks[i]}」 的注意力分布`;
+        out.innerHTML = W[i].map((w, j) => `
+          <div class="barrow">
+            <span>→ ${toks[j]}</span>
+            <div class="track"><div class="fill" style="width:${w * 100}%"></div></div>
+            <span class="mono">${w.toFixed(2)}</span>
+          </div>`).join("");
+      };
+      toks.forEach((t, i) => {
+        const b = document.createElement("button");
+        b.className = "chip ghost";
+        b.textContent = t;
+        b.onclick = () => pick(i);
+        row.appendChild(b);
+      });
+      el.appendChild(row);
+      el.appendChild(title);
+      el.appendChild(out);
+      pick(1);
+    }
+  },
+  {
+    code: "03", title: "Tokenizer 与 BPE",
+    lead: "BPE 从字节出发，反复合并语料中最高频的相邻对，直到词表达到目标大小。点「下一步」看合并过程如何把字符拼成子词。",
+    note: "常见中文被切成整词或双字，罕见词拆成单字甚至字节——所以「永不 OOV」，但序列长度会比按字切更短、比按词切更长。",
+    render(el) {
+      const steps = [
+        { d: "初始状态：按字符切分", tokens: ["l", "o", "w", "e", "r"], merges: [] },
+        { d: "合并最高频对 (l, o) → lo", tokens: ["lo", "w", "e", "r"], merges: ["(l,o)→lo"] },
+        { d: "合并 (lo, w) → low", tokens: ["low", "e", "r"], merges: ["(l,o)→lo", "(lo,w)→low"] },
+        { d: "合并 (e, r) → er", tokens: ["low", "er"], merges: ["(l,o)→lo", "(lo,w)→low", "(e,r)→er"] },
+        { d: "合并 (er, </w>) → er</w>", tokens: ["low", "er</w>"], merges: ["(l,o)→lo", "(lo,w)→low", "(e,r)→er", "(er,</w>)→er</w>"] }
+      ];
+      let i = 0;
+      const bar = document.createElement("div");
+      bar.className = "toolbar";
+      const prev = document.createElement("button");
+      prev.textContent = "上一步";
+      const next = document.createElement("button");
+      next.className = "primary";
+      next.textContent = "下一步";
+      const reset = document.createElement("button");
+      reset.textContent = "重置";
+      bar.append(prev, next, reset);
+      const desc = document.createElement("div");
+      desc.className = "detail";
+      const toks = document.createElement("div");
+      toks.className = "row";
+      const rules = document.createElement("div");
+      rules.className = "mono";
+      const draw = () => {
+        const s = steps[i];
+        desc.textContent = `第 ${i} 步 · ${s.d}`;
+        toks.innerHTML = s.tokens.map((t) => `<span class="tok hot">${t}</span>`).join("");
+        rules.textContent = "合并规则：" + (s.merges.length ? s.merges.join("  ") : "（暂无）");
+      };
+      next.onclick = () => { i = Math.min(i + 1, steps.length - 1); draw(); };
+      prev.onclick = () => { i = Math.max(i - 1, 0); draw(); };
+      reset.onclick = () => { i = 0; draw(); };
+      el.append(bar, desc, toks, rules);
+      draw();
+    }
+  },
+  {
+    code: "04", title: "预训练与 Scaling Law",
+    lead: "Chinchilla 结论：算力固定时，参数量 N 与 token 数 D 应同步增长，且 D ≈ 20N。拖动滑块看推荐数据量与训练算力的变化。",
+    note: "C ≈ 6ND。这条公式是预算估算的起点：先定算力，再反推 N 与 D，而不是先拍参数量。",
+    render(el) {
+      const bar = document.createElement("div");
+      bar.className = "toolbar";
+      const range = document.createElement("input");
+      range.type = "range"; range.min = "1"; range.max = "70"; range.step = "1"; range.value = "7";
+      const label = document.createElement("label");
+      label.textContent = "参数量 N";
+      const val = document.createElement("span");
+      val.className = "val";
+      bar.append(label, range, val);
+      const table = document.createElement("table");
+      const draw = () => {
+        const N = Number(range.value);
+        const D = N * 20;
+        const C = 6 * N * 1e9 * D * 1e9;
+        val.textContent = N + "B";
+        table.innerHTML = `
+          <tr><th>项目</th><th>数值</th><th>说明</th></tr>
+          <tr><td>参数量 N</td><td class="num">${N}B</td><td>模型规模</td></tr>
+          <tr><td>推荐 token 数 D</td><td class="num">${D}B</td><td>D ≈ 20 × N</td></tr>
+          <tr><td>训练算力 C</td><td class="num">${C.toExponential(2)}</td><td>C ≈ 6ND (FLOPs)</td></tr>
+          <tr><td>BF16 权重显存</td><td class="num">${(N * 2).toFixed(0)} GB</td><td>仅权重，不含 KV Cache</td></tr>`;
+      };
+      range.oninput = draw;
+      el.append(bar, table);
+      draw();
+    }
+  },
+  {
+    code: "05", title: "对齐技术 SFT 与 RLHF",
+    lead: "对齐三段式：SFT 教「照着答」，RM 学「什么是好答案」，PPO/DPO 让模型偏向好答案。点选阶段看输入输出与成本。",
+    note: "资源有限优先 DPO：不需要奖励模型与在线采样，一个 loss 就能做偏好优化。",
+    render(el) {
+      const stages = [
+        { k: "① SFT 指令微调", cost: "低", io: ["输入：指令 + 优质回答", "输出：会听指令的模型"], d: "只对 assistant 部分算 loss，2~3 个 epoch。数据质量比数量重要。" },
+        { k: "② 奖励模型 RM", cost: "中", io: ["输入：偏好对 chosen / rejected", "输出：标量打分器"], d: "用 -log σ(r_chosen - r_rejected) 训练，学会人类的「哪个更好」。" },
+        { k: "③ PPO 强化学习", cost: "很高", io: ["输入：SFT 模型 + RM", "输出：偏好对齐模型"], d: "生成→打分→带 KL 惩罚更新。需 4 个模型同时驻显存，易崩。" },
+        { k: "③' DPO 替代", cost: "中", io: ["输入：偏好对 + 参考模型", "输出：偏好对齐模型"], d: "把 RL 目标改写成分类损失，无需 RM 与在线采样，单卡可跑。" }
+      ];
+      const flow = document.createElement("div");
+      flow.className = "flow";
+      const detail = document.createElement("div");
+      detail.className = "detail";
+      stages.forEach((s, i) => {
+        const b = document.createElement("div");
+        b.className = "step";
+        b.textContent = s.k;
+        b.onclick = () => {
+          [...flow.querySelectorAll(".step")].forEach((n) => n.classList.remove("on"));
+          b.classList.add("on");
+          detail.innerHTML = `<b>成本：${s.cost}</b><br>${s.io.join("<br>")}<br>${s.d}`;
+        };
+        flow.appendChild(b);
+        if (i < stages.length - 1) {
+          const a = document.createElement("span");
+          a.className = "arrow";
+          a.textContent = "→";
+          flow.appendChild(a);
+        }
+      });
+      el.append(flow, detail);
+      flow.querySelector(".step").click();
+    }
+  },
+  {
+    code: "06", title: "开源模型巡礼",
+    lead: "选型四道闸：许可 → 中文 → 显存 → 生态。点标签筛选模型，下表实时收敛。",
+    note: "许可是法律问题：Apache 2.0 / MIT 基本无限制，Llama 社区许可对超大平台有额外要求。",
+    render(el) {
+      const models = [
+        { n: "LLaMA 3.x", size: "8B/70B/405B", lic: "社区许可", zh: "中", ctx: "8K~128K", tag: "生态最全" },
+        { n: "Qwen 2.5/3", size: "0.5B~72B", lic: "Apache 2.0", zh: "强", ctx: "32K~128K", tag: "中文均衡" },
+        { n: "DeepSeek V3/R1", size: "MoE 236B", lic: "MIT", zh: "强", ctx: "64K~128K", tag: "推理强" },
+        { n: "GLM-4", size: "9B/32B", lic: "各有不同", zh: "强", ctx: "128K", tag: "中文优化" },
+        { n: "Mistral/Mixtral", size: "7B/8x7B", lic: "Apache 2.0", zh: "弱", ctx: "32K~128K", tag: "英文高效" },
+        { n: "Gemma 2/3", size: "2B/9B/27B", lic: "Gemma 许可", zh: "中", ctx: "8K~128K", tag: "单卡可跑" }
+      ];
+      const bar = document.createElement("div");
+      bar.className = "toolbar";
+      const opts = ["全部", "强中文", "宽松许可", "小显存"];
+      let cur = "全部";
+      const table = document.createElement("table");
+      const draw = () => {
+        let rows = models.slice();
+        if (cur === "强中文") rows = rows.filter((m) => m.zh === "强");
+        if (cur === "宽松许可") rows = rows.filter((m) => /Apache|MIT/.test(m.lic));
+        if (cur === "小显存") rows = rows.filter((m) => /2B|7B|8B|9B/.test(m.size));
+        table.innerHTML = `<tr><th>模型</th><th>规格</th><th>许可</th><th>中文</th><th>上下文</th><th>特点</th></tr>` +
+          rows.map((m) => `<tr><td>${m.n}</td><td class="num">${m.size}</td><td>${m.lic}</td><td>${m.zh}</td><td class="num">${m.ctx}</td><td>${m.tag}</td></tr>`).join("");
+      };
+      opts.forEach((o) => {
+        const b = document.createElement("button");
+        b.textContent = o;
+        b.onclick = () => { cur = o; [...bar.querySelectorAll("button")].forEach((x) => x.classList.toggle("primary", x.textContent === o)); draw(); };
+        bar.appendChild(b);
+      });
+      el.append(bar, table);
+      bar.querySelector("button").classList.add("primary");
+      draw();
+    }
+  },
+  {
+    code: "07", title: "推理基础与采样",
+    lead: "Temperature 缩放 logits 后 softmax，改变候选词的锐利程度。拖动滑块，看同一组 logits 在 4 个候选词上的概率如何变化。",
+    note: "通用起点 temperature=0.7 + top_p=0.9；结构化输出用 0；过高会跑题，过低会重复。",
+    render(el) {
+      const words = ["好", "晴", "热", "冷"];
+      const logits = [3.2, 2.6, 1.4, 0.8];
+      const bar = document.createElement("div");
+      bar.className = "toolbar";
+      const range = document.createElement("input");
+      range.type = "range"; range.min = "0.1"; range.max = "2"; range.step = "0.1"; range.value = "0.7";
+      const label = document.createElement("label");
+      label.textContent = "temperature";
+      const val = document.createElement("span");
+      val.className = "val";
+      const out = document.createElement("div");
+      out.className = "bars";
+      const draw = () => {
+        const T = Number(range.value);
+        val.textContent = T.toFixed(1);
+        const scaled = logits.map((l) => l / T);
+        const max = Math.max(...scaled);
+        const exps = scaled.map((s) => Math.exp(s - max));
+        const sum = exps.reduce((a, b) => a + b, 0);
+        const probs = exps.map((e) => e / sum);
+        out.innerHTML = words.map((w, i) => `
+          <div class="barrow">
+            <span>${w}</span>
+            <div class="track"><div class="fill" style="width:${(probs[i] * 100).toFixed(1)}%"></div></div>
+            <span class="mono">${(probs[i] * 100).toFixed(1)}%</span>
+          </div>`).join("");
+      };
+      range.oninput = draw;
+      bar.append(label, range, val);
+      el.append(bar, out);
+      draw();
+    }
+  },
+  {
+    code: "08", title: "多模态与 FAQ",
+    lead: "VLM 的三段式：视觉编码器把图切 patch 编码 → 投影层映射到词嵌入空间 → 与文本 token 一起进 LLM。点选组件看职责。",
+    note: "视觉 token 很贵：一张 1024² 图经池化后仍占 256~2048 个 token，直接挤占上下文与成本。",
+    render(el) {
+      const parts = [
+        { k: "视觉编码器", d: "ViT / SigLIP / CLIP ViT。把图切成 patch，输出 patch 级特征序列。" },
+        { k: "投影层", d: "MLP（LLaVA）或 Q-Former（BLIP-2）。把视觉特征对齐到 LLM 的词嵌入空间。" },
+        { k: "LLM 主干", d: "接收「视觉 token + 文本 token」混合序列，统一做注意力与解码。" },
+        { k: "输出解码", d: "按文本 token 逐个生成，可带坐标/结构化的多模态输出。" }
+      ];
+      const flow = document.createElement("div");
+      flow.className = "flow";
+      const detail = document.createElement("div");
+      detail.className = "detail";
+      parts.forEach((p, i) => {
+        const b = document.createElement("div");
+        b.className = "step";
+        b.textContent = p.k;
+        b.onclick = () => {
+          [...flow.children].forEach((n) => n.classList.remove("on"));
+          b.classList.add("on");
+          detail.textContent = p.d;
+        };
+        flow.appendChild(b);
+        if (i < parts.length - 1) {
+          const a = document.createElement("span");
+          a.className = "arrow";
+          a.textContent = "→";
+          flow.appendChild(a);
+        }
+      });
+      el.append(flow, detail);
+    }
+  }
+];
+
+const nav = document.getElementById("nav");
+const titleEl = document.getElementById("title");
+const leadEl = document.getElementById("lead");
+const lab = document.getElementById("lab");
+const noteEl = document.getElementById("note");
+
+function show(code) {
+  const ch = CHAPTERS.find((c) => c.code === code) || CHAPTERS[0];
+  titleEl.textContent = `${ch.code} ${ch.title}`;
+  leadEl.textContent = ch.lead;
+  noteEl.textContent = ch.note;
+  lab.innerHTML = "";
+  ch.render(lab);
+  [...nav.children].forEach((b) => b.classList.toggle("active", b.dataset.code === ch.code));
+  if (history.replaceState) history.replaceState(null, "", `?c=${ch.code}`);
+}
+
+CHAPTERS.forEach((c) => {
+  const b = document.createElement("button");
+  b.textContent = `${c.code} ${c.title}`;
+  b.dataset.code = c.code;
+  b.onclick = () => show(c.code);
+  nav.appendChild(b);
+});
+
+const init = new URLSearchParams(location.search).get("c") || "01";
+show(init);
+</script>
+</body>
+</html>

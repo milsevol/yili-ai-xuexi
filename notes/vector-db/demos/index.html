@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>向量数据库与 Embedding · 交互式演示</title>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --panel: #fff;
+      --ink: #16202e;
+      --muted: #5f6b7a;
+      --line: rgba(22, 32, 46, 0.11);
+      --brand: #6d28d9;
+      --brand-soft: rgba(109, 40, 217, 0.1);
+      --ok: #15803d;
+      --fail: #b91c1c;
+      --run: #0369a1;
+      --warn: #a16207;
+      --c0: #6d28d9; --c1: #0f766e; --c2: #15803d; --c3: #b91c1c; --c4: #a16207;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", "PingFang SC", "Noto Sans SC", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 70% 40% at 0% 0%, var(--brand-soft), transparent 55%),
+        var(--bg);
+      min-height: 100vh;
+    }
+    .app {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 20px 16px 48px;
+      display: grid;
+      gap: 16px;
+    }
+    @media (min-width: 880px) {
+      .app { grid-template-columns: 210px 1fr; align-items: start; }
+    }
+    .brand h1 { margin: 0; font-size: 1.25rem; font-family: "Noto Serif SC", "Songti SC", serif; }
+    .brand p { margin: 4px 0 0; color: var(--muted); font-size: 0.85rem; line-height: 1.5; }
+    .nav { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+    @media (min-width: 880px) {
+      .nav {
+        flex-direction: column;
+        position: sticky; top: 12px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 10px;
+      }
+    }
+    .nav button {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 999px;
+      padding: 0.45rem 0.85rem;
+      font-size: 0.86rem;
+      cursor: pointer;
+      text-align: left;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    @media (min-width: 880px) {
+      .nav button { width: 100%; border-radius: 10px; border-color: transparent; background: transparent; }
+      .nav button:hover { background: #f5f3fb; }
+    }
+    .nav button.active { background: var(--brand-soft); border-color: var(--brand); color: var(--brand); font-weight: 600; }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 18px 18px 22px;
+      min-height: 440px;
+    }
+    .panel h2 { margin: 0 0 6px; font-size: 1.2rem; }
+    .panel h4 { margin: 18px 0 8px; font-size: 0.95rem; }
+    .lead { margin: 0 0 16px; color: var(--muted); font-size: 0.9rem; line-height: 1.6; }
+    .arch { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-top: 8px; }
+    .arch-item {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      cursor: pointer;
+      transition: border-color .2s, transform .2s;
+      background: #fff;
+    }
+    .arch-item:hover, .arch-item.on { border-color: var(--brand); transform: translateY(-1px); }
+    .arch-item strong { display: block; margin-bottom: 4px; }
+    .arch-item span { font-size: 0.8rem; color: var(--muted); line-height: 1.4; }
+    .detail {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: var(--brand-soft);
+      color: var(--ink);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      min-height: 3.2em;
+    }
+    .flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0; }
+    .chip {
+      border: none;
+      border-radius: 999px;
+      padding: 0.35rem 0.75rem;
+      background: var(--brand-soft);
+      color: var(--brand);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .chip.ghost { background: #eef2f8; color: var(--muted); font-weight: 500; }
+    .chip:hover { filter: brightness(0.97); }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0 14px; }
+    .toolbar button, .toolbar label {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 8px;
+      padding: 0.4rem 0.75rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+    .toolbar button.primary { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600; }
+    .toolbar input[type=range] { accent-color: var(--brand); }
+    .toolbar .val { font-family: ui-monospace, Menlo, monospace; font-size: 0.85rem; color: var(--brand); font-weight: 700; min-width: 3.5em; }
+    .log {
+      margin-top: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      background: #16202e;
+      color: #e5eaf1;
+      border-radius: 10px;
+      padding: 10px 12px;
+      max-height: 260px;
+      overflow: auto;
+      white-space: pre-wrap;
+    }
+    .log .hot { color: #fb923c; }
+    .log .ok { color: #86efac; }
+    .log .blue { color: #93c5fd; }
+    .hint { font-size: 0.8rem; color: var(--muted); margin-top: 8px; }
+    .hidden { display: none !important; }
+    table.tbl { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 8px; }
+    table.tbl th, table.tbl td { border-bottom: 1px solid var(--line); padding: 0.42rem 0.5rem; text-align: left; vertical-align: top; }
+    table.tbl th { color: var(--muted); font-weight: 600; }
+    .code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      background: #f4f6fa;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      overflow-x: auto;
+      white-space: pre;
+    }
+    .bar-row { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; font-family: ui-monospace, Menlo, monospace; margin-top: 4px; }
+    .bar-row .lbl { width: 64px; color: var(--muted); flex: none; }
+    .bar-track { flex: 1; background: #eaeef5; border-radius: 6px; height: 17px; overflow: hidden; }
+    .bar-fill { height: 100%; background: var(--run); border-radius: 6px; transition: width .5s ease; }
+    .bar-fill.hot { background: var(--fail); }
+    .bar-fill.good { background: var(--ok); }
+    .bar-val { width: 110px; flex: none; color: var(--muted); }
+    .faq-q {
+      width: 100%;
+      text-align: left;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.88rem;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .faq-q:hover { border-color: var(--brand); }
+    .faq-a {
+      margin: 4px 0 4px;
+      padding: 8px 12px;
+      border-left: 3px solid var(--brand);
+      background: var(--brand-soft);
+      border-radius: 0 8px 8px 0;
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+    .slider-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; font-size: 0.85rem; }
+    .slider-row .name { width: 180px; color: var(--muted); flex: none; }
+    .slider-row input { flex: 1; accent-color: var(--brand); }
+    .slider-row .val { width: 100px; font-family: ui-monospace, Menlo, monospace; color: var(--brand); font-weight: 700; text-align: right; }
+    .verdict { margin-top: 10px; padding: 10px 14px; border-radius: 10px; font-size: 0.88rem; line-height: 1.6; }
+    .verdict.ok { background: #f0fdf4; border: 1px solid rgba(21,128,61,.3); }
+    .verdict.warn { background: #fffbeb; border: 1px solid rgba(161,98,7,.35); }
+    .verdict.bad { background: #fef2f2; border: 1px solid rgba(185,28,28,.3); }
+    .pill { display: inline-block; border-radius: 999px; padding: 0.1rem 0.55rem; font-size: 0.75rem; background: #eef2f8; color: var(--muted); }
+    .pill.ok { background: #dcfce7; color: var(--ok); }
+    .pill.bad { background: #fee2e2; color: var(--fail); }
+    .pill.warn { background: #fef3c7; color: var(--warn); }
+    .arch-flow {
+      display: flex; flex-wrap: wrap; gap: 4px; align-items: center;
+      border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+      background: #fafcff; margin-top: 8px;
+    }
+    .arch-node {
+      border: 1px solid var(--brand);
+      background: var(--brand-soft);
+      border-radius: 8px;
+      padding: 0.4rem 0.7rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--brand);
+      cursor: pointer;
+      text-align: center;
+      min-width: 60px;
+    }
+    .arch-node.on { background: var(--brand); color: #fff; }
+    .arch-node.muted { background: transparent; border-color: var(--line); color: var(--muted); }
+    .engine-compare { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-top: 8px; }
+    .engine-card { border: 2px solid var(--line); border-radius: 12px; padding: 14px; background: #fafcff; cursor: pointer; transition: all .2s; text-align: center; }
+    .engine-card.on { border-color: var(--brand); background: var(--brand-soft); }
+    .engine-card h5 { margin: 0 0 4px; font-size: 1rem; color: var(--brand); }
+    .engine-card .speed { font-size: 0.75rem; color: var(--muted); }
+    .schema-viz { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-top: 10px; }
+    .schema-card { border: 2px solid var(--line); border-radius: 12px; padding: 12px; cursor: pointer; transition: all .2s; }
+    .schema-card.on { border-color: var(--brand); background: var(--brand-soft); }
+    .schema-card h5 { margin: 0 0 4px; font-size: 0.95rem; color: var(--brand); }
+    .schema-card .tag { display: inline-block; border-radius: 999px; padding: 0.05rem 0.5rem; font-size: 0.7rem; margin-right: 3px; margin-top: 4px; }
+    canvas.stage { display: block; width: 100%; border: 1px solid var(--line); border-radius: 12px; background: #fafcff; margin-top: 8px; }
+    .pipe { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: center; margin-top: 10px; }
+    .pipe-step {
+      border: 2px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 14px;
+      background: #fafcff;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-align: center;
+      min-width: 90px;
+      transition: all .25s;
+    }
+    .pipe-step.doing { border-color: var(--warn); background: #fffbeb; color: var(--warn); transform: scale(1.04); }
+    .pipe-step.done { border-color: var(--ok); background: #f0fdf4; color: var(--ok); }
+    .pipe-arrow { color: var(--muted); font-size: 0.9rem; }
+    .rank-list { display: grid; gap: 4px; font-size: 0.8rem; font-family: ui-monospace, Menlo, monospace; }
+    .rank-item { display: flex; gap: 8px; align-items: center; border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; background: #fafcff; }
+    .rank-item .rk { width: 2em; color: var(--muted); flex: none; }
+    .rank-item .doc { flex: 1; }
+    .rank-item .sc { color: var(--brand); font-weight: 700; }
+    .rank-item.both { border-color: var(--brand); background: var(--brand-soft); }
+    .grid3 { display: grid; gap: 12px; }
+    @media (min-width: 760px) { .grid3 { grid-template-columns: 1fr 1fr 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <div class="brand" style="margin-bottom:12px">
+        <h1>向量数据库 交互演示</h1>
+        <p>Embedding + ANN 索引 + RAG 检索。点左侧章节，动手玩概念。</p>
+      </div>
+      <nav class="nav" id="nav"></nav>
+    </aside>
+    <main class="panel" id="panel"></main>
+  </div>
+
+  <script>
+    const chapters = [
+      { id: '01', title: '01 概述与定位' },
+      { id: '02', title: '02 Embedding 原理与模型' },
+      { id: '03', title: '03 ANN 算法原理' },
+      { id: '04', title: '04 FAISS 与 Milvus 实战' },
+      { id: '05', title: '05 混合检索与调优' },
+      { id: '06', title: '06 语义搜索实战与 FAQ' },
+    ]
+
+    const params = new URLSearchParams(location.search)
+    let current = (params.get('c') || '01').padStart(2, '0')
+    const nav = document.getElementById('nav')
+    const panel = document.getElementById('panel')
+
+    chapters.forEach((c) => {
+      const b = document.createElement('button')
+      b.textContent = c.title
+      b.dataset.id = c.id
+      b.onclick = () => show(c.id)
+      nav.appendChild(b)
+    })
+
+    function show(id) {
+      current = id
+      nav.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.id === id))
+      history.replaceState(null, '', `?c=${id}`)
+      panel.innerHTML = ''
+      renders[id](panel)
+    }
+
+    /* ============ 01 概述与定位 ============ */
+    function render01(el) {
+      el.innerHTML = `
+        <h2>向量数据库解决什么问题？</h2>
+        <p class="lead">传统数据库只会「精确匹配」，向量数据库懂「语义相似」。点下方场景卡片看它在哪发光；再看与 ES/关系库的对比。</p>
+
+        <h4>四大应用场景（点击看详情）</h4>
+        <div class="arch" id="sceneCards"></div>
+        <div class="detail" id="sceneD">点击上方场景卡片。</div>
+
+        <h4>语义检索 vs 关键词检索（动手感受）</h4>
+        <div class="toolbar">
+          <button class="chip ghost" data-q="sem">查询：「怎么把东西退掉」</button>
+          <button class="chip ghost" data-q="kw">查询：「错误码 E2001」</button>
+        </div>
+        <table class="tbl">
+          <tr><th>检索方式</th><th>命中结果</th><th>评价</th></tr>
+          <tbody id="cmpBody"></tbody>
+        </table>
+
+        <h4>主流产品一览（点击看定位）</h4>
+        <div class="engine-compare" id="prodCards"></div>
+        <div class="detail" id="prodD">点击上方产品。</div>
+      `
+      const scenes = [
+        ['语义搜索', '用户输入自然语言，不要求关键词命中。「送妈妈的生日礼物」直接命中相关商品。电商、企业文档、工单系统标配。'],
+        ['RAG 检索增强', '大模型幻觉的主流解法：提问 → 向量库检索知识片段 → 塞进 Prompt → LLM 基于检索结果回答。企业知识库、客服机器人的核心链路。'],
+        ['推荐与去重', '商品/内容向量找近邻做「看了又看」；新闻/短视频向量距离小于阈值判重复；以图搜图找同款。'],
+        ['异常检测', '正常行为向量聚成簇，离群向量（距离所有簇都远）判定为异常交易、异常日志。风控场景常用。'],
+      ]
+      const sc = el.querySelector('#sceneCards'), sd = el.querySelector('#sceneD')
+      scenes.forEach(([n, d]) => {
+        const div = document.createElement('div')
+        div.className = 'arch-item'
+        div.innerHTML = `<strong>${n}</strong><span>${d.slice(0, 26)}…</span>`
+        div.onclick = () => {
+          sc.querySelectorAll('.arch-item').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); sd.innerHTML = `<b>${n}</b>：${d}`
+        }
+        sc.appendChild(div)
+      })
+
+      const cmpData = {
+        sem: [
+          ['关键词 LIKE', '只命中字面含「退」的文档，漏掉「退款流程」「售后申请」', '<span class="pill bad">召回差</span>'],
+          ['向量检索', '命中退货/退款/售后申请——语义相近的文档向量距离也近', '<span class="pill ok">语义全中</span>'],
+        ],
+        kw: [
+          ['关键词 LIKE', '精确命中含「E2001」的文档', '<span class="pill ok">精确</span>'],
+          ['向量检索', '「E2001」无语义，Embedding 失效，可能召回「E2002」「错误码说明」', '<span class="pill bad">易跑偏</span>'],
+        ],
+      }
+      const cmpBody = el.querySelector('#cmpBody')
+      function renderCmp(k) {
+        cmpBody.innerHTML = cmpData[k].map(r =>
+          `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('')
+      }
+      el.querySelectorAll('[data-q]').forEach(btn => {
+        btn.onclick = () => {
+          el.querySelectorAll('[data-q]').forEach(x => x.classList.add('ghost'))
+          btn.classList.remove('ghost')
+          renderCmp(btn.dataset.q)
+        }
+      })
+      renderCmp('sem')
+      el.querySelector('[data-q="sem"]').classList.remove('ghost')
+
+      const prods = [
+        ['FAISS', '嵌入式库', 'Meta 开源，索引算法最全，单机，需自建服务层。学习/研究首选。'],
+        ['Milvus', '分布式服务', '云原生存算分离，亿级生产，生态最全。大规模首选。'],
+        ['Qdrant', 'Rust 服务', '单二进制极简部署，过滤强。中小规模生产推荐。'],
+        ['Chroma', '嵌入式/服务', 'API 极简，AI 应用原型首选。规模上限低。'],
+        ['pgvector', 'PG 插件', '复用 PostgreSQL 生态，SQL 直接查向量。已有 PG 先顶上。'],
+        ['ES dense_vector', '搜索引擎', '8.x+ 支持 HNSW。已有 ES 栈做混合检索方便。'],
+      ]
+      const pc = el.querySelector('#prodCards'), pd = el.querySelector('#prodD')
+      prods.forEach(([n, tag, d]) => {
+        const div = document.createElement('div')
+        div.className = 'engine-card'
+        div.innerHTML = `<h5>${n}</h5><div class="speed">${tag}</div>`
+        div.onclick = () => {
+          pc.querySelectorAll('.engine-card').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); pd.innerHTML = `<b>${n}</b>（${tag}）：${d}`
+        }
+        pc.appendChild(div)
+      })
+    }
+
+    /* ============ 02 Embedding 原理与模型 ============ */
+    function render02(el) {
+      el.innerHTML = `
+        <h2>Embedding：语义变成可计算的距离</h2>
+        <p class="lead">下面是 12 个词的 2D 投影（实际模型是 768/1024 维，原理相同）。<b>点击任意词</b>，看它与其他所有词的余弦相似度——同语义簇的词会排最前。</p>
+
+        <canvas class="stage" id="vecCv" width="980" height="420"></canvas>
+        <p class="hint">三个语义簇：售后（退货/退款/退钱/售后）、天气（晴天/下雨/气温/天气）、数码（iPhone/安卓/手机/苹果）。注意「苹果」离数码簇更近——上下文相关的 Embedding 能消歧，Word2Vec 做不到。</p>
+        <h4>与 <span id="selWord" style="color:var(--brand)">（点击一个词）</span> 的余弦相似度 Top-12</h4>
+        <div id="simBars"></div>
+
+        <h4>主流模型对比（点击看详情）</h4>
+        <div class="schema-viz" id="modelCards"></div>
+        <div class="detail" id="modelD">点击上方模型。</div>
+      `
+      // 2D 词向量（手工聚簇坐标，画布 980x420）
+      const words = [
+        ['退货', 130, 120, 0], ['退款', 175, 90, 0], ['退钱', 150, 165, 0], ['售后', 95, 155, 0],
+        ['晴天', 480, 90, 1], ['下雨', 525, 130, 1], ['气温', 470, 160, 1], ['天气', 440, 120, 1],
+        ['iPhone', 810, 110, 2], ['安卓', 855, 155, 2], ['手机', 800, 185, 2], ['苹果', 750, 140, 2],
+      ]
+      const colors = ['#6d28d9', '#0f766e', '#b45309']
+      const cv = el.querySelector('#vecCv')
+      const ctx = cv.getContext('2d')
+      let selected = -1
+
+      function drawCanvas() {
+        ctx.clearRect(0, 0, cv.width, cv.height)
+        if (selected >= 0) {
+          const [wx, wy] = [words[selected][1], words[selected][2]]
+          words.forEach((w, i) => {
+            if (i === selected) return
+            const sim = cosine2d(words[selected], w)
+            ctx.beginPath()
+            ctx.moveTo(wx, wy); ctx.lineTo(w[1], w[2])
+            ctx.strokeStyle = `rgba(109,40,217,${(sim * 0.85).toFixed(2)})`
+            ctx.lineWidth = 1 + sim * 3
+            ctx.stroke()
+          })
+        }
+        words.forEach((w, i) => {
+          ctx.beginPath()
+          ctx.arc(w[1], w[2], i === selected ? 9 : 6, 0, Math.PI * 2)
+          ctx.fillStyle = i === selected ? '#16202e' : colors[w[3]]
+          ctx.fill()
+          ctx.font = '13px sans-serif'
+          ctx.fillStyle = '#16202e'
+          ctx.fillText(w[0], w[1] + 10, w[2] + 4)
+        })
+      }
+      function cosine2d(a, b) {
+        // 以画布中心为原点计算方向相似度（消去平移）
+        const cx = 490, cy = 210
+        const ax = a[1] - cx, ay = a[2] - cy, bx = b[1] - cx, by = b[2] - cy
+        const dot = ax * bx + ay * by
+        const na = Math.hypot(ax, ay), nb = Math.hypot(bx, by)
+        return Math.max(0, dot / (na * nb))
+      }
+      cv.onclick = (e) => {
+        const rect = cv.getBoundingClientRect()
+        const x = (e.clientX - rect.left) * (cv.width / rect.width)
+        const y = (e.clientY - rect.top) * (cv.height / rect.height)
+        let best = -1, bd = 1e9
+        words.forEach((w, i) => {
+          const d = Math.hypot(w[1] - x, w[2] - y)
+          if (d < bd) { bd = d; best = i }
+        })
+        if (bd < 40) { selected = best; drawCanvas(); drawBars() }
+      }
+      function drawBars() {
+        const box = el.querySelector('#simBars')
+        el.querySelector('#selWord').textContent = '「' + words[selected][0] + '」'
+        const sims = words.map((w, i) => [w[0], cosine2d(words[selected], w), i])
+          .filter(s => s[2] !== selected).sort((a, b) => b[1] - a[1])
+        box.innerHTML = sims.map(([n, s]) => `
+          <div class="bar-row">
+            <span class="lbl">${n}</span>
+            <div class="bar-track"><div class="bar-fill ${s > 0.85 ? 'good' : s > 0.4 ? '' : 'hot'}" style="width:${(s * 100).toFixed(1)}%"></div></div>
+            <span class="bar-val">${s.toFixed(3)}</span>
+          </div>`).join('')
+      }
+      drawCanvas()
+
+      const models = [
+        ['bge-m3', '1024 维', '智源开源。中文标杆、8192 长文、dense+sparse 混合。中文自部署首选。'],
+        ['bge-large-zh', '1024 维', '中文检索老牌标杆，512 长度。短文档场景稳定。'],
+        ['m3e-base', '768 维', '轻量中文模型，CPU 可跑。资源受限场景。'],
+        ['text-embedding-3-small', '1536 维', 'OpenAI 云端 API，性价比极高（$0.02/百万 token），可降维。'],
+        ['text-embedding-3-large', '3072 维', 'MTEB 高分，$0.13/百万 token。质量优先的云端选择。'],
+        ['multilingual-e5', '1024 维', '微软多语言老牌，100+ 语言。跨语言检索场景。'],
+      ]
+      const mc = el.querySelector('#modelCards'), md = el.querySelector('#modelD')
+      models.forEach(([n, tag, d]) => {
+        const div = document.createElement('div')
+        div.className = 'schema-card'
+        div.innerHTML = `<h5>${n}</h5><span class="tag" style="background:#eef2f8;color:var(--muted)">${tag}</span>`
+        div.onclick = () => {
+          mc.querySelectorAll('.schema-card').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); md.innerHTML = `<b>${n}</b>（${tag}）：${d}`
+        }
+        mc.appendChild(div)
+      })
+    }
+
+    /* ============ 03 ANN 算法原理 ============ */
+    function render03(el) {
+      el.innerHTML = `
+        <h2>HNSW 分层图检索动画</h2>
+        <p class="lead">HNSW 像「分层跳表」：高层稀疏快速接近目标，底层稠密精细查找。点「下一步」看查询（★）从最高层贪心导航到最近邻的全过程。</p>
+
+        <div class="toolbar">
+          <button class="primary" id="hNext">下一步</button>
+          <button id="hReset">重置</button>
+          <span class="pill" id="hPhase">未开始</span>
+        </div>
+        <canvas class="stage" id="hCv" width="980" height="460"></canvas>
+        <div class="log" id="hLog">点「下一步」开始。观察：每层访问的节点数极少（log 级），这就是百万级检索只要几毫秒的原因。</div>
+
+        <h4>三大 ANN 算法对比（点击卡片）</h4>
+        <div class="schema-viz" id="annCards"></div>
+        <div class="detail" id="annD">点击上方算法。</div>
+      `
+      // 三层节点：L2 稀疏、L1 中、L0 稠密；目标最近邻在右下
+      const L2 = [[80, 60], [880, 80]]
+      const L1 = [[80, 150], [320, 130], [600, 170], [880, 150]]
+      const L0 = [[70, 300], [180, 330], [290, 290], [400, 340], [510, 300], [620, 350],
+                  [730, 310], [810, 340], [890, 300], [240, 400], [560, 410], [860, 420]]
+      const query = [920, 395]
+      const target = [860, 420]   // 真最近邻（L0 最后一个）
+      // 预计算路径：L2 入口(80,60)→(880,80)；下 L1 (880,150)；下 L0 (890,300)→(810,340) 或直达 (860,420)
+      const path = [
+        { layer: 2, node: L2[0], note: '从最高层 L2 入口点出发（随机固定入口）' },
+        { layer: 2, node: L2[1], note: 'L2 贪心：入口的邻居里 (880,80) 离查询更近 → 跳过去' },
+        { layer: 1, node: L1[3], note: 'L2 无更近邻居 → 下降到 L1，从 (880,80) 的映射点继续' },
+        { layer: 1, node: L1[3], note: 'L1 贪心：没有比 (880,150) 更近的 → 下降到 L0' },
+        { layer: 0, node: L0[8], note: 'L0 从 (890,300) 开始，候选队列维护最近若干节点' },
+        { layer: 0, node: L0[11], note: '扩展到邻居 (860,420)：更近！加入候选' },
+        { layer: 0, node: L0[11], note: '候选队列收敛（efSearch 控制队列大小）→ 返回最近邻 ✅' },
+      ]
+      const cv = el.querySelector('#hCv')
+      const ctx = cv.getContext('2d')
+      let step = -1
+      const visited = []
+
+      function drawGraph() {
+        ctx.clearRect(0, 0, cv.width, cv.height)
+        // 层分隔线与标签
+        ctx.strokeStyle = 'rgba(22,32,46,.08)'; ctx.lineWidth = 1
+        ctx.setLineDash([4, 4])
+        ;[[105, 'Layer 2（稀疏 · 大跳接近）'], [215, 'Layer 1（过渡）'], [255, 'Layer 0（稠密 · 精细查找）']].forEach(([y, label], i) => {
+          if (i < 2) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(980, y); ctx.stroke() }
+          ctx.setLineDash([])
+          ctx.font = '12px sans-serif'; ctx.fillStyle = '#5f6b7a'
+          ctx.fillText(label, 12, y - 6)
+          ctx.setLineDash([4, 4])
+        })
+        ctx.setLineDash([])
+        // 层内连线（近邻边）
+        function link(nodes, idxPairs) {
+          ctx.strokeStyle = 'rgba(22,32,46,.15)'; ctx.lineWidth = 1
+          idxPairs.forEach(([a, b]) => {
+            ctx.beginPath(); ctx.moveTo(nodes[a][0], nodes[a][1]); ctx.lineTo(nodes[b][0], nodes[b][1]); ctx.stroke()
+          })
+        }
+        link(L2, [[0, 1]])
+        link(L1, [[0, 1], [1, 2], [2, 3]])
+        link(L0, [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[1,9],[4,10],[8,11],[10,11]])
+        // 已访问路径
+        for (let i = 0; i < visited.length; i++) {
+          const v = visited[i]
+          ctx.beginPath(); ctx.arc(v[0], v[1], 11, 0, Math.PI * 2)
+          ctx.strokeStyle = '#6d28d9'; ctx.lineWidth = 2.5; ctx.stroke()
+          if (i > 0) {
+            const p = visited[i - 1]
+            ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(v[0], v[1])
+            ctx.strokeStyle = '#6d28d9'; ctx.lineWidth = 2.5; ctx.stroke()
+          }
+        }
+        // 节点
+        function drawNodes(nodes, r) {
+          nodes.forEach(n => {
+            ctx.beginPath(); ctx.arc(n[0], n[1], r, 0, Math.PI * 2)
+            ctx.fillStyle = '#fff'; ctx.fill()
+            ctx.strokeStyle = '#6d28d9'; ctx.lineWidth = 1.5; ctx.stroke()
+          })
+        }
+        drawNodes(L2, 7); drawNodes(L1, 6); drawNodes(L0, 5)
+        // 查询点
+        ctx.font = '18px sans-serif'; ctx.fillStyle = '#b91c1c'
+        ctx.fillText('★ 查询', query[0] - 30, query[1] + 6)
+      }
+      const hLog = el.querySelector('#hLog'), hPhase = el.querySelector('#hPhase')
+      el.querySelector('#hNext').onclick = () => {
+        if (step >= path.length - 1) return
+        step++
+        const p = path[step]
+        if (!visited.length || visited[visited.length - 1] !== p.node) visited.push(p.node)
+        hPhase.textContent = `第 ${step + 1}/${path.length} 步`
+        hLog.innerHTML += `\n<span class="hot">[步 ${step + 1}] L${p.layer}</span>  ${p.note}`
+        hLog.scrollTop = hLog.scrollHeight
+        drawGraph()
+        if (step === path.length - 1) {
+          hLog.innerHTML += `\n<span class="ok">完成：全程只访问 ${visited.length} 个节点（库中共 ${L0.length + L1.length + L2.length} 个）。规模到百万级时，暴力要算 100 万次距离，HNSW 只访问几百个节点 → 毫秒级。</span>`
+          hLog.scrollTop = hLog.scrollHeight
+        }
+      }
+      el.querySelector('#hReset').onclick = () => {
+        step = -1; visited.length = 0; hPhase.textContent = '未开始'
+        hLog.textContent = '点「下一步」开始。观察每层访问的节点数。'
+        drawGraph()
+      }
+      drawGraph()
+
+      const anns = [
+        ['HNSW', '分层图', '查询约 O(log N)，召回 95~99%，内存高（图+原向量）。在线服务默认首选。参数：M（每节点边数）、efConstruction（建库质量）、efSearch（查询召回/延迟旋钮）。'],
+        ['IVF', '聚类分桶', 'K-Means 把向量分 nlist 桶，查询只扫最近 nprobe 桶。内存中等，召回 90~97%。nlist≈4√N，nprobe 是运行时旋钮。'],
+        ['PQ', '乘积量化', 'D 维切 m 段各用 1 字节中心码表示 → 压缩 32 倍。距离变查表。精度有损失，生产上配「粗筛+重排」两段式。'],
+        ['IVF_PQ', '组合拳', 'IVF 先粗筛 99% 数据 + PQ 压缩剩余。1 亿向量压到几 GB 内存，FAISS 大规模经典配置。'],
+      ]
+      const ac = el.querySelector('#annCards'), ad = el.querySelector('#annD')
+      anns.forEach(([n, tag, d]) => {
+        const div = document.createElement('div')
+        div.className = 'schema-card'
+        div.innerHTML = `<h5>${n}</h5><span class="tag" style="background:#eef2f8;color:var(--muted)">${tag}</span>`
+        div.onclick = () => {
+          ac.querySelectorAll('.schema-card').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); ad.innerHTML = `<b>${n}</b>（${tag}）：${d}`
+        }
+        ac.appendChild(div)
+      })
+    }
+
+    /* ============ 04 FAISS 与 Milvus 实战 ============ */
+    function render04(el) {
+      el.innerHTML = `
+        <h2>FAISS 索引选择器</h2>
+        <p class="lead">选数据量，再看四种 FAISS 索引在「延迟 / 内存 / 召回」上的权衡；点索引卡片看对应代码。</p>
+
+        <div class="slider-row"><span class="name">数据规模 N</span><input type="range" id="nSlider" min="4" max="8" value="6" step="1"><span class="val" id="nVal">100 万</span></div>
+
+        <h4>索引卡片（点击看代码与参数）</h4>
+        <div class="schema-viz" id="idxCards"></div>
+        <div class="detail" id="idxD">点击上方索引。</div>
+        <h4>该规模下的权衡（条越长越差）</h4>
+        <div id="tradeBars"></div>
+        <div class="code" id="idxCode" style="margin-top:12px">点击索引卡片查看代码。</div>
+
+        <h4>Milvus 架构速览（点击组件）</h4>
+        <div class="arch" id="archCards"></div>
+        <div class="detail" id="archD">点击上方组件。</div>
+      `
+      const nMap = { 4: '1 万', 5: '10 万', 6: '100 万', 7: '1000 万', 8: '1 亿' }
+      const idxDefs = [
+        {
+          name: 'IndexFlatIP', tag: '暴力 · 召回100%',
+          detail: '暴力全扫，召回 100%，用作真值基线。只适合 ≤ 10 万级或离线评估。',
+          lat: n => n, mem: () => 1, rec: () => 1,
+          code: `index = faiss.IndexFlatIP(768)\nfaiss.normalize_L2(xb)      # 余弦必归一化\nindex.add(xb)\nscores, ids = index.search(xq, 10)`,
+        },
+        {
+          name: 'IndexIVFFlat', tag: '聚类分桶',
+          detail: 'K-Means 分 nlist 桶，查询扫 nprobe 桶。内存仍存原向量，召回 90~97%。',
+          lat: n => n * 0.06, mem: () => 1, rec: () => 0.94,
+          code: `quantizer = faiss.IndexFlatIP(768)\nindex = faiss.IndexIVFFlat(quantizer, 768, 1024)\nindex.train(xb)          # 必须训练\nindex.add(xb)\nindex.nprobe = 16        # 运行时召回/延迟旋钮`,
+        },
+        {
+          name: 'IndexHNSWFlat', tag: '分层图 · 首选',
+          detail: '分层小世界图，召回 95~99%，延迟 log 级。内存最高（图 + 原向量），千万级在线首选。',
+          lat: n => Math.log2(n) * 2, mem: () => 1.3, rec: () => 0.97,
+          code: `index = faiss.IndexHNSWFlat(768, 32)   # M=32\nindex.hnsw.efConstruction = 200\nindex.hnsw.efSearch = 64               # 查询旋钮\nindex.add(xb)                          # 无需 train`,
+        },
+        {
+          name: 'IndexIVFPQ', tag: '压缩 32 倍',
+          detail: 'IVF 粗筛 + PQ 量化压缩。内存约为原向量 1/32，召回 90~95%，亿级省内存方案，配重排补精度。',
+          lat: n => n * 0.05, mem: () => 0.05, rec: () => 0.92,
+          code: `quantizer = faiss.IndexFlatIP(768)\nindex = faiss.IndexIVFPQ(quantizer, 768, 4096, 96, 8)\nindex.train(xb)\nindex.add(xb)\nindex.nprobe = 32`,
+        },
+      ]
+      const nSlider = el.querySelector('#nSlider'), nVal = el.querySelector('#nVal')
+      const ic = el.querySelector('#idxCards'), id = el.querySelector('#idxD')
+      const tb = el.querySelector('#tradeBars'), codeBox = el.querySelector('#idxCode')
+      let curIdx = 2
+
+      function N() { return Math.pow(10, +nSlider.value) }
+      function drawCards() {
+        ic.innerHTML = ''
+        idxDefs.forEach((def, i) => {
+          const div = document.createElement('div')
+          div.className = 'schema-card' + (i === curIdx ? ' on' : '')
+          div.innerHTML = `<h5>${def.name.replace('Index', '')}</h5>
+            <span class="tag" style="background:#eef2f8;color:var(--muted)">${def.tag}</span>`
+          div.onclick = () => { curIdx = i; drawCards(); drawDetail() }
+          ic.appendChild(div)
+        })
+      }
+      function drawDetail() {
+        const def = idxDefs[curIdx]
+        id.innerHTML = `<b>${def.name}</b>：${def.detail}`
+        codeBox.textContent = def.code
+        drawBars()
+      }
+      function fmtMs(rel) {
+        // 以 768 维暴力 100万 ≈ 300ms 归一化
+        const ms = rel / 1e6 * 300 * (768 / 768)
+        if (ms < 1) return (ms * 1000).toFixed(0) + ' µs'
+        return ms < 100 ? ms.toFixed(1) + ' ms' : ms.toFixed(0) + ' ms'
+      }
+      function drawBars() {
+        const def = idxDefs[curIdx]
+        const n = N()
+        const rows = [
+          ['延迟', def.lat(n) / n, fmtMs(def.lat(n))],
+          ['内存', def.mem() / 1.3, def.mem() >= 1 ? '高（原向量' + (def.mem() > 1 ? '+图' : '') + '）' : '极低（≈1/32）'],
+          ['召回', 1 - def.rec(), (def.rec() * 100).toFixed(0) + '%（条=损失）'],
+        ]
+        tb.innerHTML = rows.map(([lbl, ratio, val]) => `
+          <div class="bar-row">
+            <span class="lbl">${lbl}</span>
+            <div class="bar-track"><div class="bar-fill ${ratio > 0.5 ? 'hot' : ratio > 0.15 ? '' : 'good'}" style="width:${Math.max(2, ratio * 100).toFixed(1)}%"></div></div>
+            <span class="bar-val">${val}</span>
+          </div>`).join('')
+      }
+      nSlider.oninput = () => { nVal.textContent = nMap[nSlider.value]; drawBars() }
+      drawCards(); drawDetail()
+
+      const archs = [
+        ['Proxy 接入层', '无状态网关：SDK/REST 请求入口，路由请求并合并结果。可水平扩展。'],
+        ['Query Node', '查询执行节点：加载索引分片到内存，跑 ANN 搜索。QPS 不够就加它。'],
+        ['Data Node', '写入数据节点：消费写入日志，落盘成 Segment。写吞吐不够就加它。'],
+        ['Index Node', '索引构建节点：后台异步建 HNSW/IVF 索引，与查询隔离不抢资源。'],
+        ['对象存储', 'S3/MinIO：存算分离——数据与索引文件持久化在此，计算节点无状态。'],
+        ['etcd + 协调层', 'RootCoord/QueryCoord/DataCoord：元数据与调度，etcd 存元信息。'],
+      ]
+      const acd = el.querySelector('#archCards'), add = el.querySelector('#archD')
+      archs.forEach(([n, d]) => {
+        const div = document.createElement('div')
+        div.className = 'arch-item'
+        div.innerHTML = `<strong>${n}</strong><span>${d.slice(0, 24)}…</span>`
+        div.onclick = () => {
+          acd.querySelectorAll('.arch-item').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); add.innerHTML = `<b>${n}</b>：${d}`
+        }
+        acd.appendChild(div)
+      })
+    }
+
+    /* ============ 05 混合检索与调优 ============ */
+    function render05(el) {
+      el.innerHTML = `
+        <h2>混合检索：RRF 融合计算器</h2>
+        <p class="lead">向量路懂语义、BM25 路精关键词。两路 Top-5 用 RRF 融合：<b>score = Σ 1/(k+rank)</b>。拖动 k 值，观察两路都命中的文档如何浮到榜首。</p>
+
+        <div class="slider-row"><span class="name">RRF 常数 k</span><input type="range" id="kSlider" min="1" max="100" value="60" step="1"><span class="val" id="kVal">60</span></div>
+
+        <div class="grid3">
+          <div>
+            <h4>向量路 Top-5（语义）</h4>
+            <div class="rank-list" id="vecList"></div>
+          </div>
+          <div>
+            <h4>BM25 路 Top-5（关键词）</h4>
+            <div class="rank-list" id="bmList"></div>
+          </div>
+          <div>
+            <h4>RRF 融合结果</h4>
+            <div class="rank-list" id="rrfList"></div>
+          </div>
+        </div>
+        <div class="verdict ok" id="rrfVerdict"></div>
+
+        <h4>标量过滤三种策略（点击对比）</h4>
+        <div class="toolbar">
+          <button class="chip ghost" data-f="pre">Pre-filter 先过滤</button>
+          <button class="chip ghost" data-f="post">Post-filter 后过滤</button>
+          <button class="chip ghost" data-f="in">In-search 遍历中过滤</button>
+        </div>
+        <div class="detail" id="filterD">点击上方策略。</div>
+
+        <h4>HNSW 参数调优模拟器</h4>
+        <div class="slider-row"><span class="name">efSearch（查询旋钮）</span><input type="range" id="efSlider" min="16" max="256" value="64" step="16"><span class="val" id="efVal">64</span></div>
+        <div class="bar-row"><span class="lbl">召回@10</span><div class="bar-track"><div class="bar-fill good" id="recBar"></div></div><span class="bar-val" id="recV"></span></div>
+        <div class="bar-row"><span class="lbl">相对延迟</span><div class="bar-track"><div class="bar-fill hot" id="latBar"></div></div><span class="bar-val" id="latV"></span></div>
+        <p class="hint">调优顺序口诀：先调运行时参数 efSearch → 不达标再回调建库参数 M/efConstruction → 还不够考虑 IVF_PQ + 重排。</p>
+      `
+      // 模拟两路结果：查询「苹果 退货」
+      const vecHits = [['D1 退货流程说明', .91], ['D2 售后申请指南', .88], ['D3 退款到账时间', .85], ['D7 苹果种植技术', .62], ['D9 水果促销海报', .58]]
+      const bmHits = [['D4 苹果手机退货政策', 12.3], ['D1 退货流程说明', 11.8], ['D5 iPhone 退款规则', 10.5], ['D2 售后申请指南', 9.2], ['D8 苹果官网客服', 8.4]]
+      function fillList(id, hits, fusedScores) {
+        const box = el.querySelector(id)
+        box.innerHTML = hits.map(([doc, sc], i) => {
+          const inBoth = vecHits.some(v => v[0] === doc) && bmHits.some(b => b[0] === doc)
+          return `<div class="rank-item ${inBoth ? 'both' : ''}"><span class="rk">#${i + 1}</span><span class="doc">${doc}</span><span class="sc">${typeof sc === 'number' ? sc.toFixed(2) : sc}</span></div>`
+        }).join('')
+      }
+      function calcRRF() {
+        const k = +el.querySelector('#kSlider').value
+        el.querySelector('#kVal').textContent = k
+        const scores = {}
+        vecHits.forEach(([doc], i) => scores[doc] = (scores[doc] || 0) + 1 / (k + i + 1))
+        bmHits.forEach(([doc], i) => scores[doc] = (scores[doc] || 0) + 1 / (k + i + 1))
+        const fused = Object.entries(scores).sort((a, b) => b[1] - a[1]).slice(0, 5)
+        el.querySelector('#rrfList').innerHTML = fused.map(([doc, sc], i) => {
+          const inBoth = vecHits.some(v => v[0] === doc) && bmHits.some(b => b[0] === doc)
+          return `<div class="rank-item ${inBoth ? 'both' : ''}"><span class="rk">#${i + 1}</span><span class="doc">${doc}</span><span class="sc">${sc.toFixed(4)}</span></div>`
+        }).join('')
+        const top = fused[0][0]
+        el.querySelector('#rrfVerdict').className = 'verdict ok'
+        el.querySelector('#rrfVerdict').innerHTML =
+          `✅ 榜首：<b>${top}</b>。两路都命中的文档（紫框）获得双份排名贡献，自然浮上来。k 越小头部区分度越大；k=60 是论文经验值，通常不用调。`
+      }
+      fillList('#vecList', vecHits); fillList('#bmList', bmHits)
+      el.querySelector('#kSlider').oninput = calcRRF
+      calcRRF()
+
+      const filters = {
+        pre: '<b>Pre-filter</b>：先按标量条件（如 category="售后"）筛出候选集，再在其中跑 ANN。结果最准，但过滤太狠（命中 &lt; 1%）时图索引失效，退化为小范围暴力——此时反而可能更快。适合极苛刻条件。',
+        post: '<b>Post-filter</b>：先 ANN 取 Top-N（N≫K），再按标量筛到 K。最快但可能筛完不足 K 条（如 ANN 返回的 10 条全不满足条件 → 结果为空）。适合宽松条件。',
+        in: '<b>In-search（主流）</b>：HNSW 图遍历过程中跳过不满足条件的节点。准且快，Milvus/Qdrant 默认。前提：标量字段要建索引（倒排/Bitmap），否则过滤本身成瓶颈。',
+      }
+      el.querySelectorAll('[data-f]').forEach(btn => {
+        btn.onclick = () => {
+          el.querySelectorAll('[data-f]').forEach(x => x.classList.add('ghost'))
+          btn.classList.remove('ghost')
+          el.querySelector('#filterD').innerHTML = filters[btn.dataset.f]
+        }
+      })
+
+      const efSlider = el.querySelector('#efSlider'), efVal = el.querySelector('#efVal')
+      function drawEf() {
+        const ef = +efSlider.value
+        efVal.textContent = ef
+        const rec = Math.min(0.995, 0.72 + 0.28 * Math.log2(ef / 16) / 4)
+        const lat = ef / 16
+        el.querySelector('#recBar').style.width = (rec * 100).toFixed(1) + '%'
+        el.querySelector('#recV').textContent = (rec * 100).toFixed(1) + '%'
+        el.querySelector('#latBar').style.width = Math.min(100, lat / 16 * 100).toFixed(1) + '%'
+        el.querySelector('#latV').textContent = lat.toFixed(1) + 'x'
+      }
+      efSlider.oninput = drawEf
+      drawEf()
+    }
+
+    /* ============ 06 语义搜索实战与 FAQ ============ */
+    function render06(el) {
+      el.innerHTML = `
+        <h2>RAG 语义搜索管线：五步走完</h2>
+        <p class="lead">点「播放」看一条查询从原始文档到精排结果的完整流动：<b>切块 → Embedding → 入库 → 混合检索 → Rerank</b>。</p>
+
+        <div class="toolbar">
+          <button class="primary" id="pPlay">播放管线</button>
+          <button id="pReset">重置</button>
+          <span class="pill" id="pPhase">就绪</span>
+        </div>
+        <div class="pipe" id="pipeBox">
+          <span class="pipe-step" data-s="0">① 文档切块</span><span class="pipe-arrow">→</span>
+          <span class="pipe-step" data-s="1">② Embedding</span><span class="pipe-arrow">→</span>
+          <span class="pipe-step" data-s="2">③ 入库建索引</span><span class="pipe-arrow">→</span>
+          <span class="pipe-step" data-s="3">④ 混合检索</span><span class="pipe-arrow">→</span>
+          <span class="pipe-step" data-s="4">⑤ Rerank 精排</span>
+        </div>
+        <div class="log" id="pLog">点「播放管线」。查询：「退货后钱多久能退回」</div>
+
+        <h4>常见坑速查（点击展开）</h4>
+        <div id="pitList"></div>
+
+        <h4>高频面试题（点击展开/收起）</h4>
+        <div id="faqList"></div>
+      `
+      const pipeSteps = el.querySelectorAll('.pipe-step')
+      const pLog = el.querySelector('#pLog'), pPhase = el.querySelector('#pPhase')
+      const logs = [
+        ['[1] 文档切块', '原文 2800 字 → 按标题分节 + 节内 300~500 字滑窗（重叠 50）→ 6 个 chunk\n  chunk#1 "退货流程：签收后 7 天内可申请…"\n  chunk#2 "退款时效：审核通过后 1-3 个工作日原路退回…"\n  ⚠️ 超长不切块会被模型静默截断，后半段永远检索不到'],
+        ['[2] Embedding', 'bge-m3 批量 encode → 6 × 1024 维 float32\n  normalize_embeddings=True（归一化后点积 = 余弦）\n  ⚠️ 入库与查询必须用同一模型同一归一化方式'],
+        ['[3] 入库建索引', 'IndexHNSWFlat(1024, M=32), efConstruction=200\n  add 6 条向量 + 维护 id→原文映射\n  生产：Milvus collection + HNSW + 标量索引（category/year）'],
+        ['[4] 混合检索', '查询 encode → 向量路 Top-3: #2(0.91) #1(0.87) #5(0.74)\n  BM25 路 Top-3: #2(12.1) #4(10.3) #1(9.8)\n  RRF(k=60) 融合 → 候选: #2 #1 #4 #5'],
+        ['[5] Rerank 精排', 'bge-reranker 对 4 个候选精排：\n  #2 退款时效(0.96) > #1 退货流程(0.88) > #4(0.41) > #5(0.12)\n  ✅ 最终 Top-2 送入 LLM Prompt 生成带引用的回答'],
+      ]
+      let playing = false
+      el.querySelector('#pPlay').onclick = () => {
+        if (playing) return
+        playing = true
+        el.querySelector('#pReset').click()
+        playing = true
+        let i = 0
+        function nextStep() {
+          if (i > 0) {
+            pipeSteps[i - 1].classList.remove('doing')
+            pipeSteps[i - 1].classList.add('done')
+          }
+          if (i >= pipeSteps.length) {
+            pPhase.textContent = '完成'
+            playing = false
+            return
+          }
+          pipeSteps[i].classList.add('doing')
+          pPhase.textContent = `步骤 ${i + 1}/5`
+          pLog.innerHTML += `\n<span class="hot">${logs[i][0]}</span>\n${logs[i][1]}\n`
+          pLog.scrollTop = pLog.scrollHeight
+          i++
+          setTimeout(nextStep, 1100)
+        }
+        nextStep()
+      }
+      el.querySelector('#pReset').onclick = () => {
+        playing = false
+        pipeSteps.forEach(s => s.classList.remove('doing', 'done'))
+        pPhase.textContent = '就绪'
+        pLog.textContent = '点「播放管线」。查询：「退货后钱多久能退回」'
+      }
+
+      const pits = [
+        ['坑 1：维度不一致', '入库 1024 维、查询 768 维 → 直接报错或全乱。换 Embedding 模型必须全量重建索引，向量空间不可混用。'],
+        ['坑 2：忘记归一化', '用余弦/IP 索引却忘 normalize，或只归一化了一侧。bug 隐蔽（结果「看起来差不多」）。对策：入库和查询走同一个 encode 函数。'],
+        ['坑 3：增量更新退化', 'IVF 建库后新数据分布偏移，聚类中心过时，召回缓慢下降。监控 Recall@10 周趋势，低了触发 retrain；常用「增量小库 + 定期合并」架构。'],
+        ['坑 4：超长静默截断', '512 token 上限模型喂 2000 字，后半段无声丢失。入库前打印 token 长度分布，P99 必须在上限内——先切块！'],
+        ['坑 5：距离方向搞反', 'L2 越小越近，余弦越大越近。融合或设阈值时搞反全错。统一约定「分数越大越好」，或直接用 RRF 只看排名。'],
+      ]
+      const pl = el.querySelector('#pitList')
+      pits.forEach(([q, a]) => {
+        const b = document.createElement('button')
+        b.className = 'faq-q'; b.textContent = q
+        const div = document.createElement('div')
+        div.className = 'faq-a hidden'; div.innerHTML = a
+        b.onclick = () => div.classList.toggle('hidden')
+        pl.appendChild(b); pl.appendChild(div)
+      })
+
+      const faqs = [
+        ['Q1：向量数据库和 ES 的核心区别？为什么混用？', '向量库按<b>语义距离</b>检索，ES 按<b>词项匹配</b>（BM25）。语义查询向量强，精确词项（型号/编号）BM25 强。生产混用：两路召回 + RRF 融合互补短板。'],
+        ['Q2：HNSW 原理？M / efConstruction / efSearch 影响什么？', '分层可导航小世界图：高层稀疏快速接近、底层稠密精细查找，查询约 O(log N)。M=每节点边数（内存/连通性），efConstruction=建库候选集（图质量），efSearch=查询候选集（召回/延迟的运行时旋钮，调优先调它）。'],
+        ['Q3：IVF 和 PQ 各解决什么？为什么组合？', 'IVF 分桶让查询少算距离（扫 nprobe 桶）；PQ 分段量化把存储压 32 倍、距离变查表。IVF_PQ 组合：先粗筛 99% 数据再压缩计算，1 亿向量几 GB 内存，召回损失靠原向量重排补。'],
+        ['Q4：RAG 标准流程与各环节质量问题？', '切块→Embedding→入库→混合检索→Rerank→拼 Prompt→LLM。切块断语义（结构切块+重叠）、模型领域不匹配（换微调模型）、检索漏召回（混合检索+调 ef）、Top-K 噪音（Rerank）、Prompt 超 token（控制预算）。'],
+        ['Q5：为什么向量检索后还要 Rerank？', '向量检索是双塔（query/doc 独立编码），快但交互浅；Rerank 交叉编码器把 query+doc 拼接输入，精度高但慢 100 倍。所以只对召回 Top-50~200 精排。代表：bge-reranker、Cohere Rerank。'],
+        ['Q6：余弦相似度和欧氏距离怎么选？', '文本主流用<b>余弦</b>（关注方向、对长度鲁棒），归一化后余弦=内积，计算更快。注意归一化后 L2 与余弦排序等价（L2²=2-2cos），排序结果相同。'],
+        ['Q7：亿级向量系统怎么设计？', '索引 IVF_PQ 或 HNSW+量化；存算分离 + 查询节点无状态水平扩 + 副本扛 QPS；增量小库+定期合并重建；混合检索+Rerank 保质量；监控 Recall@10 / P99 / 副本滞后。'],
+        ['Q8：Embedding 模型怎么选与评估？', '中文自部署选 bge-m3，云端选 text-embedding-3。评估不看榜单看自己数据：构建 query-相关文档评估集算 Recall@10/MRR，上线看业务指标（点击率、回答采纳率）。'],
+      ]
+      const fl = el.querySelector('#faqList')
+      faqs.forEach(([q, a]) => {
+        const b = document.createElement('button')
+        b.className = 'faq-q'; b.textContent = q
+        const div = document.createElement('div')
+        div.className = 'faq-a hidden'; div.innerHTML = a
+        b.onclick = () => div.classList.toggle('hidden')
+        fl.appendChild(b); fl.appendChild(div)
+      })
+    }
+
+    const renders = { '01': render01, '02': render02, '03': render03, '04': render04, '05': render05, '06': render06 }
+
+    // 初始化
+    show(current)
+  </script>
+</body>
+</html>
