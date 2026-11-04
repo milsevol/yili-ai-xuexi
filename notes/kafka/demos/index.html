@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Apache Kafka · 交互式演示</title>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --panel: #fff;
+      --ink: #16202e;
+      --muted: #5f6b7a;
+      --line: rgba(22, 32, 46, 0.11);
+      --brand: #1d4ed8;
+      --brand-soft: rgba(37, 99, 235, 0.1);
+      --ok: #15803d;
+      --fail: #b91c1c;
+      --run: #0369a1;
+      --warn: #a16207;
+      --c0: #1d4ed8; --c1: #0f766e; --c2: #15803d; --c3: #7c3aed; --c4: #a16207;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", "PingFang SC", "Noto Sans SC", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 70% 40% at 0% 0%, var(--brand-soft), transparent 55%),
+        var(--bg);
+      min-height: 100vh;
+    }
+    .app {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 20px 16px 48px;
+      display: grid;
+      gap: 16px;
+    }
+    @media (min-width: 880px) {
+      .app { grid-template-columns: 210px 1fr; align-items: start; }
+    }
+    .brand h1 { margin: 0; font-size: 1.25rem; font-family: "Noto Serif SC", "Songti SC", serif; }
+    .brand p { margin: 4px 0 0; color: var(--muted); font-size: 0.85rem; line-height: 1.5; }
+    .nav { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+    @media (min-width: 880px) {
+      .nav {
+        flex-direction: column;
+        position: sticky; top: 12px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 10px;
+      }
+    }
+    .nav button {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 999px;
+      padding: 0.45rem 0.85rem;
+      font-size: 0.86rem;
+      cursor: pointer;
+      text-align: left;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    @media (min-width: 880px) {
+      .nav button { width: 100%; border-radius: 10px; border-color: transparent; background: transparent; }
+      .nav button:hover { background: #f1f5fb; }
+    }
+    .nav button.active { background: var(--brand-soft); border-color: var(--brand); color: var(--brand); font-weight: 600; }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 18px 18px 22px;
+      min-height: 440px;
+    }
+    .panel h2 { margin: 0 0 6px; font-size: 1.2rem; }
+    .panel h4 { margin: 18px 0 8px; font-size: 0.95rem; }
+    .lead { margin: 0 0 16px; color: var(--muted); font-size: 0.9rem; line-height: 1.6; }
+    .grid2 { display: grid; gap: 12px; }
+    @media (min-width: 700px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      background: #fafcff;
+    }
+    .card h3 { margin: 0 0 8px; font-size: 0.95rem; }
+    .card ul { margin: 0; padding-left: 1.1rem; color: var(--muted); font-size: 0.86rem; line-height: 1.55; }
+    .card.click { cursor: pointer; transition: border-color .2s, transform .2s; }
+    .card.click:hover { border-color: var(--brand); transform: translateY(-1px); }
+    .arch { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-top: 8px; }
+    .arch-item {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      cursor: pointer;
+      transition: border-color .2s, transform .2s;
+      background: #fff;
+    }
+    .arch-item:hover, .arch-item.on { border-color: var(--brand); transform: translateY(-1px); }
+    .arch-item strong { display: block; margin-bottom: 4px; }
+    .arch-item span { font-size: 0.8rem; color: var(--muted); line-height: 1.4; }
+    .detail {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: var(--brand-soft);
+      color: var(--ink);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      min-height: 3.2em;
+    }
+    .flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0; }
+    .chip {
+      border: none;
+      border-radius: 999px;
+      padding: 0.35rem 0.75rem;
+      background: var(--brand-soft);
+      color: var(--brand);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .chip.ghost { background: #eef2f8; color: var(--muted); font-weight: 500; }
+    .chip:hover { filter: brightness(0.97); }
+    .arrow { color: var(--muted); }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0 14px; }
+    .toolbar button, .toolbar label {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 8px;
+      padding: 0.4rem 0.75rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+    .toolbar button.primary { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600; }
+    .toolbar input[type=range] { accent-color: var(--brand); }
+    .toolbar .val { font-family: ui-monospace, Menlo, monospace; font-size: 0.85rem; color: var(--brand); font-weight: 700; min-width: 3.5em; }
+    .log {
+      margin-top: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      background: #16202e;
+      color: #e5eaf1;
+      border-radius: 10px;
+      padding: 10px 12px;
+      max-height: 260px;
+      overflow: auto;
+      white-space: pre-wrap;
+    }
+    .log .hot { color: #fb923c; }
+    .log .ok { color: #86efac; }
+    .hint { font-size: 0.8rem; color: var(--muted); margin-top: 8px; }
+    .hidden { display: none !important; }
+    table.tbl { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 8px; }
+    table.tbl th, table.tbl td { border-bottom: 1px solid var(--line); padding: 0.42rem 0.5rem; text-align: left; vertical-align: top; }
+    table.tbl th { color: var(--muted); font-weight: 600; }
+    .code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      background: #f4f6fa;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      overflow-x: auto;
+      white-space: pre;
+    }
+    .bar-row { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; font-family: ui-monospace, Menlo, monospace; margin-top: 4px; }
+    .bar-row .lbl { width: 90px; color: var(--muted); flex: none; }
+    .bar-track { flex: 1; background: #eaeef5; border-radius: 6px; height: 17px; overflow: hidden; }
+    .bar-fill { height: 100%; background: var(--run); border-radius: 6px; transition: width .5s ease; }
+    .bar-fill.hot { background: var(--fail); }
+    .bar-fill.good { background: var(--ok); }
+    .bar-val { width: 80px; flex: none; color: var(--muted); text-align: right; }
+    .faq-q {
+      width: 100%;
+      text-align: left;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.88rem;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .faq-q:hover { border-color: var(--brand); }
+    .faq-a {
+      margin: 4px 0 4px;
+      padding: 8px 12px;
+      border-left: 3px solid var(--brand);
+      background: var(--brand-soft);
+      border-radius: 0 8px 8px 0;
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+    .slider-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; font-size: 0.85rem; }
+    .slider-row .name { width: 160px; color: var(--muted); flex: none; }
+    .slider-row input { flex: 1; accent-color: var(--brand); }
+    .slider-row .val { width: 120px; font-family: ui-monospace, Menlo, monospace; color: var(--brand); font-weight: 700; text-align: right; }
+    .verdict { margin-top: 10px; padding: 10px 14px; border-radius: 10px; font-size: 0.88rem; line-height: 1.6; }
+    .verdict.ok { background: #f0fdf4; border: 1px solid rgba(21,128,61,.3); }
+    .verdict.warn { background: #fffbeb; border: 1px solid rgba(161,98,7,.35); }
+    .verdict.bad { background: #fef2f2; border: 1px solid rgba(185,28,28,.3); }
+    .kv { font-size: 0.85rem; line-height: 1.85; }
+    .kv b { color: var(--brand); font-family: ui-monospace, Menlo, monospace; }
+    .pill { display: inline-block; border-radius: 999px; padding: 0.1rem 0.55rem; font-size: 0.75rem; background: #eef2f8; color: var(--muted); }
+    .pill.ok { background: #dcfce7; color: var(--ok); }
+    .pill.bad { background: #fee2e2; color: var(--fail); }
+    .steps { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .step-dot {
+      border: 1px solid var(--line); background: #fff; border-radius: 8px;
+      padding: 0.35rem 0.6rem; font-size: 0.76rem; color: var(--muted);
+    }
+    .step-dot.on { border-color: var(--brand); background: var(--brand-soft); color: var(--brand); font-weight: 700; }
+    .matrix td, .matrix th { border: 1px solid var(--line); padding: 7px; text-align: center; font-size: 0.8rem; }
+    .matrix td { background: #fff; }
+    .banner-arrow { display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: var(--brand); font-weight: bold; margin: 0 8px; }
+    .chain-box { border: 1px dashed var(--line); border-radius: 12px; padding: 14px; background: #fafcff; text-align: center; font-size: 0.88rem; }
+    .flow-line { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 12px 0; flex-wrap: wrap; }
+    .node-box { border: 1px solid var(--c0); background: var(--brand-soft); border-radius: 10px; padding: 10px 14px; font-size: 0.85rem; font-weight: 600; color: var(--brand); cursor: pointer; }
+    .node-box:hover { filter: brightness(0.95); }
+    .node-box.c1 { border-color: var(--c1); background: rgba(15,118,110,.1); color: var(--c1); }
+    .node-box.c2 { border-color: var(--c2); background: rgba(21,128,61,.1); color: var(--c2); }
+    .node-box.c3 { border-color: var(--c3); background: rgba(124,58,237,.1); color: var(--c3); }
+    .connector { font-size: 1.2rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <div class="brand" style="margin-bottom:12px">
+        <h1>Kafka 交互演示</h1>
+        <p>分布式提交日志 · 实时数据总线。点左侧章节，动手玩概念。</p>
+      </div>
+      <nav class="nav" id="nav"></nav>
+    </aside>
+    <main class="panel" id="panel"></main>
+  </div>
+
+  <script>
+    const chapters = [
+      { id: '01', title: '01 概述与定位' },
+      { id: '02', title: '02 架构与核心概念' },
+      { id: '03', title: '03 Producer 生产者' },
+      { id: '04', title: '04 Consumer 消费者' },
+      { id: '05', title: '05 存储与分区原理' },
+      { id: '06', title: '06 高级特性' },
+      { id: '07', title: '07 部署与集群规划' },
+      { id: '08', title: '08 运维与故障排查' },
+      { id: '09', title: '09 生态与大数据链路' },
+      { id: '10', title: '10 生态对比与 FAQ' },
+    ]
+
+    const params = new URLSearchParams(location.search)
+    let current = (params.get('c') || '01').padStart(2, '0')
+    const nav = document.getElementById('nav')
+    const panel = document.getElementById('panel')
+
+    chapters.forEach((c) => {
+      const b = document.createElement('button')
+      b.textContent = c.title
+      b.dataset.id = c.id
+      b.onclick = () => show(c.id)
+      nav.appendChild(b)
+    })
+
+    function show(id) {
+      current = id
+      nav.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.id === id))
+      history.replaceState(null, '', `?c=${id}`)
+      panel.innerHTML = ''
+      renders[id](panel)
+    }
+
+    /* ============ 01 概述与定位 ============ */
+    function render01(el) {
+      el.innerHTML = `
+        <h2>为什么需要 Kafka？三大流派 + 选型</h2>
+        <p class="lead">点击卡片看消息队列三大流派，再点对比卡看 Kafka vs RocketMQ vs Pulsar vs RabbitMQ。</p>
+        <h4>消息队列三大流派</h4>
+        <div class="arch" id="schools"></div>
+        <div class="detail" id="schoolsD">点击上方流派卡片。</div>
+
+        <h4>Kafka vs RocketMQ vs RabbitMQ 综合对比</h4>
+        <div class="arch" id="mqComp"></div>
+        <div class="detail" id="mqCompD" style="min-height:2.8em">点击产品看适用场景。</div>
+
+        <h4>这个场景该选谁？</h4>
+        <div class="flow" id="decide"></div>
+        <div class="verdict ok" id="decideD" style="min-height:4.5em">点一个场景。</div>
+      `
+      const schools = [
+        ['点对点 Queue（RabbitMQ）', '一条消息只能被一个 Consumer 拿到。传统 AMQP 模型，业务解耦用得多，但吞吐上不去。'],
+        ['发布订阅 Topic', '一条消息可被多个 Consumer Group 独立消费。Kafka/RocketMQ/Pulsar 都是这种模型。'],
+        ['分布式提交日志（Kafka/Pulsar）', '消息是不可变、有 Offset 的日志，消费后不删除。这让它同时能做消息队列、事件溯源、流处理状态存储。'],
+      ]
+      const schoolsEl = el.querySelector('#schools'), schoolsD = el.querySelector('#schoolsD')
+      schools.forEach(([n, d]) => {
+        const div = document.createElement('div')
+        div.className = 'arch-item'
+        div.innerHTML = `<strong>${n}</strong><span>${d.slice(0, 24)}…</span>`
+        div.onclick = () => {
+          schoolsEl.querySelectorAll('.arch-item').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); schoolsD.innerHTML = `<b>${n}</b>：${d}`
+        }
+        schoolsEl.appendChild(div)
+      })
+
+      const comps = [
+        ['Kafka', '百万级/s 吞吐 · 毫秒级延迟 · 分布式提交日志模型 · Flink/Spark 原生支持 · 大数据实时链路首选'],
+        ['RocketMQ', '十万级/s 吞吐 · 毫秒级延迟 · 半消息事务 · 延迟消息 · 业务消息 + 大数据兼顾 · 阿里系主推'],
+        ['RabbitMQ', '万级/s 吞吐 · 微秒级低延迟 · AMQP 协议丰富 · 业务解耦 · 管理界面友好 · 小量高可靠'],
+        ['Pulsar', '百万级/s 吞吐 · Broker 无状态 · 跨地域 Geo 复制 · 多租户命名空间 · 流存储统一 · 适合多集群'],
+      ]
+      const mqEl = el.querySelector('#mqComp'), mqD = el.querySelector('#mqCompD')
+      comps.forEach(([n, d]) => {
+        const div = document.createElement('div')
+        div.className = 'arch-item'
+        div.innerHTML = `<strong>${n}</strong><span>${d.slice(0, 24)}…</span>`
+        div.onclick = () => {
+          mqEl.querySelectorAll('.arch-item').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); mqD.innerHTML = `<b>${n}</b>：${d}`
+        }
+        mqEl.appendChild(div)
+      })
+
+      const cases = [
+        ['实时大数据链路（日志/CDC/埋点）', 'Kafka', 'ok'],
+        ['电商交易小量解耦（高可靠/事务）', 'RocketMQ', 'ok'],
+        ['极低延迟 AMQP 协议', 'RabbitMQ', 'ok'],
+        ['跨地域多集群多租户', 'Pulsar', 'ok'],
+        ['既要业务解耦又要大数据链路', 'Kafka 做大数据链路 + RocketMQ/RabbitMQ 做业务', 'warn'],
+        ['自建成本敏感', 'Kafka（KRaft）或 RocketMQ（NameServer 简单）', 'warn'],
+      ]
+      const decEl = el.querySelector('#decide'), decD = el.querySelector('#decideD')
+      cases.forEach(([q, a, cls]) => {
+        const b = document.createElement('button')
+        b.className = 'chip ghost'; b.type = 'button'; b.textContent = q
+        b.onclick = () => {
+          decEl.querySelectorAll('.chip').forEach(x => x.classList.add('ghost'))
+          b.classList.remove('ghost')
+          decD.className = 'verdict ' + cls
+          decD.innerHTML = `推荐 <b>${a}</b>`
+        }
+        decEl.appendChild(b)
+      })
+    }
+
+    /* ============ 02 架构与核心概念 ============ */
+    function render02(el) {
+      el.innerHTML = `
+        <h2>Kafka 架构：点角色看职责</h2>
+        <p class="lead">Broker/Topic/Partition/ISR/Controller。KRaft 用 Raft 替代 ZooKeeper。</p>
+        <h4>核心角色（点击看职责）</h4>
+        <div class="arch" id="roles"></div>
+        <div class="detail" id="roleD">点击上方角色。</div>
+
+        <h4>KRaft vs ZooKeeper：哪个模式？</h4>
+        <div class="arch" id="kraftVs"></div>
+        <div class="detail" id="kraftD">点击上方模式。</div>
+
+        <h4>Producer → Partition 路由模拟</h4>
+        <div class="slider-row"><span class="name">Topic 分区数</span><input type="range" id="np" min="1" max="12" value="6"><span class="val" id="npV">6</span></div>
+        <div class="toolbar">
+          <button class="primary" id="rk">随机发送 20 条</button>
+          <button id="rk2">带 key 发送 20 条</button>
+          <button id="rk3">重置</button>
+        </div>
+        <div id="partBars"></div>
+        <p class="hint">无 key 时默认 Sticky Partitioner（粘到一个 Partition 直到 batch 满）；有 key 时按 Murmur2 hash(key) % numPartitions 固定。</p>
+      `
+      const roles = [
+        ['Broker', '集群中的一台 Kafka 服务器。存 Partition 的 Segment 日志，对外服务 Producer/Consumer 请求，Controller 协调下做 ISR 同步与 Leader 选举。'],
+        ['Controller', '集群大脑。负责 Partition Leader 选举、Topic 管理、Broker 上下线监听。KRaft 模式下 Controller Quorum 用 Raft 协议选主。'],
+        ['Topic', '消息的逻辑分类。比如「order-events」「user-activity」。Topic 不直接存消息，它是 Partition 的集合。'],
+        ['Partition', 'Topic 的物理分片，每个分区是一个有序追加日志。每个 Partition 有自己独立的 Offset，顺序性只在 Partition 内保证。'],
+        ['Replica', 'Partition 在某个 Broker 上的一份拷贝。Leader 负责读写；Follower 从 Leader 主动 Fetch 同步。'],
+        ['ISR', 'In-Sync Replicas。与 Leader 保持同步的副本集合（Leader + 追得上的 Follower）。acks=all 必须这些都 sync 才算成功。'],
+        ['OSR', 'Out-of-Sync Replicas。不在 ISR 里的副本——落后太多。不会参与 ack=all，也不会被选做新 Leader。'],
+        ['Consumer Group', '一组协同消费的 Consumer。组内每个 Partition 只能被一个 Consumer 消费；Group 间独立进度。'],
+      ]
+      const rEl = el.querySelector('#roles'), rD = el.querySelector('#roleD')
+      roles.forEach(([n, d]) => {
+        const div = document.createElement('div')
+        div.className = 'arch-item'
+        div.innerHTML = `<strong>${n}</strong><span>${d.slice(0, 22)}…</span>`
+        div.onclick = () => {
+          rEl.querySelectorAll('.arch-item').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); rD.innerHTML = `<b>${n}</b>：${d}`
+        }
+        rEl.appendChild(div)
+      })
+
+      const kv = [
+        ['KRaft（推荐）', '元数据存在 Broker 内部的 Metadata Log（Raft 协议维护）。少一个外部组件，启动快，支持百万级 Partition。3.5 GA，4.0 计划移除 ZK。'],
+        ['ZooKeeper（老模式）', '元数据存在外部 ZK 集群。成熟稳定但运维成本高、Partition 上限约 3 万、Broker 启动慢。3.8 起 deprecated。'],
+      ]
+      const kvEl = el.querySelector('#kraftVs'), kvD = el.querySelector('#kraftD')
+      kv.forEach(([n, d]) => {
+        const div = document.createElement('div')
+        div.className = 'arch-item'
+        div.innerHTML = `<strong>${n}</strong><span>${d.slice(0, 22)}…</span>`
+        div.onclick = () => {
+          kvEl.querySelectorAll('.arch-item').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); kvD.innerHTML = `<b>${n}</b>：${d}`
+        }
+        kvEl.appendChild(div)
+      })
+
+      const np = el.querySelector('#np'), npV = el.querySelector('#npV')
+      function drawBars(counts, key) {
+        const n = +np.value
+        npV.textContent = `${n} 分区`
+        const total = counts.reduce((a, b) => a + b, 0) || 1
+        el.querySelector('#partBars').innerHTML = counts.map((v, i) =>
+          `<div class="bar-row"><span class="lbl">P-${i}</span><span class="bar-track"><span class="bar-fill" style="width:${(v / total * 100).toFixed(1)}%"></span></span><span class="bar-val">${v} 条</span></div>`
+        ).join('') + `<p class="hint">${key ? '带 key：固定分布在 Part 2（hash(key)%6=2）' : '无 key：Sticky Partitioner 倾向粘到少数分区（提高批处理效果）'}</p>`
+      }
+      let counts = Array(+np.value).fill(0)
+      drawBars(counts, false)
+      np.oninput = () => { counts = Array(+np.value).fill(0); drawBars(counts, false) }
+      el.querySelector('#rk').onclick = () => {
+        for (let i = 0; i < 20; i++) {
+          const n = +np.value
+          // Sticky: 粘到一个随机分区
+          const stickyP = Math.floor(Math.random() * n)
+          counts[stickyP] += 1
+        }
+        drawBars(counts, false)
+      }
+      el.querySelector('#rk2').onclick = () => {
+        const n = +np.value
+        for (let i = 0; i < 20; i++) {
+          const key = `key-${i}`
+          // Murmur2 hash modulo
+          let h = 0
+          for (let j = 0; j < key.length; j++) h = (h * 31 + key.charCodeAt(j)) >>> 0
+          const p = h % n
+          counts[p] += 1
+        }
+        drawBars(counts, true)
+      }
+      el.querySelector('#rk3').onclick = () => { counts = Array(+np.value).fill(0); drawBars(counts, false) }
+    }
+
+    /* ============ 03 Producer 生产者原理 ============ */
+    function render03(el) {
+      el.innerHTML = `
+        <h2>Producer 发送流程：步进动画</h2>
+        <p class="lead">调 acks/重试/幂等开关，点「发送一条」，看完整链路。</p>
+        <div class="toolbar">
+          <button class="primary" id="nextP">下一步</button>
+          <button id="resetP">重置</button>
+          <span style="margin-left:8px" class="pill" id="phase">未开始</span>
+        </div>
+        <div class="steps" id="stepsP"></div>
+        <div class="log" id="logP">点击「下一步」开始。</div>
+
+        <h4>acks / 重试 / 幂等 / 事务：效果模拟</h4>
+        <div class="toolbar">
+          <label>acks
+            <select id="acksS">
+              <option value="0">0（不等 ack）</option>
+              <option value="1" selected>1（Leader 落盘）</option>
+              <option value="all">all（ISR 全 sync）</option>
+            </select>
+          </label>
+          <label><input type="checkbox" id="idempotent"> enable.idempotence（幂等）</label>
+          <label><input type="checkbox" id="tx"> 事务</label>
+        </div>
+        <div class="toolbar">
+          <button class="primary" id="runP">模拟发送 1000 条</button>
+          <button id="resetP2">重置</button>
+        </div>
+        <div id="simOut"></div>
+        <p class="hint">生产推荐：acks=all + min.insync.replicas=2 + replication.factor=3 + enable.idempotence=true。</p>
+      `
+      const steps = [
+        ['Interceptor', 'ProducerInterceptor.onSend() —— 可选拦截器（打日志、加 header）。生产很少用，主要测试场景。'],
+        ['Serialize', 'Serializer.serialize() —— 把 key/value 序列化成 byte[]。StringSerializer 默认 UTF-8。'],
+        ['Partition', 'Partitioner.partition() —— 选目标 Partition（指定 partition > hash(key) % N > Sticky 轮询）。'],
+        ['Cluster', '从本地 Metadata 缓存查 Partition Leader 在哪个 Broker。缓存会定期刷新或 on-demand。'],
+        ['Accumulator', '进 RecordAccumulator —— 按 Broker+Partition 分组，攒成 RecordBatch（默认 16KB / linger 超时）。'],
+        ['Sender Thread', '后台 Sender 线程定期把满/超时的 batch 打包成 ClientRequest，走 NIO 批量发往 Broker。'],
+        ['Broker Process', 'Broker 收 Request → 校验权限、加 Header（leader epoch）→ 追加到 Leader Partition 的 Segment 日志尾部。'],
+        ['ISR Sync', 'acks=0 → 立即返回；acks=1 → Leader 落盘后返回；acks=all → Leader + ISR 所有 Follower 都 sync 完才返回。'],
+        ['Callback', 'Producer 收到 Response → 按错误码判断：可重试错误（网络超时/NOT_LEADER）自动重试；不可重试（RecordTooLarge）抛异常。Future.complete() 触发用户回调。'],
+      ]
+      const spEl = el.querySelector('#stepsP'), logP = el.querySelector('#logP'), phase = el.querySelector('#phase')
+      steps.forEach(([n]) => {
+        const s = document.createElement('span')
+        s.className = 'step-dot'; s.textContent = n; spEl.appendChild(s)
+      })
+      let pi = -1
+      el.querySelector('#nextP').onclick = () => {
+        pi = Math.min(pi + 1, steps.length - 1)
+        spEl.querySelectorAll('.step-dot').forEach((x, i) => x.classList.toggle('on', i <= pi))
+        phase.textContent = steps[pi][0]
+        logP.innerHTML += (pi ? '\n' : '') + `<span class="${pi >= 6 ? 'hot' : (pi >= 8 ? 'ok' : '')}">[${pi + 1}] ${steps[pi][0]}</span>\n${steps[pi][1]}`
+      }
+      el.querySelector('#resetP').onclick = () => {
+        pi = -1; phase.textContent = '未开始'; logP.textContent = '点击「下一步」开始。'
+        spEl.querySelectorAll('.step-dot').forEach(x => x.classList.remove('on'))
+      }
+
+      const runP = el.querySelector('#runP')
+      const acksS = el.querySelector('#acksS'), idem = el.querySelector('#idempotent'), tx = el.querySelector('#tx')
+      function runSim() {
+        const acks = +acksS.value
+        const ide = idem.checked
+        const txOn = tx.checked
+        let loss = 0, dup = 0, latency = 0, msg = []
+        for (let i = 0; i < 1000; i++) {
+          // 模拟 Leader 挂的概率 0.1%
+          const leaderCrash = Math.random() < 0.001
+          // 模拟 ISR 丢一个 Follower 概率 0.2%
+          const isrSmall = Math.random() < 0.002
+          if (acks === 0 && leaderCrash) { loss++ }
+          if (acks === 1 && leaderCrash) { loss++ }
+          if (acks === 1 && Math.random() < 0.001) { dup++ } // Broker 落盘但 Response 丢了 → Producer 重试
+          if (acks === 'all') {
+            if (isrSmall) { latency += 15 } // ISR 小 → 可能被拒绝 → 等待 Follower 追
+            if (leaderCrash && ide) { /* 幂等去重，忽略 */ }
+            if (leaderCrash && !ide) { dup++ } // Leader 切换 → Producer 重试
+          }
+          if (txOn) { latency += 20 } // 事务多一次 RPC
+          latency += 1 + Math.random() * 3
+        }
+        msg.push(`发送 1000 条模拟（acks=${acks}${ide ? ', 幂等' : ''}${txOn ? ', 事务' : ''}）`)
+        msg.push(`安全诊断:`)
+        if (loss === 0 && dup === 0) msg.push(`  ✅ 不丢不重：${loss} 条丢失，${dup} 条重复`)
+        else {
+          if (loss > 0) msg.push(`  ❌ 丢失 ${loss} 条 → 建议 acks=all + min.insync.replicas=2`)
+          if (dup > 0) msg.push(`  ⚠️ 重复 ${dup} 条 → 建议 enable.idempotence=true`)
+        }
+        msg.push(`平均延迟 ≈ ${(latency / 1000).toFixed(1)} ms（Broker 落盘 + ISR 同步 + 网络 RTT）`)
+        if (acks === 'all' && ide) msg.push(`  已开启幂等 Producer：同 Partition 内 SeqNo 去重，Broker 丢弃重复请求不报错`)
+        if (txOn) msg.push(`  已开启事务：跨 Topic/Partition 写入原子化；Consumer 需 isolation.level=read_committed`)
+        const cls = loss === 0 && dup === 0 ? 'ok' : 'warn'
+        el.querySelector('#simOut').innerHTML = `<div class="verdict ${cls}">${msg.join('<br>')}</div>`
+      }
+      runP.onclick = runSim
+      el.querySelector('#resetP2').onclick = () => { el.querySelector('#simOut').innerHTML = '' }
+    }
+
+    /* ============ 04 Consumer 消费者原理 ============ */
+    function render04(el) {
+      el.innerHTML = `
+        <h2>Consumer 消费流程 + Rebalance 模拟</h2>
+        <p class="lead">点「开始消费」看流程，调 Consumer 数量看 Partition 分配，模拟 Rebalance 场景。</p>
+
+        <h4>消费流程步进</h4>
+        <div class="toolbar">
+          <button class="primary" id="nextC">下一步</button>
+          <button id="resetC">重置</button>
+          <span class="pill" id="phaseC">未开始</span>
+        </div>
+        <div class="steps" id="stepsC"></div>
+        <div class="log" id="logC">点击「下一步」开始。</div>
+
+        <h4>Rebalance 模拟：Consumer 数量 vs Partition 分配</h4>
+        <div class="slider-row"><span class="name">Topic 分区数</span><input type="range" id="parts" min="2" max="12" value="6"><span class="val" id="partsV">6</span></div>
+        <div class="slider-row"><span class="name">Consumer Group 大小</span><input type="range" id="cgSize" min="1" max="8" value="3"><span class="val" id="cgV">3</span></div>
+        <div id="cgView"></div>
+        <p class="hint">Consumer 数 = Partition 数时每个 Consumer 各吃一个 Partition。Consumer 数 > Partition 数时多出来的会闲置。Partition 数 > Consumer 数时负载均衡分配。</p>
+
+        <h4>提交策略：选哪种？</h4>
+        <div class="arch" id="commitModes"></div>
+        <div class="detail" id="commitD">点击策略卡片。</div>
+      `
+      const csteps = [
+        ['Subscribe', 'consumer.subscribe(topics) —— 加入 Consumer Group，发送 JoinGroupRequest 给 Group Coordinator（Broker）。'],
+        ['Coordinator', 'Coordinator 收集 Group 成员，选 Group Leader（通常第一个 Join 的）。'],
+        ['Assign', 'Group Leader 用 PartitionAssignor（默认 Range）把 TopicPartitions → Group 内 Consumer，通过 SyncGroupResponse 下发。'],
+        ['Fetch Start', 'Consumer 对每个分到的 Partition，从上次 commit 的 offset 开始发 FetchRequest（批量拉多个 Partition）。'],
+        ['Poll & Process', 'poll() 返回 ConsumerRecords —— 业务处理（写 DB / 调下游 / 聚合）。此时心跳线程继续定期发 Heartbeat。'],
+        ['Commit', 'enable.auto.commit=true → poll() 自动提交；false → commitSync()/commitAsync() 手动。At-Least-Once 关键！'],
+        ['Rebalance?', '新 Consumer 加入 / 心跳超时 / max.poll.interval.ms 超时 → Coordinator 判「旧 Consumer 死了」→ 触发再分配。'],
+      ]
+      const scEl = el.querySelector('#stepsC'), lc = el.querySelector('#logC'), pc = el.querySelector('#phaseC')
+      csteps.forEach(([n]) => {
+        const s = document.createElement('span')
+        s.className = 'step-dot'; s.textContent = n; scEl.appendChild(s)
+      })
+      let ci = -1
+      el.querySelector('#nextC').onclick = () => {
+        ci = Math.min(ci + 1, csteps.length - 1)
+        scEl.querySelectorAll('.step-dot').forEach((x, i) => x.classList.toggle('on', i <= ci))
+        pc.textContent = csteps[ci][0]
+        lc.innerHTML += (ci ? '\n' : '') + `<span class="${ci >= 6 ? 'hot' : (ci >= 4 ? 'ok' : '')}">[${ci + 1}] ${csteps[ci][0]}</span>\n${csteps[ci][1]}`
+      }
+      el.querySelector('#resetC').onclick = () => {
+        ci = -1; pc.textContent = '未开始'; lc.textContent = '点击「下一步」开始。'
+        scEl.querySelectorAll('.step-dot').forEach(x => x.classList.remove('on'))
+      }
+
+      const parts = el.querySelector('#parts'), cgSize = el.querySelector('#cgSize')
+      function drawCG() {
+        const p = +parts.value, c = +cgSize.value
+        el.querySelector('#partsV').textContent = `${p} 分区`
+        el.querySelector('#cgV').textContent = `${c} Consumer`
+        // RangeAssignor: 每个 Consumer 拿一段连续的 Partition
+        const assign = Array(c).fill(null).map(() => [])
+        for (let i = 0; i < p; i++) assign[i % c].push(i)
+        el.querySelector('#cgView').innerHTML = `
+          <table class="tbl">
+            <tr><th>Consumer</th><th>分配到的 Partition</th><th>状态</th></tr>
+            ${assign.map((ps, i) => `<tr>
+              <td>Consumer-${i}</td>
+              <td>${ps.length ? ps.map(x => `<b>P-${x}</b>`).join(' ') : '<span style="color:var(--muted)">（闲置）</span>'}</td>
+              <td>${ps.length ? '<span class="pill ok">正常</span>' : '<span class="pill">闲置</span>'}</td>
+            </tr>`).join('')}
+          </table>
+        `
+      }
+      parts.oninput = drawCG; cgSize.oninput = drawCG; drawCG()
+
+      const commits = [
+        ['At-Most-Once（先 commit 再处理）', '可能丢消息。处理前就 commit offset，崩了就跳过。除非你真的能接受丢（比如监控埋点），否则别用。'],
+        ['At-Least-Once（先处理再 commit）', '不丢，可能重复。生产最常见。手动 commitSync() / commitAsync()，配合业务幂等（唯一 ID + 去重表）。'],
+        ['Exactly-Once（Kafka 内部）', 'Producer 事务 + Consumer isolation.level=read_committed + EOS v2。保证跨 Topic/Partition 原子写入。外部系统还得业务幂等。'],
+      ]
+      const cmEl = el.querySelector('#commitModes'), cd = el.querySelector('#commitD')
+      commits.forEach(([n, d]) => {
+        const div = document.createElement('div')
+        div.className = 'arch-item'
+        div.innerHTML = `<strong>${n}</strong><span>${d.slice(0, 22)}…</span>`
+        div.onclick = () => {
+          cmEl.querySelectorAll('.arch-item').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); cd.innerHTML = `<b>${n}</b>：${d}`
+        }
+        cmEl.appendChild(div)
+      })
+    }
+
+    /* ============ 05 存储与分区原理 ============ */
+    function render05(el) {
+      el.innerHTML = `
+        <h2>存储：零拷贝 + 分区并行度计算器</h2>
+        <p class="lead">点角色看零拷贝调用链，算一下你的 Kafka 需要多少 Partition。</p>
+
+        <h4>零拷贝 sendfile 原理</h4>
+        <div class="flow" id="zcNodes"></div>
+        <div class="detail" id="zcD" style="min-height:3.5em">点击节点看这一步做什么。</div>
+        <p class="hint">传统 IO：磁盘 → PageCache → 用户 Buffer → SocketBuffer → 网卡（4 次拷贝）。sendfile：磁盘 → PageCache → 网卡 DMA（2 次拷贝 + 1 次系统调用）。</p>
+
+        <h4>分区并行度计算器</h4>
+        <div class="slider-row"><span class="name">总写入 QPS</span><input type="range" id="tps" min="1000" max="5000000" value="500000" step="1000"><span class="val" id="tpsV">500,000/s</span></div>
+        <div class="slider-row"><span class="name">单条消息大小</span><input type="range" id="msgSize" min="100" max="10240" value="1024" step="100"><span class="val" id="msgV">1 KB</span></div>
+        <div class="slider-row"><span class="name">Consumer Group 最大并发</span><input type="range" id="cgMax" min="1" max="500" value="100"><span class="val" id="cgMaxV">100 Consumer</span></div>
+        <div class="slider-row"><span class="name">单 Partition 目标 QPS</span><input type="range" id="pQps" min="1000" max="50000" value="10000" step="1000"><span class="val" id="pQpsV">10,000/s</span></div>
+        <div class="kv" id="pCalcOut"></div>
+
+        <h4>ISR 同步可视化</h4>
+        <div class="slider-row"><span class="name">Broker 数量</span><input type="range" id="bkNum" min="3" max="9" value="3" step="2"><span class="val" id="bkV">3</span></div>
+        <div class="slider-row"><span class="name">replication.factor</span><input type="range" id="rf" min="1" max="5" value="3"><span class="val" id="rfV">3</span></div>
+        <div class="toolbar"><button class="primary" id="isrSim">模拟 Follower 慢 → ISR 踢出</button></div>
+        <div id="isrView"></div>
+        <p class="hint">Follower 超过 replica.lag.time.max.ms（默认 30s）没追上 Leader → 踢出 ISR。追上后自动加回。acks=all 只等 ISR，不等 OSR。</p>
+      `
+      const zcNodes = [
+        ['磁盘', 'Kafka 追加日志写到磁盘文件（Segment），但其实先写 OS PageCache，OS 异步刷盘。'],
+        ['PageCache', '内核态内存缓存。零拷贝的「零」就是不把数据复制到用户进程。'],
+        ['sendfile()', '一次系统调用，让 DMA 直接从 PageCache 把数据送进网卡的环形缓冲区。'],
+        ['网卡 DMA', 'DMA（Direct Memory Access）绕过 CPU，直接在 PageCache 和网卡之间搬数据。CPU 只做配置，不参与搬运。'],
+      ]
+      const zcEl = el.querySelector('#zcNodes'), zcD = el.querySelector('#zcD')
+      zcNodes.forEach(([n, d], i) => {
+        const c = document.createElement('span')
+        c.className = 'chip ghost'; c.textContent = n; c.dataset.i = i
+        c.onclick = () => {
+          zcEl.querySelectorAll('.chip').forEach(x => x.classList.add('ghost'))
+          c.classList.remove('ghost'); zcD.innerHTML = `<b>${n}</b>：${d}`
+        }
+        zcEl.appendChild(c)
+        if (i < zcNodes.length - 1) {
+          const a = document.createElement('span'); a.className = 'arrow'; a.textContent = '→'; zcEl.appendChild(a)
+        }
+      })
+
+      const tps = el.querySelector('#tps'), msgSize = el.querySelector('#msgSize'), cgMax = el.querySelector('#cgMax'), pQps = el.querySelector('#pQps')
+      function calc() {
+        const q = +tps.value, m = +msgSize.value, cg = +cgMax.value, pq = +pQps.value
+        el.querySelector('#tpsV').textContent = q.toLocaleString() + '/s'
+        el.querySelector('#msgV').textContent = m >= 1024 ? (m / 1024).toFixed(1) + ' KB' : m + ' B'
+        el.querySelector('#cgMaxV').textContent = cg + ' Consumer'
+        el.querySelector('#pQpsV').textContent = pq.toLocaleString() + '/s'
+        const writeP = Math.ceil(q / pq)
+        const consumerP = cg
+        const dailyGB = q * 86400 * m / 1024 / 1024 / 1024
+        const rec = Math.max(writeP, consumerP)
+        const withBuff = Math.ceil(rec * 1.3)
+        el.querySelector('#pCalcOut').innerHTML =
+          `写入需要分区 = ceil(<b>${q.toLocaleString()}</b> / <b>${pq.toLocaleString()}</b>) = <b>${writeP}</b><br>` +
+          `Consumer 并行需要 = <b>${cg}</b><br>` +
+          `建议分区数 = max(写入并行, Consumer 并行) × 1.3 余量 = <b>${withBuff}</b><br>` +
+          `每日磁盘 = ${(dailyGB * 3).toFixed(1)} GB（3 副本，还没算保留天数）`
+      }
+      ;[tps, msgSize, cgMax, pQps].forEach(x => x.oninput = calc); calc()
+
+      const bkNum = el.querySelector('#bkNum'), rf = el.querySelector('#rf')
+      function drawISR(followerSlow) {
+        const n = +bkNum.value, r = Math.min(+rf.value, n)
+        el.querySelector('#bkV').textContent = n
+        el.querySelector('#rfV').textContent = r
+        el.querySelector('#isrView').innerHTML = Array.from({length: n}, (_, i) => {
+          const isLeader = i === 0
+          const isReplica = i < r
+          const isISR = isReplica && !(followerSlow && i === 1)
+          const cls = isLeader ? 'c0' : (isISR ? 'c1' : 'c3')
+          const tag = isLeader ? '<span class="pill ok">Leader</span>' : (isISR ? '<span class="pill ok">ISR Follower</span>' : '<span class="pill">OSR（已踢出）</span>')
+          const icon = isReplica ? '✓' : '—'
+          return `<div style="border:1px solid var(--line); border-radius:10px; padding:10px 14px; margin:6px 0; background:#fafcff">
+            <div style="display:flex; align-items:center; justify-content:space-between">
+              <span style="font-weight:600">Broker-${i}</span>
+              ${tag}
+            </div>
+            <div style="margin-top:6px; font-size:0.82rem; color:var(--muted)">${isReplica ? 'Partition 副本 ' + (i + 1) + ' / replica=' + i : '无副本'}</div>
+            <div style="margin-top:2px; font-size:0.78rem">${followerSlow && i === 1 ? '⚠️ 落后 > 30s，被踢出 ISR' : isReplica ? '与 Leader 同步正常' : '—'}</div>
+          </div>`
+        }).join('') + (followerSlow && r >= 2 ? '<div class="verdict warn" style="margin-top:8px">⚠️ ISR 只剩 Leader 1 个副本！此时 acks=all 退化到 acks=1。生产应配 min.insync.replicas=2 + replication.factor=3，这样 ISR < 2 时直接拒绝写入。</div>' : '')
+      }
+      bkNum.oninput = () => drawISR(false); rf.oninput = () => drawISR(false)
+      drawISR(false)
+      el.querySelector('#isrSim').onclick = () => drawISR(true)
+    }
+
+    /* ============ 06 高级特性 ============ */
+    function render06(el) {
+      el.innerHTML = `
+        <h2>Streams 拓扑 + 压缩算法选择</h2>
+        <p class="lead">模拟 Streams DAG，看 Source → Processor → Sink 的流水线。然后选压缩算法。</p>
+
+        <h4>Streams 拓扑模拟</h4>
+        <div class="flow-line">
+          <span class="node-box" id="sn1">Source: input-topic</span>
+          <span class="connector">→</span>
+          <span class="node-box c1" id="sn2">filter(error)</span>
+          <span class="connector">→</span>
+          <span class="node-box c2" id="sn3">groupByKey</span>
+          <span class="connector">→</span>
+          <span class="node-box c3" id="sn4">count + Windowed</span>
+          <span class="connector">→</span>
+          <span class="node-box" id="sn5">Sink: count-output</span>
+        </div>
+        <div class="detail" id="streamsD" style="min-height:3.2em">点击节点看职责。</div>
+        <p class="hint">Streams API 是 JVM 客户端库（不单独起服务），把 Producer/Consumer 组合成有状态流处理。状态存本地 RocksDB + Kafka changelog 备份。</p>
+
+        <h4>压缩算法选择器</h4>
+        <div class="arch" id="compAlgs"></div>
+        <div class="detail" id="compD">点击算法卡片。</div>
+        <div class="slider-row"><span class="name">压缩类型</span><select id="compS"><option value="none">none</option><option value="snappy">snappy</option><option value="lz4" selected>lz4</option><option value="zstd">zstd</option><option value="gzip">gzip</option></select></div>
+        <div id="compBar"></div>
+      `
+      const sn = el.querySelectorAll('#sn1, #sn2, #sn3, #sn4, #sn5')
+      const snInfo = [
+        ['Source: input-topic', '从 Kafka Topic 读原始事件（比如用户点击日志）。内部就是 Consumer.subscribe。'],
+        ['filter(error)', '过滤：只保留 value.startsWith("error:") 的记录。无状态。'],
+        ['groupByKey', '按 key 分组。触发 re-partition（shuffle），同一 key 的所有记录到同一个 Processor 下游。'],
+        ['count + Windowed', '有状态算子：按 key + 1 分钟窗口聚合 count。状态存本地 RocksDB（checkpoint + changelog 到 Kafka）。'],
+        ['Sink: count-output', '结果写回 Kafka（Producer.send）。下游 Consumer Group 可以独立消费。'],
+      ]
+      const sd = el.querySelector('#streamsD')
+      sn.forEach((n, i) => {
+        n.onclick = () => {
+          sd.innerHTML = `<b>${snInfo[i][0]}</b>：${snInfo[i][1]}`
+        }
+      })
+
+      const algs = [
+        ['lz4', '压缩率中 · 压缩极快 · 解压极快 · 吞吐优先首选，Kafka 社区强烈推荐'],
+        ['zstd', '压缩率极好 · 压缩中速 · 解压快 · 空间-时间综合最优，3.x 推荐升级'],
+        ['snappy', '压缩率中 · 压缩快 · 解压极快 · 历史选项，lz4 更快'],
+        ['gzip', '压缩率好 · 压缩慢 · 解压中 · CPU 充足 + 空间优先，吞吐会降'],
+        ['none', '不压缩。适合消息很小（< 100B）或已有上游压缩。'],
+      ]
+      const compEl = el.querySelector('#compAlgs'), compD = el.querySelector('#compD')
+      algs.forEach(([n, d]) => {
+        const div = document.createElement('div')
+        div.className = 'arch-item'
+        div.innerHTML = `<strong>${n}</strong><span>${d.slice(0, 22)}…</span>`
+        div.onclick = () => {
+          compEl.querySelectorAll('.arch-item').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); compD.innerHTML = `<b>${n}</b>：${d}`
+        }
+        compEl.appendChild(div)
+      })
+
+      const compS = el.querySelector('#compS')
+      const compBar = el.querySelector('#compBar')
+      const algData = {
+        none: { size: 100, speed: 100, label: 'none' },
+        snappy: { size: 62, speed: 92, label: 'snappy' },
+        lz4: { size: 58, speed: 96, label: 'lz4' },
+        zstd: { size: 42, speed: 82, label: 'zstd' },
+        gzip: { size: 34, speed: 45, label: 'gzip' },
+      }
+      function drawComp() {
+        const d = algData[compS.value]
+        compBar.innerHTML = `
+          <div class="bar-row"><span class="lbl">压缩后大小</span><span class="bar-track"><span class="bar-fill good" style="width:${d.size}%"></span></span><span class="bar-val">${d.size}%</span></div>
+          <div class="bar-row"><span class="lbl">压缩速度</span><span class="bar-track"><span class="bar-fill" style="width:${d.speed}%"></span></span><span class="bar-val">${d.speed}%</span></div>
+          <div class="hint">越小越好（压缩后大小）；越快越好（压缩速度）。</div>
+        `
+      }
+      compS.onchange = drawComp; drawComp()
+    }
+
+    /* ============ 07 部署与集群规划 ============ */
+    function render07(el) {
+      el.innerHTML = `
+        <h2>集群规划：数据量 → Partition → Broker</h2>
+        <p class="lead">拖动数据量和存储参数，得到建议 Broker 数和 KRaft 部署建议。</p>
+
+        <h4>四步规划计算器</h4>
+        <div class="slider-row"><span class="name">每日消息量</span><input type="range" id="dailyTps" min="10000" max="10000000" value="500000" step="10000"><span class="val" id="dailyV">500,000/s</span></div>
+        <div class="slider-row"><span class="name">单条消息</span><input type="range" id="msgSz" min="256" max="10240" value="1024" step="128"><span class="val" id="msgSzV">1 KB</span></div>
+        <div class="slider-row"><span class="name">副本数</span><input type="range" id="rep" min="1" max="5" value="3"><span class="val" id="repV">3</span></div>
+        <div class="slider-row"><span class="name">保留天数</span><input type="range" id="ret" min="1" max="90" value="7"><span class="val" id="retV">7 天</span></div>
+        <div class="slider-row"><span class="name">每 Broker 磁盘</span><input type="range" id="diskNum" min="2" max="16" value="8" step="2"><span class="val" id="diskNV">8 盘</span></div>
+        <div class="slider-row"><span class="name">单盘容量</span><input type="range" id="diskCap" min="1" max="20" value="4"><span class="val" id="capV">4 TB</span></div>
+        <div class="slider-row"><span class="name">Broker 预留</span><input type="range" id="reserve" min="5" max="20" value="10" step="5"><span class="val" id="resV">10%</span></div>
+        <div class="kv" id="planOut"></div>
+
+        <h4>KRaft 部署建议</h4>
+        <div class="arch" id="deployTypes"></div>
+        <div class="detail" id="deployD">点击部署模式。</div>
+      `
+      const dTps = el.querySelector('#dailyTps'), mSz = el.querySelector('#msgSz'), rep = el.querySelector('#rep'), ret = el.querySelector('#ret')
+      const dN = el.querySelector('#diskNum'), dC = el.querySelector('#diskCap'), res = el.querySelector('#reserve')
+      function plan() {
+        const tps = +dTps.value, msg = +mSz.value, rf = +rep.value, days = +ret.value
+        const diskN = +dN.value, diskC = +dC.value, resP = +res.value / 100
+        el.querySelector('#dailyV').textContent = tps.toLocaleString() + '/s'
+        el.querySelector('#msgSzV').textContent = msg >= 1024 ? (msg / 1024).toFixed(1) + ' KB' : msg + ' B'
+        el.querySelector('#repV').textContent = rf
+        el.querySelector('#retV').textContent = days + ' 天'
+        el.querySelector('#diskNV').textContent = diskN + ' 盘'
+        el.querySelector('#capV').textContent = diskC + ' TB'
+        el.querySelector('#resV').textContent = (resP * 100) + '%'
+        const dailyTB = tps * 86400 * msg / 1024 / 1024 / 1024 / 1024
+        const totalTB = dailyTB * rf * days
+        const brokerDiskTB = diskN * diskC * (1 - resP)
+        const brokerCount = Math.ceil(totalTB / brokerDiskTB)
+        const brokers = Math.max(brokerCount, 3)
+        el.querySelector('#planOut').innerHTML =
+          `每日数据 = <b>${dailyTB.toFixed(1)} TB</b>；${rf} 副本 × ${days} 天 = <b>${totalTB.toFixed(0)} TB</b> 总量<br>` +
+          `单 Broker 可用 = ${diskN} 盘 × ${diskC} TB × ${(1 - resP).toFixed(1)} = <b>${brokerDiskTB.toFixed(1)} TB</b><br>` +
+          `建议 Broker 数 = ceil(${totalTB.toFixed(0)} / ${brokerDiskTB.toFixed(1)}) = <b>${brokers}</b><br>` +
+          (brokers <= 5 ? 'KRaft 合并部署（3 Broker + Controller 同进程）。' :
+           brokers <= 10 ? 'KRaft 合并部署或独立 3 节点 Controller Quorum。' : 'KRaft 独立 3+5 节点 Controller Quorum（Raft 选主），Broker 纯 Broker 角色。')
+      }
+      ;[dTps, mSz, rep, ret, dN, dC, res].forEach(x => x.oninput = plan); plan()
+
+      const depls = [
+        ['合并部署（Broker + Controller）', '3 个进程（node.id 1/2/3）各自 process.roles=broker,controller，共享 log.dirs。适合 < 10 Broker 的集群。少组件，运维极简。'],
+        ['独立 Controller（3 节点）', '3 个纯 Controller 节点 + N 个 Broker 节点。适合 10-50 Broker。Raft Quorum 要奇数（2F+1），允许 1 个挂。'],
+        ['独立 Controller（5 节点）', '5 个纯 Controller 节点，允许 2 个挂。适合 50+ Broker。Metadata 可以分片（KIP-464），更好扩展。'],
+      ]
+      const depEl = el.querySelector('#deployTypes'), depD = el.querySelector('#deployD')
+      depls.forEach(([n, d]) => {
+        const div = document.createElement('div')
+        div.className = 'arch-item'
+        div.innerHTML = `<strong>${n}</strong><span>${d.slice(0, 22)}…</span>`
+        div.onclick = () => {
+          depEl.querySelectorAll('.arch-item').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); depD.innerHTML = `<b>${n}</b>：${d}`
+        }
+        depEl.appendChild(div)
+      })
+    }
+
+    /* ============ 08 运维监控与故障排查 ============ */
+    function render08(el) {
+      el.innerHTML = `
+        <h2>排障决策树：症状 → 原因 → 处理</h2>
+        <p class="lead">点一个症状，按步骤排查。所有路径都指向可验证的动作。</p>
+
+        <h4>选症状</h4>
+        <div class="flow" id="syms"></div>
+        <div id="symDetail"></div>
+
+        <h4>核心指标一览</h4>
+        <table class="tbl">
+          <tr><th>指标</th><th>含义</th><th>异常阈值</th><th>紧急</th></tr>
+          <tr><td><b>UnderReplicatedPartitions</b></td><td>ISR < replication.factor 的 Partition 数</td><td>> 0</td><td>🔴</td></tr>
+          <tr><td><b>OfflinePartitionsCount</b></td><td>没有 Leader 的 Partition 数</td><td>> 0</td><td>🔴</td></tr>
+          <tr><td><b>ActiveControllerCount</b></td><td>集群里有几个 Active Controller</td><td>≠ 1</td><td>🟡</td></tr>
+          <tr><td><b>ConsumerLag</b></td><td>Consumer Log-End-Offset - Committed Offset</td><td>持续增长</td><td>🟡</td></tr>
+          <tr><td><b>GC-PauseMs</b></td><td>Broker/Consumer GC 停顿 P99</td><td>> 1000ms</td><td>🟡</td></tr>
+          <tr><td><b>RecordTooLargeException</b></td><td>单条消息 > max.message.bytes</td><td>> 0</td><td>🟡</td></tr>
+        </table>
+      `
+      const syms = [
+        ['UnderReplicatedPartitions', 'ISR 不足'],
+        ['Rebalance 频繁', 'Consumer 反复重分配'],
+        ['ConsumerLag 增长', '消费跟不上生产'],
+        ['RecordTooLarge', '大消息报错'],
+        ['Controller 脑裂', '多个 Active Controller'],
+        ['Broker 宕机', '节点挂了'],
+      ]
+      const symBox = el.querySelector('#syms'), detail = el.querySelector('#symDetail')
+      const paths = {
+        UnderReplicatedPartitions: `
+          <div class="verdict bad"><b>UnderReplicatedPartitions > 0</b></div>
+          <p><b>Step 1：查哪个 Broker 挂了？</b>
+          <div class="code">kafka-broker-api-versions.sh --bootstrap-server kafka1:9092 --broker-list all</div>
+          <p><b>→ Broker 真挂了</b>：重启 Broker 进程（检查 OOM / 磁盘满 / GC 停顿），重启后自动追日志、重新进 ISR。
+          <p><b>→ Broker 活着但 ISR 落后</b>：按顺序排查 ① 磁盘慢？<code>iostat -x 1 3</code> 看 %util；② 网络慢？<code>iperf3</code> 测带宽；③ GC 卡了 Follower？<code>jstat -gcutil &lt;pid&gt; 1000</code> 看停顿。
+          <p><b>→ 长期不恢复</b>：<code>kafka-reassign-partitions.sh</code> 把 Partition 迁到新 Broker。
+        `,
+        'Rebalance 频繁': `
+          <div class="verdict warn"><b>Rebalance 每隔几秒/几分钟一次</b></div>
+          <p><b>三大元凶</b>：
+          <ol>
+            <li><b>业务处理太慢</b>（最常见！）→ poll 间隔 > max.poll.interval.ms → Coordinator 踢 Consumer。<br>→ 调大 max.poll.interval.ms 或减小 max.poll.records，或优化业务。</li>
+            <li><b>GC 停顿太长</b> → 心跳没发出去 → session.timeout.ms 超时。<br>→ jstat/jmap 排查 GC 原因，G1 MaxGCPauseMillis=200。</li>
+            <li><b>网络抖动</b> → 心跳 RPC 超时。<br>→ ping/traceroute 查，调大 session.timeout.ms（= heartbeat * 3）。</li>
+          </ol>
+        `,
+        'ConsumerLag 增长': `
+          <div class="verdict warn"><b>Lag 持续增长不收敛</b></div>
+          <p>按 <b>下游速度</b> 维度排查：
+          <ol>
+            <li>业务处理慢 → 优化 / 加 Consumer 实例（注意 Rebalance）。</li>
+            <li>Consumer 数够但 Partition 少 → 加分区（Producer 无 key 消息仍能 RR 分发）。</li>
+            <li>单 Partition 写入洪峰 → 检查是不是热点 key（hash 不均匀），打散 key。</li>
+            <li>Consumer → Broker 网络瓶颈 → 跨机房延迟？用就近部署。</li>
+          </ol>
+          <div class="code">kafka-consumer-groups.sh --bootstrap-server kafka1:9092 --describe --group demo-group</div>
+        `,
+        RecordTooLarge: `
+          <div class="verdict bad"><b>RecordTooLargeException</b></div>
+          <p><b>根因</b>：单条消息 > Broker 的 <code>max.message.bytes</code>（默认 1MB）。
+          <p><b>解法 1（调配置，应急）</b>：
+          <ul>
+            <li>Producer: <code>max.request.size</code> 调大</li>
+            <li>Broker: <code>max.message.bytes</code> + Topic 级配置 <code>max.message.bytes</code></li>
+          </ul>
+          <p><b>解法 2（推荐）</b>：<b>消息不要这么大</b>。大内容存对象存储（S3/OSS），Kafka 只发路径引用。
+        `,
+        'Controller 脑裂': `
+          <div class="verdict bad"><b>ActiveControllerCount ≠ 1</b></div>
+          <p>KRaft Quorum 节点互发心跳收不到 → 多个节点抢 Leader。
+          <ol>
+            <li><b>网络</b>：telnet ctrl:9093 通吗？防火墙/SecurityGroup？</li>
+            <li><b>GC 停顿</b>：Controller 进程卡了 > election.timeout.ms（默认 1s，实际看配置）。</li>
+            <li><b>多进程</b>：是不是启动了多个 Controller 进程抢同一个 node.id？</li>
+          </ol>
+          <p><b>紧急修复</b>：kill 掉多余的 Controller 进程，确保 node.id 唯一，网络全通。
+        `,
+        'Broker 宕机': `
+          <div class="verdict bad"><b>Broker 挂了</b></div>
+          <p><b>自动恢复流程</b>：
+          <ol>
+            <li>Controller 检测到 Broker 下线 → 该 Broker 上所有 Partition 的 Leader 从剩余 ISR 选新 Leader。</li>
+            <li>Follower 从新 Leader 继续同步。</li>
+            <li>Broker 重启 → 追上新 Leader 的日志 → 重新进 ISR。</li>
+            <li>Controller 可能 PreferReplicaLeaderElection 把 Leader 还回去（3.4+ 自动）。</li>
+          </ol>
+          <p><b>排查</b>：<code>df -h</code>（磁盘满？）、<code>top</code>（CPU 100%？）、<code>jmap -dump</code>（OOM？）、<code>dmesg</code>（硬件？）。
+        `,
+      }
+      syms.forEach(([q, s], i) => {
+        const b = document.createElement('button')
+        b.className = 'chip' + (i ? ' ghost' : '')
+        b.type = 'button'
+        b.textContent = `${q}`
+        b.onclick = () => {
+          symBox.querySelectorAll('.chip').forEach(x => x.classList.add('ghost'))
+          b.classList.remove('ghost')
+          detail.innerHTML = paths[q]
+        }
+        symBox.appendChild(b)
+      })
+      // 初始显示第一个
+      detail.innerHTML = paths['UnderReplicatedPartitions']
+    }
+
+    /* ============ 09 Kafka 与周边生态 ============ */
+    function render09(el) {
+      el.innerHTML = `
+        <h2>Kafka 在大数据链路中的位置</h2>
+        <p class="lead">点节点看完整链路：数据源 → Kafka → 实时/离线/CDC 三条路。再对比 Flink vs Spark Structured Streaming。</p>
+
+        <h4>大数据链路全景图</h4>
+        <div class="flow-line">
+          <span class="node-box c3" onclick="showEco('src')">数据源<br>埋点 / 日志 / DB binlog</span>
+          <span class="connector">↓</span>
+          <span class="node-box" onclick="showEco('kafka')">Kafka<br>缓冲 + 解耦 + 多订阅</span>
+          <span class="connector">↓</span>
+          <span class="node-box c1" onclick="showEco('flink')">Flink<br>实时流处理</span>
+          <span class="connector">→</span>
+          <span class="node-box c2" onclick="showEco('hdfs')">HDFS / S3<br>冷备</span>
+        </div>
+        <div class="flow-line" style="margin-top:4px">
+          <span class="connector">├─</span>
+          <span class="node-box c3" onclick="showEco('spark')">Spark Structured Streaming<br>批流统一</span>
+          <span class="connector">→</span>
+          <span class="node-box c0" onclick="showEco('es')">ES / HBase / ClickHouse<br>检索 / 点查 / 实时 OLAP</span>
+        </div>
+        <div class="flow-line" style="margin-top:4px">
+          <span class="connector">└─</span>
+          <span class="node-box c1" onclick="showEco('connect')">Kafka Connect<br>CDC + 数据同步</span>
+          <span class="connector">→</span>
+          <span class="node-box c2" onclick="showEco('db')">MySQL / PG / Mongo<br>多库同步</span>
+        </div>
+        <div class="detail" id="ecoD" style="min-height:3.5em">点击节点看角色说明。</div>
+
+        <h4>Flink vs Spark Structured Streaming 消费 Kafka</h4>
+        <table class="tbl">
+          <tr><th>维度</th><th>Flink</th><th>Spark Structured Streaming</th></tr>
+          <tr><td>模型</td><td>真正的流（DataStream + SQL）</td><td>结构化 DataFrame，批流统一</td></tr>
+          <tr><td>延迟</td><td>毫秒级</td><td>秒-分钟级（trigger 可调）</td></tr>
+          <tr><td>Exactly-Once</td><td>Checkpoint + 2PC ✅</td><td>Checkpoint ✅</td></tr>
+          <tr><td>Offset 存储</td><td>Checkpoint + __consumer_offsets</td><td>Checkpoint（不走 Group）</td></tr>
+          <tr><td>状态存储</td><td>Managed Memory + RocksDB</td><td>Checkpoint</td></tr>
+          <tr><td>运维成本</td><td>独立 Flink 集群</td><td>Spark on YARN/K8s</td></tr>
+          <tr><td>适用</td><td>实时流主流</td><td>批流数仓 / 老 Spark 技术栈</td></tr>
+        </table>
+        <p class="hint">Spark Streaming（老的 DStream）已弃用，新项目别用。</p>
+      `
+      // 把 showEco 挂到 window 上供内联 onclick 使用
+      window.showEco = (id) => {
+        const info = {
+          src: '数据源：埋点 SDK（Sentry/Segment）、服务器日志（Filebeat/Logstash）、DB binlog（Debezium）、IoT 网关。全部汇聚到 Kafka。',
+          kafka: 'Kafka：核心价值是<b>缓冲洪峰、解耦上下游、多订阅</b>。一个 Topic 多个 Consumer Group 独立进度，Kafka 自己不丢不重（ISR + ack=all）。',
+          flink: 'Flink：真正的流处理引擎（不是微批）。从 Kafka 读 → 窗口聚合 → 结果写回 Kafka 或下游。Checkpoint 保证 Exactly-Once。',
+          spark: 'Spark Structured Streaming：DataFrame API 统一批流。从 Kafka 读 → trigger 处理 → checkpoint 存 offset。适合已有 Spark 技术栈。',
+          connect: 'Kafka Connect：独立服务，专门做外部系统 ↔ Kafka 的数据同步。Source（Debezium CDC）+ Sink（ES/S3/HDFS）。Worker 3+ 分布式。',
+          hdfs: 'HDFS / S3：冷数据长期存储。Kafka Connect S3 Connector 自动分区落盘；Flink/Spark 批处理读对象存储。',
+          es: 'ES（实时检索）/ HBase（点查）/ ClickHouse/Doris（实时 OLAP）。都是 Kafka 下游常见 Sink。',
+          db: 'MySQL/PG/Mongo 等库。Debezium Source Connector 把 binlog 转成 Kafka Topic，下游可以多端消费（同步 ES + 计算 + 另存）。',
+        }
+        document.getElementById('ecoD').innerHTML = info[id] || ''
+      }
+    }
+
+    /* ============ 10 生态对比与 FAQ ============ */
+    function render10(el) {
+      el.innerHTML = `
+        <h2>生态对比 + FAQ 手风琴</h2>
+        <p class="lead">点击问题展开面试高频答案。</p>
+
+        <h4>四大消息系统综合对比</h4>
+        <table class="tbl matrix" style="margin-bottom:16px">
+          <tr><th>维度</th><th>Kafka</th><th>RocketMQ</th><th>Pulsar</th><th>RabbitMQ</th></tr>
+          <tr><td>模型</td><td>Topic → Partition 日志</td><td>Topic → Queue</td><td>Topic → Partition 分片</td><td>Exchange → Queue</td></tr>
+          <tr><td>吞吐</td><td>百万/s</td><td>十万/s</td><td>百万/s</td><td>万/s</td></tr>
+          <tr><td>延迟</td><td>ms~亚秒</td><td>ms~亚秒</td><td>ms~亚秒</td><td>µs~ms</td></tr>
+          <tr><td>事务</td><td>EOS v2</td><td>半消息</td><td>✅</td><td>复杂</td></tr>
+          <tr><td>跨地域</td><td>MirrorMaker</td><td>原生</td><td>Geo-Replication</td><td>Shovel</td></tr>
+          <tr><td>运维</td><td>KRaft 简单</td><td>简单</td><td>Broker+BK+ZK 复杂</td><td>简单</td></tr>
+        </table>
+
+        <h4>FAQ：面试高频</h4>
+        <div id="faqBox"></div>
+      `
+      const faqs = [
+        ['Q1: 为什么 Kafka 吞吐这么高？', '① 磁盘顺序写（追加日志）；② OS PageCache 合并写；③ 零拷贝 sendfile 读；④ 批量发送（Producer batch + Consumer Fetch）；⑤ Partition 横向并行。'],
+        ['Q2: ISR 机制是什么？', 'In-Sync Replicas —— 当前与 Leader 保持同步的副本集合。Follower 落后超过 replica.lag.time.max.ms（默认 30s）被踢出（变 OSR），追上后加回。acks=all 只有在 ISR ≥ min.insync.replicas 时才接受写入。'],
+        ['Q3: Consumer Rebalance 什么时候触发？', '① 新 Consumer 加入；② 心跳超时（session.timeout.ms）；③ 处理超过 max.poll.interval.ms；④ Topic 分区数变化；⑤ Coordinator 切换。Rebalance 期间 Group 暂停消费。'],
+        ['Q4: Kafka 怎么保证 Exactly-Once？', 'Kafka 内部：幂等 Producer（enable.idempotence=true）+ Producer 事务（transactional.id + EOS v2）。跨 Partition/Topic 原子写入。Consumer 配合：isolation.level=read_committed + 手动 commit。外部系统仍需业务幂等。'],
+        ['Q5: Broker 宕机后 Partition 怎么恢复？', 'Controller 检测 → 从剩余 ISR 选新 Leader → Follower 从新 Leader 继续同步 → 原 Broker 重启追日志 → 重新进 ISR → Controller 可能 PreferReplicaLeaderElection 把 Leader 还回去。'],
+        ['Q6: KRaft vs ZooKeeper 哪个好？', 'KRaft：少一个外部组件、Broker 启动快、支持百万级 Partition、Controller 切换快。3.7 起生产推荐；4.0 计划完全移除 ZK。ZooKeeper 仅存量集群。'],
+        ['Q7: 为什么 Kafka 不支持减分区？', 'key → partition 映射 = hash(key) % numPartitions。减分区这个映射会大变，同一 key 的数据跑到不同 Partition，消费顺序被打乱。Kafka 认为是破坏性变更。'],
+        ['Q8: acks=all 到底多安全？', '要求 ISR 所有副本都 sync。但 ISR 可能只剩 Leader 一个（Follower 被踢），此时 acks=all 退化到 acks=1。必须配 min.insync.replicas=2 + replication.factor=3。ISR < 2 时 Broker 拒绝写入。'],
+        ['Q9: KRaft 何时全面替代 ZK？', '当前 2026 Q4：3.8 起 ZK deprecated；4.0（2025 Q4 计划）完全移除。迁移路径：升级到 3.5+（ZK）→ 启动 KRaft Controller Quorum → 执行 kafka-metadata-quorum.sh --migrate → 逐步切换 Broker。'],
+        ['Q10: Kafka on K8s 现状？', '主流方案：Strimzi（Red Hat，KRaft 支持好，社区活跃）、Bitnami Helm Chart、Confluent Operator。坑：本地盘 vs 云盘、跨 AZ 网络延迟、advertised.listeners 正确配置、CPU limit 太紧 → GC 停顿 → Consumer Rebalance。'],
+        ['Q11: 生产怎么规划 Partition 数？', '① 按 Consumer Group 最大并行数；② 按写入 QPS / 单 Partition 目标 QPS（~10000）；③ 加 30-50% 余量；④ 宁多勿少（只能增不能减）。'],
+        ['Q12: Kafka、RocketMQ、Pulsar、RabbitMQ 分别适合什么场景？', 'Kafka：大数据实时链路首选；RocketMQ：业务消息 + 大数据兼顾 + 阿里系；Pulsar：跨地域 / 多租户 / 流存储；RabbitMQ：业务小量 / 极低延迟 / AMQP 协议。'],
+      ]
+      const box = el.querySelector('#faqBox')
+      faqs.forEach(([q, a]) => {
+        const b = document.createElement('button')
+        b.className = 'faq-q'; b.textContent = q
+        const ans = document.createElement('div')
+        ans.className = 'faq-a hidden'; ans.innerHTML = a
+        b.onclick = () => {
+          ans.classList.toggle('hidden')
+        }
+        box.appendChild(b); box.appendChild(ans)
+      })
+    }
+
+    /* ============ 渲染注册表 ============ */
+    const renders = {
+      '01': render01, '02': render02, '03': render03, '04': render04,
+      '05': render05, '06': render06, '07': render07, '08': render08,
+      '09': render09, '10': render10,
+    }
+
+    // 初始化
+    show(current)
+  </script>
+</body>
+</html>

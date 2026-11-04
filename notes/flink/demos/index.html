@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Apache Flink · 交互式演示</title>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --panel: #fff;
+      --ink: #16202e;
+      --muted: #5f6b7a;
+      --line: rgba(22, 32, 46, 0.11);
+      --brand: #1d4ed8;
+      --brand-soft: rgba(37, 99, 235, 0.1);
+      --ok: #15803d;
+      --fail: #b91c1c;
+      --run: #0369a1;
+      --warn: #a16207;
+      --c0: #1d4ed8; --c1: #0f766e; --c2: #15803d; --c3: #7c3aed; --c4: #a16207;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", "PingFang SC", "Noto Sans SC", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 70% 40% at 0% 0%, var(--brand-soft), transparent 55%),
+        var(--bg);
+      min-height: 100vh;
+    }
+    .app {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 20px 16px 48px;
+      display: grid;
+      gap: 16px;
+    }
+    @media (min-width: 880px) {
+      .app { grid-template-columns: 210px 1fr; align-items: start; }
+    }
+    .brand h1 { margin: 0; font-size: 1.25rem; font-family: "Noto Serif SC", "Songti SC", serif; }
+    .brand p { margin: 4px 0 0; color: var(--muted); font-size: 0.85rem; line-height: 1.5; }
+    .nav { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+    @media (min-width: 880px) {
+      .nav {
+        flex-direction: column;
+        position: sticky; top: 12px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 10px;
+      }
+    }
+    .nav button {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 999px;
+      padding: 0.45rem 0.85rem;
+      font-size: 0.86rem;
+      cursor: pointer;
+      text-align: left;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    @media (min-width: 880px) {
+      .nav button { width: 100%; border-radius: 10px; border-color: transparent; background: transparent; }
+      .nav button:hover { background: #f1f5fb; }
+    }
+    .nav button.active { background: var(--brand-soft); border-color: var(--brand); color: var(--brand); font-weight: 600; }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 18px 18px 22px;
+      min-height: 440px;
+    }
+    .panel h2 { margin: 0 0 6px; font-size: 1.2rem; }
+    .panel h4 { margin: 18px 0 8px; font-size: 0.95rem; }
+    .lead { margin: 0 0 16px; color: var(--muted); font-size: 0.9rem; line-height: 1.6; }
+    .grid2 { display: grid; gap: 12px; }
+    @media (min-width: 700px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      background: #fafcff;
+    }
+    .card h3 { margin: 0 0 8px; font-size: 0.95rem; }
+    .card ul { margin: 0; padding-left: 1.1rem; color: var(--muted); font-size: 0.86rem; line-height: 1.55; }
+    .card.click { cursor: pointer; transition: border-color .2s, transform .2s; }
+    .card.click:hover { border-color: var(--brand); transform: translateY(-1px); }
+    .arch { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-top: 8px; }
+    .arch-item {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      cursor: pointer;
+      transition: border-color .2s, transform .2s;
+      background: #fff;
+    }
+    .arch-item:hover, .arch-item.on { border-color: var(--brand); transform: translateY(-1px); }
+    .arch-item strong { display: block; margin-bottom: 4px; }
+    .arch-item span { font-size: 0.8rem; color: var(--muted); line-height: 1.4; }
+    .detail {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: var(--brand-soft);
+      color: var(--ink);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      min-height: 3.2em;
+    }
+    .flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0; }
+    .chip {
+      border: none;
+      border-radius: 999px;
+      padding: 0.35rem 0.75rem;
+      background: var(--brand-soft);
+      color: var(--brand);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .chip.ghost { background: #eef2f8; color: var(--muted); font-weight: 500; }
+    .chip:hover { filter: brightness(0.97); }
+    .arrow { color: var(--muted); }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0 14px; }
+    .toolbar button, .toolbar label {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 8px;
+      padding: 0.4rem 0.75rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+    .toolbar button.primary { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600; }
+    .toolbar input[type=range] { accent-color: var(--brand); }
+    .toolbar .val { font-family: ui-monospace, Menlo, monospace; font-size: 0.85rem; color: var(--brand); font-weight: 700; min-width: 3.5em; }
+    .log {
+      margin-top: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      background: #16202e;
+      color: #e5eaf1;
+      border-radius: 10px;
+      padding: 10px 12px;
+      max-height: 260px;
+      overflow: auto;
+      white-space: pre-wrap;
+    }
+    .log .hot { color: #fb923c; }
+    .log .ok { color: #86efac; }
+    .log .warn { color: #fde68a; }
+    .hint { font-size: 0.8rem; color: var(--muted); margin-top: 8px; }
+    .hidden { display: none !important; }
+    table.tbl { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 8px; }
+    table.tbl th, table.tbl td { border-bottom: 1px solid var(--line); padding: 0.42rem 0.5rem; text-align: left; vertical-align: top; }
+    table.tbl th { color: var(--muted); font-weight: 600; }
+    .code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      background: #f4f6fa;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      overflow-x: auto;
+      white-space: pre;
+    }
+    .faq-q {
+      width: 100%;
+      text-align: left;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.88rem;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .faq-q:hover { border-color: var(--brand); }
+    .faq-a {
+      margin: 4px 0 4px;
+      padding: 8px 12px;
+      border-left: 3px solid var(--brand);
+      background: var(--brand-soft);
+      border-radius: 0 8px 8px 0;
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+    .slider-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; font-size: 0.85rem; }
+
+    /* Architecture diagram */
+    .arch-diagram {
+      display: grid;
+      gap: 12px;
+      margin: 14px 0;
+    }
+    .arch-block {
+      border: 1.5px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      background: #fafcff;
+    }
+    .arch-block h5 { margin: 0 0 8px; font-size: 0.9rem; color: var(--brand); }
+    .arch-block .sub { font-size: 0.8rem; color: var(--muted); }
+    .slot-row { display: grid; gap: 6px; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); margin-top: 6px; }
+    .slot {
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+      padding: 8px;
+      background: #fff;
+      font-size: 0.78rem;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .slot.on { border-color: var(--brand); background: var(--brand-soft); }
+
+    /* Operator chain viz */
+    .op-chain {
+      display: flex; flex-wrap: wrap; gap: 6px; align-items: stretch; margin: 10px 0;
+    }
+    .op-node {
+      border: 1.5px solid var(--brand);
+      border-radius: 8px;
+      padding: 8px 12px;
+      background: var(--brand-soft);
+      font-family: ui-monospace, Menlo, monospace;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+    .op-node.shuffle { border-color: var(--warn); background: #fff7ed; color: #9a3412; }
+    .op-chain-arrow { color: var(--muted); font-size: 1rem; align-self: center; }
+
+    /* Window viz */
+    .window-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 80px;
+      margin: 10px 0;
+      background: #f4f6fa;
+      border-radius: 8px;
+      padding: 6px;
+    }
+    .window-bar {
+      background: var(--brand);
+      border-radius: 3px;
+      flex: 1;
+      min-width: 6px;
+      cursor: pointer;
+      position: relative;
+    }
+    .window-bar.sliding { background: var(--c3); }
+    .window-bar.session { background: var(--c2); }
+    .window-bar.global { background: var(--c4); }
+    .window-bar:hover::after {
+      content: attr(data-label);
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #16202e;
+      color: #fff;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      white-space: nowrap;
+    }
+
+    /* Watermark timeline */
+    .timeline {
+      position: relative;
+      height: 60px;
+      background: #f4f6fa;
+      border-radius: 8px;
+      margin: 10px 0;
+      overflow: hidden;
+    }
+    .timeline-axis {
+      position: absolute;
+      bottom: 20px;
+      left: 10px; right: 10px;
+      height: 1px;
+      background: var(--muted);
+    }
+    .timeline-event {
+      position: absolute;
+      bottom: 15px;
+      width: 4px; height: 20px;
+      background: var(--brand);
+      border-radius: 2px;
+      cursor: pointer;
+    }
+    .timeline-event.late { background: var(--warn); }
+    .watermark-line {
+      position: absolute;
+      bottom: 0;
+      width: 2px;
+      height: 100%;
+      background: var(--fail);
+      transition: left .6s ease;
+    }
+    .watermark-label {
+      position: absolute;
+      top: 4px;
+      font-size: 0.72rem;
+      color: var(--fail);
+      font-weight: 700;
+      font-family: ui-monospace, Menlo, monospace;
+      background: #fff;
+      padding: 1px 5px;
+      border-radius: 4px;
+      border: 1px solid var(--fail);
+    }
+
+    /* Checkpoint barrier */
+    .barrier-scene {
+      display: grid;
+      gap: 8px;
+      margin: 12px 0;
+    }
+    .barrier-row {
+      display: grid;
+      grid-template-columns: 60px 1fr;
+      gap: 8px;
+      align-items: center;
+    }
+    .barrier-name { font-size: 0.8rem; color: var(--muted); font-weight: 600; }
+    .barrier-track {
+      position: relative;
+      height: 28px;
+      background: #f4f6fa;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .barrier-dot {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--brand);
+      transition: left .5s ease;
+    }
+    .barrier-dot.snapshot { background: var(--ok); }
+    .barrier-dot.waiting { background: var(--warn); }
+
+    /* Decision tree */
+    .decision-tree {
+      font-size: 0.85rem;
+      line-height: 1.7;
+      margin-top: 10px;
+    }
+    .decision-node {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin: 6px 0;
+      background: #fff;
+      cursor: pointer;
+      transition: border-color .2s, transform .1s;
+    }
+    .decision-node:hover { border-color: var(--brand); }
+    .decision-node.question { background: var(--brand-soft); border-color: var(--brand); font-weight: 600; }
+    .decision-node.answer { margin-left: 22px; color: var(--muted); font-size: 0.8rem; }
+    .decision-node.final { background: #f0fdf4; border-color: var(--ok); color: var(--ok); font-weight: 600; }
+    .decision-arrow { color: var(--muted); margin-left: 12px; font-size: 1.2rem; }
+
+    /* Budget calculator */
+    .budget-calc {
+      background: #f4f6fa;
+      border-radius: 10px;
+      padding: 14px;
+      margin-top: 10px;
+    }
+    .budget-calc label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 4px; }
+    .budget-calc input, .budget-calc select {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      font-size: 0.9rem;
+      margin-bottom: 10px;
+    }
+    .budget-result {
+      background: var(--brand-soft);
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 0.88rem;
+      margin-top: 10px;
+    }
+
+    /* Pipeline diagram */
+    .pipeline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin: 12px 0;
+    }
+    .pipeline-node {
+      padding: 10px 14px;
+      border: 1.5px solid var(--brand);
+      border-radius: 10px;
+      background: var(--brand-soft);
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-align: center;
+      min-width: 80px;
+    }
+    .pipeline-node.kafka { border-color: var(--warn); background: #fff7ed; }
+    .pipeline-node.flink { border-color: var(--brand); background: var(--brand-soft); }
+    .pipeline-node.hbase { border-color: var(--c1); background: #ecfdf5; }
+    .pipeline-node.lake { border-color: var(--c3); background: #faf5ff; }
+    .pipeline-arrow { color: var(--muted); font-size: 1.2rem; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="brand">
+      <h1>Apache Flink · 交互式演示</h1>
+      <p>10 章主题：从真正的流到 CDC 入湖。左侧选章节，每章都有可玩的交互（Watermark 推进、窗口动画、Checkpoint Barrier、反压排障树…）。版本参考 1.18 / 1.19 / 1.20。</p>
+    </header>
+    <div class="nav" id="nav"></div>
+    <main class="panel" id="panel">
+      <h2 id="panel-title">Flink · 交互式演示</h2>
+      <p class="lead" id="panel-lead">左侧选章节开始。推荐 02（架构）、04（Watermark）、06（State/Checkpoint）、09（排障决策树）。</p>
+      <div id="panel-body"></div>
+    </main>
+  </div>
+
+  <script>
+    const CHAPTERS = [
+      ["01", "概述与定位",          "Flink vs Spark vs Storm 对比卡 + 大数据链路位置图"],
+      ["02", "架构与运行原理",      "JM / TM / Slot / 数据流图；点角色看职责"],
+      ["03", "DataStream API",     "Operator Chain 可视化 + 同步 vs 异步 IO 吞吐对比"],
+      ["04", "时间语义与Watermark", "Watermark 推进动画 + 乱序容忍度滑块"],
+      ["05", "Window窗口机制",      "四种窗口类型可视化 + 迟到数据处理模拟"],
+      ["06", "State与Checkpoint",   "State 类型选择器 + Checkpoint Barrier 步进动画"],
+      ["07", "Flink SQL与Table API", "Flink SQL vs DataStream 切换 + CDC 入湖流程"],
+      ["08", "部署与集群规划",      "集群规模 → Slot / 内存预算建议计算器"],
+      ["09", "性能调优与故障排查",  "反压 / 倾斜 / Checkpoint 慢 的决策树"],
+      ["10", "生态对比与FAQ",       "常见面试题手风琴"],
+    ];
+
+    const navEl = document.getElementById("nav");
+    CHAPTERS.forEach(([code, title], i) => {
+      const b = document.createElement("button");
+      b.textContent = `${code} · ${title}`;
+      b.onclick = () => go(i);
+      navEl.appendChild(b);
+    });
+
+    const panelTitle = document.getElementById("panel-title");
+    const panelLead  = document.getElementById("panel-lead");
+    const panelBody  = document.getElementById("panel-body");
+    const navButtons = () => document.querySelectorAll(".nav button");
+
+    function activate(i) {
+      navButtons().forEach((b, idx) => b.classList.toggle("active", idx === i));
+    }
+
+    function go(i) {
+      const [code, title, lead] = CHAPTERS[i];
+      panelTitle.textContent = `${code} · ${title}`;
+      panelLead.textContent = lead;
+      panelBody.innerHTML = "";
+      activate(i);
+      window.location.hash = code;
+      const fn = window[`render${String(i+1).padStart(2,'0')}`];
+      if (fn) fn(panelBody);
+    }
+
+    // URL hash / ?c= 参数
+    (function init() {
+      let code = null;
+      const q = new URLSearchParams(location.search).get("c");
+      if (q) code = q;
+      else if (location.hash) code = location.hash.replace("#","");
+      if (code) {
+        const idx = CHAPTERS.findIndex(c => c[0] === String(code).padStart(2,'0'));
+        if (idx >= 0) go(idx); else go(0);
+      } else go(0);
+    })();
+
+    // =========================================================
+    // 01 概述与定位：对比卡 + 大数据链路
+    // =========================================================
+    function render01(root) {
+      const cmp = document.createElement("div");
+      cmp.className = "grid2";
+      cmp.innerHTML = `
+        <div class="card">
+          <h3>Flink 是什么？</h3>
+          <ul>
+            <li><b>真正的流计算引擎</b>——底层模型是「数据连续到达」</li>
+            <li>核心四件套：State、Checkpoint、Watermark、Exactly-Once</li>
+            <li>统一批流：有限数据集 = 有限流</li>
+            <li>版本参考：1.18 / 1.19 / <b>1.20</b>（Async State + SQL Gateway）</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>为什么不是 Spark Streaming？</h3>
+          <ul>
+            <li>Spark Streaming 本质是<b>微批</b>：把流切小批量跑批引擎</li>
+            <li>Watermark / Event-Time 是 2.3 之后才加</li>
+            <li>Flink 在延迟、事件时间、状态管理上更原生</li>
+            <li>但 Spark Structured Streaming 2.x+ 大幅向 Flink 靠拢</li>
+          </ul>
+        </div>
+      `;
+      root.appendChild(cmp);
+
+      const vs = document.createElement("h4");
+      vs.textContent = "三者对比（点卡片查看详情）";
+      root.appendChild(vs);
+
+      const cards = document.createElement("div");
+      cards.className = "arch";
+      const data = [
+        { name: "Flink",     color: "var(--brand)",  points: ["真正的流模型", "Event-Time 原生", "RocksDB State 内置", "Exactly-Once 开箱", "延迟 ms~s"] },
+        { name: "Spark Streaming", color: "var(--c4)", points: ["微批（批处理引擎）", "Event-Time 2.3+", "StateStore 外置", "Checkpoint + WAL", "延迟 s 级"] },
+        { name: "Storm",     color: "var(--fail)",  points: ["原生逐条流", "无 Watermark", "几乎无状态", "ACK 保证", "延迟 ms 但功能弱"] },
+      ];
+      const detEl = document.createElement("div");
+      detEl.className = "detail";
+      detEl.textContent = "点击卡片查看各引擎核心特点";
+      data.forEach(d => {
+        const e = document.createElement("div");
+        e.className = "arch-item";
+        e.innerHTML = `<strong style="color:${d.color}">${d.name}</strong><span>${d.points.slice(0,2).join("；")}</span>`;
+        e.onclick = () => {
+          detEl.innerHTML = `<b style="color:${d.color}">${d.name}</b><br>` +
+            d.points.map(p => `• ${p}`).join("<br>");
+          document.querySelectorAll(".arch-item").forEach(x => x.classList.remove("on"));
+          e.classList.add("on");
+        };
+        cards.appendChild(e);
+      });
+      root.appendChild(cards);
+      root.appendChild(detEl);
+
+      const pip = document.createElement("h4");
+      pip.textContent = "Flink 在大数据链路中的位置";
+      root.appendChild(pip);
+
+      const pipe = document.createElement("div");
+      pipe.className = "pipeline";
+      pipe.innerHTML = `
+        <div class="pipeline-node kafka">Kafka<br><small>(实时入口)</small></div>
+        <span class="pipeline-arrow">→</span>
+        <div class="pipeline-node flink">Flink<br><small>(ETL / 聚合 / CDC)</small></div>
+        <span class="pipeline-arrow">→</span>
+        <div class="pipeline-node hbase">HBase / Doris<br><small>(在线 OLAP)</small></div>
+        <span class="pipeline-arrow">→</span>
+        <div class="pipeline-node lake">Iceberg / Hudi<br><small>(湖仓表)</small></div>
+      `;
+      root.appendChild(pipe);
+
+      const hint = document.createElement("p");
+      hint.className = "hint";
+      hint.textContent = "CDC 入湖路径：MySQL/PG Binlog → Flink SQL → Iceberg 表（自动 Schema 演化）。";
+      root.appendChild(hint);
+    }
+
+    // =========================================================
+    // 02 架构与运行原理
+    // =========================================================
+    function render02(root) {
+      const arch = document.createElement("h4");
+      arch.textContent = "整体架构（点击角色查看职责）";
+      root.appendChild(arch);
+
+      const archGrid = document.createElement("div");
+      archGrid.className = "arch";
+      const roles = [
+        { k: "JobManager",     d: "集群管理者。内含 ResourceManager、JobMaster（每个作业一个）、Checkpoint Coordinator、Dispatcher。" },
+        { k: "TaskManager",    d: "工作节点。提供 Slot 资源、跑 Task、上报心跳、存 RocksDB State。通常集群多台。" },
+        { k: "ResourceManager",d: "JM 内部组件。管理 Slot 资源：向 TM 要 Slot、分配、心跳超时淘汰。" },
+        { k: "JobMaster",      d: "每个作业一个（JM 内）。把 ExecutionGraph 的 Task 部署到 Slot；监听状态；触发 Checkpoint。" },
+        { k: "Dispatcher",     d: "REST 入口，接收作业提交请求，拉起 JobMaster。" },
+        { k: "Slot",           d: "TM 的资源分片。默认 = CPU 核数。一个 Slot 可跑多个 Task（同 SlotSharingGroup）。" },
+        { k: "Operator Chain", d: "上下游并行度相同且无 shuffle 时自动链成一个 Task，省序列化/网络开销。" },
+        { k: "Checkpoint Coord", d: "JM 内部组件。协调所有算子的 Checkpoint Barrier 对齐。" },
+      ];
+      const detailBox = document.createElement("div");
+      detailBox.className = "detail";
+      detailBox.textContent = "点击上方任一角色查看职责详情";
+      roles.forEach(r => {
+        const e = document.createElement("div");
+        e.className = "arch-item";
+        e.innerHTML = `<strong>${r.k}</strong><span>${r.d.slice(0, 30)}…</span>`;
+        e.onclick = () => {
+          detailBox.innerHTML = `<b>${r.k}</b><br>${r.d}`;
+          document.querySelectorAll(".arch-item").forEach(x => x.classList.remove("on"));
+          e.classList.add("on");
+        };
+        archGrid.appendChild(e);
+      });
+      root.appendChild(archGrid);
+      root.appendChild(detailBox);
+
+      // 数据流图三次变换
+      const sg = document.createElement("h4");
+      sg.textContent = "数据流图三次变换";
+      root.appendChild(sg);
+
+      const flow = document.createElement("div");
+      flow.className = "flow";
+      flow.innerHTML = `
+        <div class="chip ghost">StreamGraph</div>
+        <span class="arrow">→ Operator Chain →</span>
+        <div class="chip ghost">JobGraph</div>
+        <span class="arrow">→ 并行度展开 →</span>
+        <div class="chip ghost">ExecutionGraph</div>
+        <span class="arrow">→ 部署 →</span>
+        <div class="chip">ExecutionVertex</div>
+      `;
+      root.appendChild(flow);
+
+      const desc = document.createElement("div");
+      desc.className = "detail";
+      desc.innerHTML = `
+        <b>StreamGraph</b>：把 API 调用串成逻辑图，每个算子独立<br>
+        <b>JobGraph</b>：相同并行度且无 shuffle 的算子自动链在一起<br>
+        <b>ExecutionGraph</b>：按并行度展开成物理并行任务，分配 SlotSharingGroup
+      `;
+      root.appendChild(desc);
+
+      // Slot 预算示例
+      const slotH = document.createElement("h4");
+      slotH.textContent = "Slot 概念示例";
+      root.appendChild(slotH);
+
+      const slotDesc = document.createElement("p");
+      slotDesc.className = "lead";
+      slotDesc.style.marginTop = "4px";
+      slotDesc.textContent = "假设作业并行度 = 3，默认 SlotSharingGroup 所有算子同组。点击 Slot 看它运行哪些算子：";
+      root.appendChild(slotDesc);
+
+      const slotBlocks = document.createElement("div");
+      slotBlocks.className = "arch";
+      const slotInfo = [
+        { name: "TM #0", slots: 4 },
+        { name: "TM #1", slots: 4 },
+      ];
+      slotInfo.forEach(tm => {
+        const b = document.createElement("div");
+        b.className = "arch-block";
+        b.innerHTML = `<h5>${tm.name}</h5><div class="sub">假设 Slot 数 = ${tm.slots}；并行度 = 3；默认同 SlotSharingGroup</div>`;
+        const row = document.createElement("div");
+        row.className = "slot-row";
+        for (let i = 0; i < tm.slots; i++) {
+          const s = document.createElement("div");
+          s.className = "slot";
+          const willRun = i < 3; // 3 并行度 占前 3 个 slot
+          s.textContent = willRun ? `Slot ${i}: map+keyBy+window+sum (并行度 0..2)` : `Slot ${i}: 空闲（可跑别的作业）`;
+          if (willRun) s.classList.add("on");
+          row.appendChild(s);
+        }
+        b.appendChild(row);
+        slotBlocks.appendChild(b);
+      });
+      root.appendChild(slotBlocks);
+    }
+
+    // =========================================================
+    // 03 DataStream API + 算子链
+    // =========================================================
+    function render03(root) {
+      const opChain = document.createElement("h4");
+      opChain.textContent = "Operator Chain 可视化";
+      root.appendChild(opChain);
+
+      const desc = document.createElement("p");
+      desc.className = "lead";
+      desc.style.marginTop = "4px";
+      desc.innerHTML = `
+        代码：<code class="code">source.map(x->x+1).filter(x->x>0).keyBy(x->x).sum(0)</code><br>
+        map 和 filter 并行度相同、中间无 shuffle → <b>自动链成一个 Task</b>；
+        keyBy 是 shuffle 边界 → <b>打断链</b>，sum 在 keyBy 后另一个 Task。
+      `;
+      root.appendChild(desc);
+
+      const chain = document.createElement("div");
+      chain.className = "op-chain";
+      chain.innerHTML = `
+        <div class="op-node">Source</div>
+        <span class="op-chain-arrow">→</span>
+        <div class="op-node">map</div>
+        <span class="op-chain-arrow">→</span>
+        <div class="op-node">filter</div>
+        <span class="op-chain-arrow">→ shuffle 边界 →</span>
+        <div class="op-node shuffle">keyBy (hash)</div>
+        <span class="op-chain-arrow">→</span>
+        <div class="op-node">sum</div>
+        <span class="op-chain-arrow">→</span>
+        <div class="op-node">Sink</div>
+      `;
+      root.appendChild(chain);
+
+      const stat = document.createElement("div");
+      stat.className = "grid2";
+      stat.innerHTML = `
+        <div class="card"><h3>链前：5 个 Task</h3>
+          <ul><li>每个 Task 独立 JVM 线程</li><li>map→filter、filter→keyBy 都需要序列化</li><li>网络开销、CPU 开销大</li></ul></div>
+        <div class="card"><h3>链后：3 个 Task</h3>
+          <ul><li>Source→map+filter 链成 1 个 Task</li><li>keyBy 打断（shuffle 必须）</li><li>keyBy+sum+Sink 同链 → 2 个 Task</li></ul></div>
+      `;
+      root.appendChild(stat);
+
+      // 同步 vs 异步 IO 吞吐对比
+      const asyncH = document.createElement("h4");
+      asyncH.textContent = "同步 vs 异步 IO 吞吐对比（互动）";
+      root.appendChild(asyncH);
+
+      const toolbar = document.createElement("div");
+      toolbar.className = "toolbar";
+      toolbar.innerHTML = `
+        <label>Source 吞吐: <span class="val" id="throughputVal">1000</span> QPS</label>
+        <input type="range" id="throughput" min="100" max="5000" step="100" value="1000">
+        <label>单并行度同步 QPS: <span class="val" id="syncPerTask">20</span></label>
+        <input type="range" id="syncPer" min="1" max="100" step="1" value="20">
+        <label>并行度: <span class="val" id="parallelismVal">4</span></label>
+        <input type="range" id="parallelism" min="1" max="16" step="1" value="4">
+      `;
+      root.appendChild(toolbar);
+
+      const result = document.createElement("div");
+      result.className = "budget-result";
+      const recalc = () => {
+        const tp = +document.getElementById("throughput").value;
+        const syncPer = +document.getElementById("syncPer").value;
+        const p = +document.getElementById("parallelism").value;
+        document.getElementById("throughputVal").textContent = tp;
+        document.getElementById("syncPerTask").textContent = syncPer;
+        document.getElementById("parallelismVal").textContent = p;
+
+        const syncThroughput = syncPer * p;
+        const asyncThroughput = Math.min(tp, syncPer * p * 10); // 异步假设 10x（并发）
+
+        result.innerHTML = `
+          <b>同步模式:</b> ${syncThroughput} QPS（被 Source ${tp} QPS 压垮 → <span style="color:var(--fail)">严重反压</span>）<br>
+          <b>异步模式:</b> ${asyncThroughput} QPS（并发 10x → 不反压）<br>
+          <span class="hint" style="margin:4px 0 0">提示：异步 IO capacity 要设对，太大打爆下游，太小反压。</span>
+        `;
+      };
+      ["throughput", "syncPer", "parallelism"].forEach(id =>
+        document.getElementById(id).addEventListener("input", recalc));
+      recalc();
+      root.appendChild(result);
+    }
+
+    // =========================================================
+    // 04 Watermark 推进动画
+    // =========================================================
+    function render04(root) {
+      const h = document.createElement("h4");
+      h.textContent = "Watermark 推进动画";
+      root.appendChild(h);
+
+      const lead = document.createElement("p");
+      lead.className = "lead";
+      lead.innerHTML = `事件时间 <b>max_seen = 20</b>，allowedLateness = <b id="lateVal">3</b>s。Watermark = max_seen - allowedLateness。<br>
+        点击"注入事件"按钮让 Watermark 前进；观察 Watermark 红色竖线向右移动。窗口 [10, 20) 在 Watermark ≥ 20 时触发。`;
+      root.appendChild(lead);
+
+      const controls = document.createElement("div");
+      controls.className = "toolbar";
+      controls.innerHTML = `
+        <button id="injectBtn" class="primary">注入随机事件</button>
+        <button id="autoBtn">自动推进</button>
+        <button id="resetBtn">重置</button>
+        <label>允许迟到(秒): <input type="range" id="late" min="0" max="10" value="3" style="width:120px"></label>
+      `;
+      root.appendChild(controls);
+
+      const timeline = document.createElement("div");
+      timeline.className = "timeline";
+      timeline.style.position = "relative";
+      timeline.style.width = "100%";
+      timeline.id = "waterTimeline";
+      root.appendChild(timeline);
+
+      const wmLine = document.createElement("div");
+      wmLine.className = "watermark-line";
+      wmLine.id = "waterLine";
+      timeline.appendChild(wmLine);
+      const wmLabel = document.createElement("div");
+      wmLabel.className = "watermark-label";
+      wmLabel.id = "waterLabel";
+      timeline.appendChild(wmLabel);
+      wmLabel.style.left = "0px";
+
+      const log = document.createElement("div");
+      log.className = "log";
+      log.id = "wmLog";
+      log.textContent = "[初始化] Watermark = 0，等待事件到达...";
+      root.appendChild(log);
+
+      let maxSeen = 0, autoTimer = null, events = [];
+
+      const positions = []; // [{x, ts}]
+
+      function pxFor(ts) { return (ts / 30) * (timeline.clientWidth - 20) + 10; }
+      function render() {
+        const late = +document.getElementById("late").value;
+        document.getElementById("lateVal").textContent = late;
+        const wm = Math.max(0, maxSeen - late);
+        wmLine.style.left = pxFor(wm) + "px";
+        wmLabel.textContent = `WM=${wm}`;
+        wmLabel.style.left = Math.min(pxFor(wm), timeline.clientWidth - 70) + "px";
+
+        // 重绘事件
+        [...timeline.querySelectorAll(".timeline-event")].forEach(el => el.remove());
+        events.forEach(ev => {
+          const e = document.createElement("div");
+          e.className = "timeline-event" + (ev.ts <= wm ? " late" : "");
+          e.style.left = pxFor(ev.ts) + "px";
+          timeline.appendChild(e);
+        });
+
+        appendLog(`事件时间戳=${events[events.length-1]?.ts ?? "-"}  max_seen=${maxSeen}  Watermark=${wm}`);
+        if (wm >= 20 && !document.getElementById("_windowFired")) {
+          appendLog("【触发】窗口 [10, 20) Watermark ≥ 20 → 触发窗口计算 ✓");
+          appendLog("【关闭】窗口 [10, 20) Watermark ≥ 20 + allowedLateness → 关闭");
+          const tag = document.createElement("div"); tag.id = "_windowFired"; tag.style.display = "none";
+          timeline.appendChild(tag);
+        }
+      }
+      function appendLog(msg) {
+        log.textContent += "\n" + msg;
+        log.scrollTop = log.scrollHeight;
+      }
+      function inject() {
+        const ts = Math.floor(Math.random() * 28) + 1; // 1..28
+        events.push({ ts });
+        if (ts > maxSeen) maxSeen = ts;
+        render();
+      }
+
+      document.getElementById("injectBtn").onclick = inject;
+      document.getElementById("resetBtn").onclick = () => {
+        maxSeen = 0; events = [];
+        [...timeline.querySelectorAll(".timeline-event")].forEach(el => el.remove());
+        document.getElementById("_windowFired")?.remove();
+        wmLine.style.left = "0px";
+        wmLabel.style.left = "0px";
+        wmLabel.textContent = "WM=0";
+        log.textContent = "[重置] Watermark = 0";
+      };
+      document.getElementById("autoBtn").onclick = () => {
+        if (autoTimer) { clearInterval(autoTimer); autoTimer = null; document.getElementById("autoBtn").textContent = "自动推进"; }
+        else { autoTimer = setInterval(inject, 700); document.getElementById("autoBtn").textContent = "停止自动"; }
+      };
+      document.getElementById("late").oninput = render;
+
+      // 延迟调整 timeline width
+      setTimeout(render, 10);
+    }
+
+    // =========================================================
+    // 05 Window 窗口类型
+    // =========================================================
+    function render05(root) {
+      const h = document.createElement("h4");
+      h.textContent = "四种窗口类型可视化";
+      root.appendChild(h);
+
+      const lead = document.createElement("p");
+      lead.className = "lead";
+      lead.innerHTML = "点击按钮切换窗口类型；鼠标悬停色块看窗口边界。";
+      root.appendChild(lead);
+
+      const toolbar = document.createElement("div");
+      toolbar.className = "toolbar";
+      toolbar.innerHTML = `
+        <button data-type="tumbling" class="primary">滚动窗口 (10min)</button>
+        <button data-type="sliding">滑动窗口 (10min/5min)</button>
+        <button data-type="session">会话窗口 (gap=5min)</button>
+        <button data-type="global">全局窗口</button>
+      `;
+      root.appendChild(toolbar);
+
+      const wr = document.createElement("div");
+      wr.className = "window-row";
+      wr.id = "windowBox";
+      root.appendChild(wr);
+
+      const hint = document.createElement("div");
+      hint.className = "detail";
+      hint.id = "windowHint";
+      root.appendChild(hint);
+
+      const descMap = {
+        tumbling: "滚动窗口：10 分钟为单位，不重叠。窗口 [0,10), [10,20), [20,30) ...",
+        sliding:  "滑动窗口：10 分钟长度，5 分钟滑动步长，窗口重叠。事件 0~10 同时落入两个窗口。",
+        session:  "会话窗口：相邻事件 gap > 5min 切新会话。事件 0,1,7 → 会话 1；事件 15,16 → 会话 2。",
+        global:   "全局窗口：所有 Key 的数据进一个窗口，需要自定义 Trigger 决定何时触发。",
+      };
+
+      function renderWindow(type) {
+        wr.innerHTML = "";
+        if (type === "tumbling") {
+          for (let i = 0; i < 6; i++) {
+            const b = document.createElement("div");
+            b.className = "window-bar";
+            b.style.height = (40 + Math.random() * 40) + "%";
+            b.dataset.label = `[${i*10},${(i+1)*10})`;
+            wr.appendChild(b);
+          }
+        } else if (type === "sliding") {
+          for (let i = 0; i < 11; i++) {
+            const b = document.createElement("div");
+            b.className = "window-bar sliding";
+            b.style.height = (40 + Math.random() * 40) + "%";
+            b.dataset.label = `[${(i)*5},${(i)*5+10})`;
+            wr.appendChild(b);
+          }
+        } else if (type === "session") {
+          [5,3,5,6,2,5,5].forEach((ratio, i) => {
+            const b = document.createElement("div");
+            b.className = "window-bar session";
+            b.style.flex = ratio;
+            b.style.height = "60%";
+            b.dataset.label = `Session ${i+1} (gap=5min)`;
+            wr.appendChild(b);
+            const gap = document.createElement("div");
+            gap.style.flex = "0 0 4px";
+            wr.appendChild(gap);
+          });
+        } else {
+          const b = document.createElement("div");
+          b.className = "window-bar global";
+          b.style.flex = "1 1 auto";
+          b.style.height = "100%";
+          b.dataset.label = "Global Window — 所有数据";
+          wr.appendChild(b);
+        }
+        hint.textContent = descMap[type];
+        document.querySelectorAll(".toolbar button[data-type]").forEach(b =>
+          b.classList.toggle("primary", b.dataset.type === type));
+      }
+      document.querySelectorAll(".toolbar button[data-type]").forEach(b =>
+        b.onclick = () => renderWindow(b.dataset.type));
+      renderWindow("tumbling");
+
+      // 迟到数据处理
+      const lateH = document.createElement("h4");
+      lateH.textContent = "迟到数据处理策略";
+      root.appendChild(lateH);
+
+      const lateCards = document.createElement("div");
+      lateCards.className = "grid2";
+      lateCards.innerHTML = `
+        <div class="card"><h3>策略一：丢弃（默认）</h3>
+          <ul><li>Watermark 过窗口结束就丢弃</li><li>节省状态</li><li>可能丢数据</li></ul></div>
+        <div class="card"><h3>策略二：延迟触发</h3>
+          <ul><li>.allowedLateness(Time.minutes(2))</li><li>Watermark 首次到 end 触发一次</li><li>之后每到迟到数据再触发</li><li>WM ≥ end + lateness 时关闭窗口</li></ul></div>
+        <div class="card"><h3>策略三：侧输出流</h3>
+          <ul><li>.sideOutputLateData(lateTag)</li><li>迟到数据单独进侧输出流</li><li>不影响主窗口计算</li><li>下游可独立补算</li></ul></div>
+        <div class="card"><h3>示例</h3>
+          <ul><li>窗口 [10:00, 10:10)</li><li>WM 首次到达 10:10 → 触发</li><li>allowedLateness = 2min</li><li>WM 到达 10:12 → 关闭</li></ul></div>
+      `;
+      root.appendChild(lateCards);
+    }
+
+    // =========================================================
+    // 06 State + Checkpoint Barrier
+    // =========================================================
+    function render06(root) {
+      const sh = document.createElement("h4");
+      sh.textContent = "State 类型选择器";
+      root.appendChild(sh);
+
+      const sdesc = document.createElement("p");
+      sdesc.className = "lead";
+      sdesc.style.marginTop = "4px";
+      sdesc.textContent = "点击下方 State 类型卡查看用途和示例：";
+      root.appendChild(sdesc);
+
+      const stateGrid = document.createElement("div");
+      stateGrid.className = "arch";
+      const states = [
+        { n: "ValueState",   c: "var(--brand)",  d: "单值。用户计数器、当前会话结束时间。", code: "counter.update(42); counter.value();" },
+        { n: "ListState",    c: "var(--c1)",     d: "列表。窗口内缓存事件、会话窗口、收集多条数据。", code: "buffer.add(ev); buffer.get(); buffer.clear();" },
+        { n: "MapState",     c: "var(--c3)",     d: "HashMap。用户属性、指标维度 Map。", code: "attrs.put(\"vip\", true); attrs.get(\"vip\");" },
+        { n: "ReducingState",c: "var(--c2)",     d: "滚动规约。简单求和、最大/最小。", code: "redc.add(ev.amount);" },
+        { n: "AggregatingState", c: "var(--c4)", d: "滚动聚合（自定义 AggregatingFunction）。平均、百分位。", code: "agg.add(ev)" },
+        { n: "OperatorState", c: "var(--fail)",   d: "每个并行实例一份（非 Keyed）。Kafka Source Offset、Sink 批量刷写。", code: "ListCheckpointed<Offset>;" },
+        { n: "BroadcastState", c: "var(--run)",   d: "配置流广播给所有并行实例。主数据流 + 配置更新流。", code: "bstate.put(key, rule);" },
+      ];
+      const sDetail = document.createElement("div");
+      sDetail.className = "detail";
+      sDetail.textContent = "点击卡片查看详情";
+      states.forEach(s => {
+        const e = document.createElement("div");
+        e.className = "arch-item";
+        e.innerHTML = `<strong style="color:${s.c}">${s.n}</strong><span>${s.d.slice(0, 22)}…</span>`;
+        e.onclick = () => {
+          sDetail.innerHTML = `<b style="color:${s.c}">${s.n}</b><br>${s.d}<br><code class="code" style="margin-top:6px">${s.code}</code>`;
+          document.querySelectorAll("#panel-body .arch-item").forEach(x => x.classList.remove("on"));
+          e.classList.add("on");
+        };
+        stateGrid.appendChild(e);
+      });
+      root.appendChild(stateGrid);
+      root.appendChild(sDetail);
+
+      // Checkpoint Barrier 动画
+      const bH = document.createElement("h4");
+      bH.textContent = "Checkpoint Barrier 对齐动画（步进）";
+      root.appendChild(bH);
+
+      const bDesc = document.createElement("p");
+      bDesc.className = "lead";
+      bDesc.style.marginTop = "4px";
+      bDesc.innerHTML = "Source 注入 Barrier，每个算子收到<b>所有</b>上游的 Barrier 后才开始快照。EXACTLY-ONCE 模式需要对齐。";
+      root.appendChild(bDesc);
+
+      const controls = document.createElement("div");
+      controls.className = "toolbar";
+      controls.innerHTML = `
+        <button id="stepBtn" class="primary">下一步 →</button>
+        <button id="autoBarrier">自动播放</button>
+        <button id="resetBarrier">重置</button>
+      `;
+      root.appendChild(controls);
+
+      const scene = document.createElement("div");
+      scene.className = "barrier-scene";
+      scene.innerHTML = `
+        <div class="barrier-row"><div class="barrier-name">Source</div><div class="barrier-track" data-op="0"></div></div>
+        <div class="barrier-row"><div class="barrier-name">OP1 (map)</div><div class="barrier-track" data-op="1"></div></div>
+        <div class="barrier-row"><div class="barrier-name">OP2 (keyBy)</div><div class="barrier-track" data-op="2"></div></div>
+        <div class="barrier-row"><div class="barrier-name">OP3 (window)</div><div class="barrier-track" data-op="3"></div></div>
+        <div class="barrier-row"><div class="barrier-name">Sink</div><div class="barrier-track" data-op="4"></div></div>
+      `;
+      root.appendChild(scene);
+
+      const log = document.createElement("div");
+      log.className = "log";
+      log.id = "bLog";
+      log.textContent = "[Step 0] 初始状态：所有 Barrier 在最左侧";
+      root.appendChild(log);
+
+      let opIdx = 0, barrierX = 0, autoTimer = null;
+      const tracks = scene.querySelectorAll(".barrier-track");
+      let dots = [0, 0, 0, 0, 0]; // 每个 op 上一个 barrier 的位置 0-100
+
+      function renderBarrier() {
+        tracks.forEach((trk, i) => {
+          let d = trk.querySelector(".barrier-dot");
+          if (!d) { d = document.createElement("div"); d.className = "barrier-dot"; trk.appendChild(d); }
+          d.style.left = dots[i] + "%";
+          d.className = "barrier-dot";
+          if (dots[i] >= 100) d.classList.add("snapshot");
+        });
+      }
+      function appendLog(msg) { log.textContent += "\n" + msg; log.scrollTop = log.scrollHeight; }
+      function stepForward() {
+        if (dots[4] >= 100 && dots.every(x => x >= 100)) {
+          appendLog("【完成】所有算子快照完成，Checkpoint N 成功 ✓");
+          if (autoTimer) { clearInterval(autoTimer); autoTimer = null; document.getElementById("autoBarrier").textContent = "自动播放"; }
+          return;
+        }
+        for (let i = 0; i < dots.length; i++) {
+          if (dots[i] < 100) {
+            dots[i] = Math.min(100, dots[i] + 12);
+            if (dots[i] >= 100) {
+              const name = scene.querySelectorAll(".barrier-name")[i].textContent;
+              appendLog(`【对齐】${name} 收到 Barrier，开始快照...`);
+            }
+          }
+        }
+        renderBarrier();
+      }
+      document.getElementById("stepBtn").onclick = stepForward;
+      document.getElementById("resetBarrier").onclick = () => {
+        dots = [0, 0, 0, 0, 0];
+        renderBarrier();
+        log.textContent = "[重置] 初始状态";
+        if (autoTimer) { clearInterval(autoTimer); autoTimer = null; document.getElementById("autoBarrier").textContent = "自动播放"; }
+      };
+      document.getElementById("autoBarrier").onclick = () => {
+        if (autoTimer) { clearInterval(autoTimer); autoTimer = null; document.getElementById("autoBarrier").textContent = "自动播放"; }
+        else { autoTimer = setInterval(stepForward, 400); document.getElementById("autoBarrier").textContent = "停止"; }
+      };
+      renderBarrier();
+    }
+
+    // =========================================================
+    // 07 Flink SQL vs DataStream + CDC
+    // =========================================================
+    function render07(root) {
+      const h = document.createElement("h4");
+      h.textContent = "Flink SQL vs DataStream（可切换）";
+      root.appendChild(h);
+
+      const toolbar = document.createElement("div");
+      toolbar.className = "toolbar";
+      toolbar.innerHTML = `
+        <button id="toggleSQL" class="primary">看 Flink SQL</button>
+        <button id="toggleDS">看 DataStream</button>
+      `;
+      root.appendChild(toolbar);
+
+      const codeBox = document.createElement("div");
+      codeBox.className = "code";
+      codeBox.id = "sqlCode";
+      codeBox.style.minHeight = "300px";
+      root.appendChild(codeBox);
+
+      const sqlCode = `// ===== Flink SQL 版本（声明式）=====
+StreamTableEnvironment tableEnv = StreamTableEnvironment.create(env);
+
+// 建表：Kafka Source
+tableEnv.executeSql("""
+  CREATE TABLE orders (
+    order_id   BIGINT,
+    user_id    BIGINT,
+    amount     DECIMAL(10,2),
+    ts         TIMESTAMP(3) METADATA FROM 'timestamp',
+    WATERMARK FOR ts AS ts - INTERVAL '5' SECOND
+  ) WITH (
+    'connector' = 'kafka',
+    'topic'     = 'orders',
+    'properties.bootstrap.servers' = 'kafka:9092',
+    'format'    = 'json'
+  )
+""");
+
+// 一行 SQL 搞定 10 分钟窗口聚合
+Table result = tableEnv.sqlQuery("""
+  SELECT user_id, SUM(amount) AS total
+  FROM orders
+  GROUP BY user_id, TUMBLE(ts, INTERVAL '10' MINUTE)
+""");
+result.execute().print();`;
+
+      const dsCode = `// ===== DataStream API 版本（命令式）=====
+DataStream<Order> orders = env.fromSource(
+    kafkaSource,
+    WatermarkStrategy.forBoundedOutOfOrderness(Duration.ofSeconds(5))
+                     .withTimestampAssigner((o, t) -> o.getTs()),
+    "kafka-source");
+
+orders
+  .keyBy(Order::getUserId)
+  .window(TumblingEventTimeWindows.of(Time.minutes(10)))
+  .aggregate(
+      (Order o, Tuple2<Long, BigDecimal> acc) ->
+          Tuple2.of(acc.f0 + 1L, acc.f1.add(o.getAmount())),
+      (Tuple2<Long, BigDecimal> acc) -> acc.f1,
+      new SumAggregator<>()
+  )
+  .print();`;
+
+      const updateCode = () => {
+        const isSQL = document.getElementById("toggleSQL").classList.contains("primary");
+        codeBox.textContent = isSQL ? sqlCode : dsCode;
+      };
+      document.getElementById("toggleSQL").onclick = () => {
+        document.getElementById("toggleSQL").classList.add("primary");
+        document.getElementById("toggleDS").classList.remove("primary");
+        updateCode();
+      };
+      document.getElementById("toggleDS").onclick = () => {
+        document.getElementById("toggleDS").classList.add("primary");
+        document.getElementById("toggleSQL").classList.remove("primary");
+        updateCode();
+      };
+      updateCode();
+
+      // CDC 入湖流程
+      const cdcH = document.createElement("h4");
+      cdcH.textContent = "CDC 入湖全流程";
+      root.appendChild(cdcH);
+
+      const pipe = document.createElement("div");
+      pipe.className = "pipeline";
+      pipe.innerHTML = `
+        <div class="pipeline-node kafka">MySQL Binlog</div>
+        <span class="pipeline-arrow">→</span>
+        <div class="pipeline-node flink">Flink SQL CDC Source<br><small>(全量快照 + 增量)</small></div>
+        <span class="pipeline-arrow">→</span>
+        <div class="pipeline-node flink">Flink SQL ETL<br><small>(聚合 / CDC Join / Schema 演化)</small></div>
+        <span class="pipeline-arrow">→</span>
+        <div class="pipeline-node lake">Iceberg / Hudi 表<br><small>(湖仓 Sink + Compaction)</small></div>
+        <span class="pipeline-arrow">→</span>
+        <div class="pipeline-node hbase">Trino / Spark 查询</div>
+      `;
+      root.appendChild(pipe);
+
+      const cdcCards = document.createElement("div");
+      cdcCards.className = "grid2";
+      cdcCards.innerHTML = `
+        <div class="card"><h3>关键特性</h3>
+          <ul>
+            <li>scan.startup.mode=initial：先全量快照，再切 Binlog</li>
+            <li>incremental.snapshot.enabled=true：无锁快照</li>
+            <li>Schema 变更自动演化：加列/改类型</li>
+          </ul></div>
+        <div class="card"><h3>必须启用</h3>
+          <ul>
+            <li>execution.checkpointing.enabled=true</li>
+            <li>state.backend=rocksdb</li>
+            <li>MySQL binlog_format=ROW</li>
+          </ul></div>
+      `;
+      root.appendChild(cdcCards);
+    }
+
+    // =========================================================
+    // 08 部署与集群预算计算器
+    // =========================================================
+    function render08(root) {
+      const h = document.createElement("h4");
+      h.textContent = "集群规模 → Slot / 内存预算计算器";
+      root.appendChild(h);
+
+      const lead = document.createElement("p");
+      lead.className = "lead";
+      lead.innerHTML = "输入你的业务需求，得到 JM/TM/Slot/内存/G1 参数的建议。";
+      root.appendChild(lead);
+
+      const calc = document.createElement("div");
+      calc.className = "budget-calc";
+      calc.innerHTML = `
+        <label>最大算子并行度</label>
+        <input type="number" id="inp_parallelism" value="16">
+
+        <label>SlotSharingGroup 隔离数</label>
+        <input type="number" id="inp_groups" value="1">
+
+        <label>单 TM Slot 数（默认 = CPU 核数）</label>
+        <input type="number" id="inp_slots" value="8">
+
+        <label>每 TM 物理内存(GB)</label>
+        <input type="number" id="inp_mem" value="16">
+
+        <label>HA 要求</label>
+        <select id="inp_ha">
+          <option value="yes">生产 HA（JM 2+）</option>
+          <option value="no">非 HA / 测试</option>
+        </select>
+
+        <button id="calcBtn" class="primary" style="margin-top:10px;width:100%">计算建议</button>
+        <div id="budgetResult" class="budget-result" style="margin-top:12px"></div>
+      `;
+      root.appendChild(calc);
+
+      function calc() {
+        const p = +document.getElementById("inp_parallelism").value;
+        const g = +document.getElementById("inp_groups").value;
+        const slotsPerTM = +document.getElementById("inp_slots").value;
+        const memGB = +document.getElementById("inp_mem").value;
+        const ha = document.getElementById("inp_ha").value;
+
+        const totalSlots = p * g;
+        const tmCount = Math.max(1, Math.ceil(totalSlots / slotsPerTM));
+        const jmCount = ha === "yes" ? 2 : 1;
+
+        const managedGB = Math.max(1, Math.round(memGB * 0.25));
+        const heapGB = Math.max(1, Math.round((memGB - managedGB - 1) * 0.6));
+        const netGB = 1;
+        const overhead = memGB - heapGB - managedGB - netGB;
+
+        const out = document.getElementById("budgetResult");
+        out.innerHTML = `
+          <b>=== 集群建议 ===</b><br><br>
+          · JM 数量：<b>${jmCount}</b>（${ha === "yes" ? "HA 模式" : "非 HA"}），JM 内存建议 <b>4GB</b><br>
+          · TM 数量：<b>${tmCount}</b> 台<br>
+          · 每 TM Slot：<b>${slotsPerTM}</b><br>
+          · 总 Slot：<b>${totalSlots}</b> ≥ max 并行度 ${p} × SlotSharingGroup ${g} ✓<br>
+          · 每 TM 总内存：<b>${memGB}GB</b><br>
+          &nbsp;&nbsp;- Heap: <b>${heapGB}GB</b><br>
+          &nbsp;&nbsp;- Managed (RocksDB): <b>${managedGB}GB</b><br>
+          &nbsp;&nbsp;- Network Buffer: <b>${netGB}GB</b><br>
+          &nbsp;&nbsp;- JVM Overhead: <b>${overhead.toFixed(1)}GB</b><br><br>
+          <b>=== G1GC 参数 ===</b><br>
+          <code class="code" style="margin-top:6px">env.java.opts.taskmanager: "-XX:+UseG1GC -Xmx${heapGB}g -XX:MaxGCPauseMillis=200 -XX:+ParallelRefProcEnabled -XX:+DisableExplicitGC -XX:-UseLargePages"</code><br>
+          <b>=== RocksDB 建议 ===</b><br>
+          <code class="code" style="margin-top:6px">state.backend: rocksdb<br>state.backend.rocksdb.predefined-options: FLASH_SSD_OPTIMIZED<br>state.backend.incremental: true</code>
+        `;
+      }
+      document.getElementById("calcBtn").onclick = calc;
+      calc();
+
+      const note = document.createElement("p");
+      note.className = "hint";
+      note.textContent = "K8s 上 Pod memory requests = Total Memory + 20% Overhead。Application 模式推荐，每个作业独立集群。";
+      root.appendChild(note);
+    }
+
+    // =========================================================
+    // 09 故障排查决策树
+    // =========================================================
+    function render09(root) {
+      const h = document.createElement("h4");
+      h.textContent = "反压 / 倾斜 / Checkpoint 慢 决策树（点击问题 → 看结论）";
+      root.appendChild(h);
+
+      const lead = document.createElement("p");
+      lead.className = "lead";
+      lead.innerHTML = "在 Flink UI → Job → Operator → Subtasks 看 BackPressure 列（OK/LOW/HIGH）和 Records In/Out。";
+      root.appendChild(lead);
+
+      const tree = document.createElement("div");
+      tree.className = "decision-tree";
+      tree.innerHTML = `
+        <div class="decision-node question">问题：吞吐低 / 延迟高？</div>
+        <div class="decision-node" onclick="showDecision(this,'先看 Flink UI 反压（BackPressure），找到 HIGH 的算子')">→ 是的</div>
+        <div class="decision-node question">Flink UI 反压（HIGH）在哪？</div>
+        <div class="decision-node" onclick="showDecision(this,'Sink 反压 → 查外部系统（Kafka Broker / HBase RegionServer / HDFS）；Sink 并行度 = Source 并行度；用 AsyncDataStream')">→ 下游是 Sink</div>
+        <div class="decision-node" onclick="showDecision(this,'Window 算子反压 → 窗口内数据多（倾斜）；把全量 ProcessWindowFunction 换成增量 AggregateFunction')">→ 下游是 Window</div>
+        <div class="decision-node" onclick="showDecision(this,'keyBy 后反压 → 数据倾斜！查 Subtasks Records In，某个远大于其他 → 大 Key 拆分（key+随机桶 → 二次聚合）')">→ keyBy 之后</div>
+        <div class="decision-node question">问题：Checkpoint 慢 / 超时？</div>
+        <div class="decision-node" onclick="showDecision(this,'Barrier 对齐超时 → 反压！或 Source 多 Partition 某慢 → 查 Kafka Partition lag')">→ 对齐慢</div>
+        <div class="decision-node" onclick="showDecision(this,'State 快照慢 →换 RocksDB；HashMap 序列化 + 上传必慢；或磁盘 IO 满（iostat -x 看 %util）')">→ 快照慢</div>
+        <div class="decision-node question">问题：TM 反复 OOM？</div>
+        <div class="decision-node" onclick="showDecision(this,'java.lang.OutOfMemoryError: Java heap space → Heap 不够 / State 泄漏；换 RocksDB + 加 State TTL')">→ Heap OOM</div>
+        <div class="decision-node" onclick="showDecision(this,'java.lang.OutOfMemoryError: Direct buffer memory → Network Buffer 不够；加 taskmanager.memory.network.size')">→ Direct memory OOM</div>
+        <div class="decision-node question">问题：作业反复重启？</div>
+        <div class="decision-node" onclick="showDecision(this,'State 过大 OOM → RocksDB + TTL；Checkpoint 对齐超时 → 反压；外部依赖挂 → Kafka/HBase 健康检查')">→ 查日志</div>
+      `;
+      root.appendChild(tree);
+
+      function showDecision(node, msg) {
+        const next = document.createElement("div");
+        next.className = "decision-node final";
+        next.textContent = "✓ 建议：" + msg;
+        node.parentNode.insertBefore(next, node.nextSibling);
+        node.onclick = null;
+        node.style.background = "#f0fdf4";
+        node.style.borderColor = "var(--ok)";
+        node.style.color = "var(--ok)";
+      }
+      window.showDecision = showDecision;
+
+      // State TTL 建议
+      const ttlH = document.createElement("h4");
+      ttlH.textContent = "State TTL（过期 Key 自动清理）";
+      root.appendChild(ttlH);
+
+      const ttl = document.createElement("div");
+      ttl.className = "code";
+      ttl.textContent = `StateTtlConfig ttl = StateTtlConfig
+    .newBuilder(Time.hours(24))              // 24h 没更新就过期
+    .setUpdateType(StateTtlConfig.UpdateType.OnCreateAndWrite)
+    .setStateVisibility(StateTtlConfig.StateVisibility.NeverReturnExpired)
+    .build();
+
+ValueStateDescriptor<Long> desc = new ValueStateDescriptor<>("cnt", Long.class);
+desc.enableTimeToLive(ttl);   // ← 关键一行
+this.counter = getRuntimeContext().getState(desc);`;
+      root.appendChild(ttl);
+    }
+
+    // =========================================================
+    // 10 FAQ 手风琴
+    // =========================================================
+    function render10(root) {
+      const faqs = [
+        ["Flink 的 Exactly-Once 是怎么实现的？",
+         "三步走：(1) Checkpoint Barrier 对齐——Source 注入 Barrier，算子在所有上游都收到后才开始快照；(2) 状态快照持久化到 HDFS/S3；(3) Sink 端事务（Kafka 0.11+ Producer 两阶段提交，Checkpoint complete 时 commit）。注意 Sink 如果不是事务型，即使 Flink 保证了 Exactly-Once，也会有重复——Sink 必须幂等或支持事务。"],
+        ["Watermark 是怎么推进的？为什么设计成单调递增？",
+         "Source 周期性生成 Watermark = max_seen_ts - allowed_lateness。多并行度 Source 时，下游算子取所有上游 Watermark 的<b>最小值</b>推进。设计成单调递增，因为窗口触发、Timer 触发、状态清理都依赖「Watermark 只会前进」这个不变式。如果 Watermark 能倒退，窗口会反复触发、状态无法判断该清理还是保留。"],
+        ["State 过大怎么办？",
+         "解法阶梯：① 换 RocksDBStateBackend（关键！把 State 溢出到磁盘）；② 加 State TTL 清理过期 Key；③ 检查 ListState/MapState 是否业务 Bug 导致无限增长；④ 增加 TM 节点 / 加 Managed Memory；⑤ 检查并行度和 Key Group 分布是否均匀。"],
+        ["Flink 和 Spark Streaming 的本质区别？",
+         "Flink 是<b>真正的流</b>（底层模型：每条数据逐条触发算子）；Spark Streaming 本质是<b>微批</b>（把流切成小批量跑批处理引擎）。这个差异导致：Watermark（Event-Time）支持的原生程度、State 管理的精细程度、延迟水平上 Flink 全面领先。Spark Structured Streaming 2.x 大幅向 Flink 靠拢，但底层仍是批处理引擎。"],
+        ["流批一体 vs 湖仓一体 是什么关系？",
+         "两个独立维度，不冲突，互相配合。流批一体是<b>计算层</b>——同一套 API / SQL 既能做流又能做批（Flink SQL / Spark Structured Streaming）。湖仓一体是<b>存储层</b>——同一份底层存储既能做 OLAP 分析又能做大数据计算（Iceberg / Hudi / Delta + 对象存储）。Flink SQL 写 Iceberg 表（流），Spark SQL 读同一张表（批）——这就是流批一体 + 湖仓一体的组合。"],
+        ["Checkpoint 和 Savepoint 有什么区别？",
+         "Checkpoint 周期性自动，元数据最小化，用于故障恢复，支持增量（RocksDB 下非常快）；Savepoint 手动触发，元数据完整（包括算子 ID 映射），用于升级、扩缩、版本迁移，全量，比较慢。两者都是 Flink State 的快照，格式相同。"],
+        ["为什么 Flink 的 Temporal Join 这么快？",
+         "Temporal Join 不保留双流状态——维表（右表）只保留最新一行，事件流（左表）每来一条直接查维表最新值。和 Regular Join 必须缓存两侧所有元素、等窗口/超时清理相比，状态极小、速度极快。适合流 + 维表（用户表、商品表）关联。"],
+        ["Operator Chain 的好处和限制？",
+         "好处：同线程内方法调用，省序列化/反序列化/网络传输开销，吞吐提升 30%+。限制：① 上下游并行度必须相同；② 中间没有 shuffle 边界（keyBy / rebalance / union 都打断链）；③ 同 SlotSharingGroup；④ 程序员可手动 .disableChaining() 打断。默认 Flink 自动做。"],
+      ];
+
+      const title = document.createElement("h4");
+      title.textContent = "面试高频题（手风琴）";
+      root.appendChild(title);
+
+      faqs.forEach(([q, a], i) => {
+        const btn = document.createElement("button");
+        btn.className = "faq-q";
+        btn.textContent = `Q${i+1}. ${q}`;
+        const ans = document.createElement("div");
+        ans.className = "faq-a hidden";
+        ans.innerHTML = a.replace(/\n/g, "<br>");
+        btn.onclick = () => {
+          ans.classList.toggle("hidden");
+          btn.style.borderColor = ans.classList.contains("hidden") ? "" : "var(--brand)";
+        };
+        root.appendChild(btn);
+        root.appendChild(ans);
+      });
+
+      const moreH = document.createElement("h4");
+      moreH.textContent = "生态对比速览";
+      root.appendChild(moreH);
+
+      const grid = document.createElement("div");
+      grid.className = "grid2";
+      grid.innerHTML = `
+        <div class="card"><h3>Flink vs Spark</h3>
+          <ul>
+            <li>Flink = 实时流处理 + SQL + CDC 入湖</li>
+            <li>Spark = 批处理 + ML + 交互式 SQL</li>
+            <li>两者互补，不是替代</li>
+          </ul></div>
+        <div class="card"><h3>Flink CDC vs SeaTunnel</h3>
+          <ul>
+            <li>Flink CDC = Flink 生态的 CDC Source（读端）</li>
+            <li>SeaTunnel = 独立同步工具（Source → Transform → Sink）</li>
+            <li>实战：SeaTunnel 离线全量 + Flink 实时增量 + 入湖</li>
+          </ul></div>
+        <div class="card"><h3>Flink vs Kafka Streams</h3>
+          <ul>
+            <li>Flink = 独立集群，大规模（> 100 节点，复杂 State）</li>
+            <li>Kafka Streams = 嵌入式库，中等规模（< 10 节点）</li>
+          </ul></div>
+        <div class="card"><h3>部署：YARN vs K8s</h3>
+          <ul>
+            <li>已有 Hadoop + 多租户 → YARN</li>
+            <li>云原生 + 弹性 → K8s Application 模式</li>
+            <li>K8s 还支持 Adaptive Scheduler 自动扩缩 TM</li>
+          </ul></div>
+      `;
+      root.appendChild(grid);
+    }
+  </script>
+</body>
+</html>

@@ -39,21 +39,21 @@ export const categoryHints: Record<TopicCategory, string> = {
 
 export const topics: Topic[] = [
   {
-    id: 'dolphin-scheduler',
-    title: '海豚调度',
-    category: '大数据',
-    description:
-      'Apache DolphinScheduler：从概述到部署运维与选型。浏览器可视化交互演示，不依赖真实集群。',
-    link: '/dolphin-scheduler/',
-    status: 'ready',
-  },
-  {
     id: 'hadoop',
     title: 'Hadoop',
     category: '大数据',
     description:
-      'Apache Hadoop：HDFS、YARN、MapReduce 与生态组件。10 章笔记 + 浏览器可视化交互演示，不依赖真实集群。',
+      'Apache Hadoop：HDFS、YARN、MapReduce 与生态组件。大数据栈的底座。10 章笔记 + 浏览器可视化交互演示。',
     link: '/hadoop/',
+    status: 'ready',
+  },
+  {
+    id: 'hive',
+    title: 'Hive',
+    category: '大数据',
+    description:
+      'Apache Hive：HDFS 上的数仓 SQL 层。Metastore、执行引擎切换（MR/Tez/Spark）、分区管理、数仓分层（ODS/DWD/DWS/ADS）。10 章笔记 + 浏览器可视化交互演示。',
+    link: '/hive/',
     status: 'ready',
   },
   {
@@ -61,8 +61,62 @@ export const topics: Topic[] = [
     title: 'Spark',
     category: '大数据',
     description:
-      'Apache Spark：PySpark 从 RDD/SQL 到 Shuffle、调优、流处理。10 章笔记 + 浏览器可视化交互演示，不依赖真实集群。',
+      'Apache Spark：PySpark 从 RDD/SQL 到 Shuffle、调优、流处理。批计算主力，可连 Hive Metastore。10 章笔记 + 浏览器可视化交互演示。',
     link: '/spark/',
+    status: 'ready',
+  },
+  {
+    id: 'flink',
+    title: 'Flink',
+    category: '大数据',
+    description:
+      'Apache Flink：真正的流计算引擎。DataStream、Watermark、Window、State/Checkpoint、Flink SQL、CDC。10 章笔记 + 浏览器可视化交互演示。',
+    link: '/flink/',
+    status: 'ready',
+  },
+  {
+    id: 'kafka',
+    title: 'Kafka',
+    category: '大数据',
+    description:
+      'Apache Kafka：实时链路标配消息队列。Producer/Consumer 原理、分区副本、ISR、零拷贝、Rebalance、KRaft。10 章笔记 + 浏览器可视化交互演示。',
+    link: '/kafka/',
+    status: 'ready',
+  },
+  {
+    id: 'iceberg',
+    title: '湖仓一体',
+    category: '大数据',
+    description:
+      'Apache Iceberg：开放表格式，解决 Hive 表无 ACID、分区难演进、无时间旅行的痛点。元数据三层、快照隔离、隐藏分区、Schema 演进与表维护。10 章笔记 + 浏览器可视化交互演示。',
+    link: '/iceberg/',
+    status: 'ready',
+  },
+  {
+    id: 'hbase',
+    title: 'HBase',
+    category: '大数据',
+    description:
+      'Apache HBase：海量数据随机点查的 LSM-Tree 数据库。RowKey 设计、Compaction、Region 管理与运维调优。10 章笔记 + 浏览器可视化交互演示。',
+    link: '/hbase/',
+    status: 'ready',
+  },
+  {
+    id: 'clickhouse',
+    title: 'ClickHouse',
+    category: '大数据',
+    description:
+      'ClickHouse：列式 OLAP 数据库。MergeTree 引擎家族、向量化执行、分区排序键、分布式集群、物化视图与 CDC。10 章笔记 + 浏览器可视化交互演示。',
+    link: '/clickhouse/',
+    status: 'ready',
+  },
+  {
+    id: 'dolphin-scheduler',
+    title: '海豚调度',
+    category: '大数据',
+    description:
+      'Apache DolphinScheduler：从概述到部署运维与选型。理解 Hadoop/Spark/Flink 后再学调度编排最自然。浏览器可视化交互演示。',
+    link: '/dolphin-scheduler/',
     status: 'ready',
   },
 ]

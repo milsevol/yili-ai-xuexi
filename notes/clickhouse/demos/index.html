@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ClickHouse · 交互式演示</title>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --panel: #fff;
+      --ink: #16202e;
+      --muted: #5f6b7a;
+      --line: rgba(22, 32, 46, 0.11);
+      --brand: #1d4ed8;
+      --brand-soft: rgba(29, 78, 216, 0.1);
+      --ok: #15803d;
+      --fail: #b91c1c;
+      --run: #0369a1;
+      --warn: #a16207;
+      --c0: #1d4ed8; --c1: #0f766e; --c2: #15803d; --c3: #7c3aed; --c4: #a16207;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", "PingFang SC", "Noto Sans SC", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 70% 40% at 0% 0%, var(--brand-soft), transparent 55%),
+        var(--bg);
+      min-height: 100vh;
+    }
+    .app {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 20px 16px 48px;
+      display: grid;
+      gap: 16px;
+    }
+    @media (min-width: 880px) {
+      .app { grid-template-columns: 210px 1fr; align-items: start; }
+    }
+    .brand h1 { margin: 0; font-size: 1.25rem; font-family: "Noto Serif SC", "Songti SC", serif; }
+    .brand p { margin: 4px 0 0; color: var(--muted); font-size: 0.85rem; line-height: 1.5; }
+    .nav { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+    @media (min-width: 880px) {
+      .nav {
+        flex-direction: column;
+        position: sticky; top: 12px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 10px;
+      }
+    }
+    .nav button {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 999px;
+      padding: 0.45rem 0.85rem;
+      font-size: 0.86rem;
+      cursor: pointer;
+      text-align: left;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    @media (min-width: 880px) {
+      .nav button { width: 100%; border-radius: 10px; border-color: transparent; background: transparent; }
+      .nav button:hover { background: #f1f5fb; }
+    }
+    .nav button.active { background: var(--brand-soft); border-color: var(--brand); color: var(--brand); font-weight: 600; }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 18px 18px 22px;
+      min-height: 440px;
+    }
+    .panel h2 { margin: 0 0 6px; font-size: 1.2rem; }
+    .panel h4 { margin: 18px 0 8px; font-size: 0.95rem; }
+    .lead { margin: 0 0 16px; color: var(--muted); font-size: 0.9rem; line-height: 1.6; }
+    .grid2 { display: grid; gap: 12px; }
+    @media (min-width: 700px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      background: #fafcff;
+    }
+    .card h3 { margin: 0 0 8px; font-size: 0.95rem; }
+    .card ul { margin: 0; padding-left: 1.1rem; color: var(--muted); font-size: 0.86rem; line-height: 1.55; }
+    .arch { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-top: 8px; }
+    .arch-item {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      cursor: pointer;
+      transition: border-color .2s, transform .2s;
+      background: #fff;
+    }
+    .arch-item:hover, .arch-item.on { border-color: var(--brand); transform: translateY(-1px); }
+    .arch-item strong { display: block; margin-bottom: 4px; }
+    .arch-item span { font-size: 0.8rem; color: var(--muted); line-height: 1.4; }
+    .detail {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: var(--brand-soft);
+      color: var(--ink);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      min-height: 3.2em;
+    }
+    .flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0; }
+    .chip {
+      border: none;
+      border-radius: 999px;
+      padding: 0.35rem 0.75rem;
+      background: var(--brand-soft);
+      color: var(--brand);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .chip.ghost { background: #eef2f8; color: var(--muted); font-weight: 500; }
+    .chip:hover { filter: brightness(0.97); }
+    .arrow { color: var(--muted); }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0 14px; }
+    .toolbar button, .toolbar label {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 8px;
+      padding: 0.4rem 0.75rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+    .toolbar button.primary { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600; }
+    .toolbar input[type=range] { accent-color: var(--brand); }
+    .toolbar .val { font-family: ui-monospace, Menlo, monospace; font-size: 0.85rem; color: var(--brand); font-weight: 700; min-width: 3.5em; }
+    .log {
+      margin-top: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      background: #16202e;
+      color: #e5eaf1;
+      border-radius: 10px;
+      padding: 10px 12px;
+      max-height: 260px;
+      overflow: auto;
+      white-space: pre-wrap;
+    }
+    .log .hot { color: #fb923c; }
+    .log .ok { color: #86efac; }
+    .log .blue { color: #60a5fa; }
+    .hint { font-size: 0.8rem; color: var(--muted); margin-top: 8px; }
+    .hidden { display: none !important; }
+    table.tbl { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 8px; }
+    table.tbl th, table.tbl td { border-bottom: 1px solid var(--line); padding: 0.42rem 0.5rem; text-align: left; vertical-align: top; }
+    table.tbl th { color: var(--muted); font-weight: 600; }
+    .code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      background: #f4f6fa;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      overflow-x: auto;
+      white-space: pre;
+    }
+    .bar-row { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; font-family: ui-monospace, Menlo, monospace; margin-top: 4px; }
+    .bar-row .lbl { width: 64px; color: var(--muted); flex: none; }
+    .bar-track { flex: 1; background: #eaeef5; border-radius: 6px; height: 17px; overflow: hidden; }
+    .bar-fill { height: 100%; background: var(--run); border-radius: 6px; transition: width .5s ease; }
+    .bar-fill.hot { background: var(--fail); }
+    .bar-fill.good { background: var(--ok); }
+    .bar-val { width: 90px; flex: none; color: var(--muted); }
+    .faq-q {
+      width: 100%;
+      text-align: left;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.88rem;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .faq-q:hover { border-color: var(--brand); }
+    .faq-a {
+      margin: 4px 0 4px;
+      padding: 8px 12px;
+      border-left: 3px solid var(--brand);
+      background: var(--brand-soft);
+      border-radius: 0 8px 8px 0;
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+    .slider-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; font-size: 0.85rem; }
+    .slider-row .name { width: 180px; color: var(--muted); flex: none; }
+    .slider-row input { flex: 1; accent-color: var(--brand); }
+    .slider-row .val { width: 100px; font-family: ui-monospace, Menlo, monospace; color: var(--brand); font-weight: 700; text-align: right; }
+    .verdict { margin-top: 10px; padding: 10px 14px; border-radius: 10px; font-size: 0.88rem; line-height: 1.6; }
+    .verdict.ok { background: #f0fdf4; border: 1px solid rgba(21,128,61,.3); }
+    .verdict.warn { background: #fffbeb; border: 1px solid rgba(161,98,7,.35); }
+    .verdict.bad { background: #fef2f2; border: 1px solid rgba(185,28,28,.3); }
+    .kv { font-size: 0.85rem; line-height: 1.85; }
+    .kv b { color: var(--brand); font-family: ui-monospace, Menlo, monospace; }
+    .pill { display: inline-block; border-radius: 999px; padding: 0.1rem 0.55rem; font-size: 0.75rem; background: #eef2f8; color: var(--muted); }
+    .pill.ok { background: #dcfce7; color: var(--ok); }
+    .pill.bad { background: #fee2e2; color: var(--fail); }
+    .pill.warn { background: #fef3c7; color: var(--warn); }
+    .arch-flow {
+      display: flex; flex-wrap: wrap; gap: 4px; align-items: center;
+      border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+      background: #fafcff; margin-top: 8px;
+    }
+    .arch-node {
+      border: 1px solid var(--brand);
+      background: var(--brand-soft);
+      border-radius: 8px;
+      padding: 0.4rem 0.7rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--brand);
+      cursor: pointer;
+      text-align: center;
+      min-width: 60px;
+    }
+    .arch-node.on { background: var(--brand); color: #fff; }
+    .arch-node.muted { background: transparent; border-color: var(--line); color: var(--muted); }
+    .engine-compare { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-top: 8px; }
+    .engine-card { border: 2px solid var(--line); border-radius: 12px; padding: 14px; background: #fafcff; cursor: pointer; transition: all .2s; text-align: center; }
+    .engine-card.on { border-color: var(--brand); background: var(--brand-soft); }
+    .engine-card h5 { margin: 0 0 4px; font-size: 1rem; color: var(--brand); }
+    .engine-card .speed { font-size: 0.75rem; color: var(--muted); }
+    .dag-box { border: 1px solid var(--line); border-radius: 10px; padding: 12px; background: #16202e; color: #e5eaf1; font-family: ui-monospace, Menlo, monospace; font-size: 0.78rem; margin-top: 10px; }
+    .projection-box { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); margin-top: 10px; }
+    .proj-card { border: 2px solid var(--line); border-radius: 12px; padding: 12px; background: #fafcff; cursor: pointer; text-align: center; transition: all .2s; }
+    .proj-card.on { border-color: var(--brand); background: var(--brand-soft); }
+    .proj-card h5 { margin: 0 0 4px; font-size: 0.95rem; color: var(--brand); }
+    .part-viz { display: grid; gap: 6px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); margin-top: 10px; }
+    .part-cell {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 0.82rem;
+      background: #fafcff;
+      font-family: ui-monospace, Menlo, monospace;
+      text-align: center;
+    }
+    .part-cell.scanned { background: #fee2e2; border-color: var(--fail); color: var(--fail); font-weight: 600; }
+    .part-cell.skipped { background: #dcfce7; border-color: var(--ok); color: var(--ok); }
+    .dist-viz { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); margin-top: 10px; }
+    .dist-node { border: 2px solid var(--line); border-radius: 12px; padding: 12px; text-align: center; cursor: pointer; transition: all .2s; background: #fff; }
+    .dist-node.on { border-color: var(--brand); background: var(--brand-soft); }
+    .dist-node.coordinator { background: var(--brand-soft); border-color: var(--brand); color: var(--brand); }
+    .dist-node h5 { margin: 0; font-size: 0.9rem; }
+    .dist-node p { margin: 2px 0 0; font-size: 0.72rem; color: var(--muted); }
+    .mv-viz { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; background: #fafcff; margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: center; }
+    .mv-box { border: 2px solid var(--brand); border-radius: 10px; padding: 8px 12px; background: var(--brand-soft); color: var(--brand); font-size: 0.82rem; font-weight: 600; }
+    .trace-step {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 0.82rem;
+      background: #fff;
+      cursor: pointer;
+      text-align: center;
+      transition: all .2s;
+    }
+    .trace-step.on { border-color: var(--brand); background: var(--brand-soft); color: var(--brand); font-weight: 600; }
+    .trace-step.current { background: var(--brand); color: #fff; border-color: var(--brand); font-weight: 600; }
+    .schema-viz { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-top: 10px; }
+    .schema-card { border: 2px solid var(--line); border-radius: 12px; padding: 12px; cursor: pointer; transition: all .2s; }
+    .schema-card.on { border-color: var(--brand); background: var(--brand-soft); }
+    .schema-card h5 { margin: 0 0 4px; font-size: 0.95rem; color: var(--brand); }
+    .schema-card .tag { display: inline-block; border-radius: 999px; padding: 0.05rem 0.5rem; font-size: 0.7rem; margin-right: 3px; margin-top: 4px; }
+    .decision-tree { border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: #fafcff; margin-top: 10px; }
+    .dt-node { padding: 6px 10px; border-radius: 8px; margin: 4px 0; font-size: 0.85rem; }
+    .dt-node.q { background: #eef2f8; color: var(--ink); border-left: 3px solid var(--brand); font-weight: 600; }
+    .dt-node.a { background: var(--ok-color, #dcfce7); color: var(--ok); padding-left: 24px; }
+    .dt-node.b { background: #fee2e2; color: var(--fail); padding-left: 24px; }
+    .col-row { display: grid; grid-template-columns: 60px 100px 100px 1fr; gap: 6px; align-items: center; font-size: 0.78rem; font-family: ui-monospace, Menlo, monospace; padding: 4px 0; }
+    .col-row .col-header { color: var(--muted); font-size: 0.72rem; }
+    .simd-viz { display: flex; gap: 4px; align-items: center; margin: 10px 0; }
+    .simd-vec { display: flex; gap: 2px; }
+    .simd-cell { width: 24px; height: 24px; background: var(--brand-soft); border: 1px solid var(--brand); border-radius: 4px; text-align: center; font-size: 0.6rem; line-height: 22px; color: var(--brand); font-weight: 700; }
+    .simd-cell.scalar { background: #fef3c7; border-color: var(--warn); color: var(--warn); }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <div class="brand" style="margin-bottom:12px">
+        <h1>ClickHouse 交互演示</h1>
+        <p>列式 OLAP 数据库 · MergeTree + 向量化。点左侧章节，动手玩概念。</p>
+      </div>
+      <nav class="nav" id="nav"></nav>
+    </aside>
+    <main class="panel" id="panel"></main>
+  </div>
+
+  <script>
+    const chapters = [
+      { id: '01', title: '01 概述与定位' },
+      { id: '02', title: '02 架构与核心组件' },
+      { id: '03', title: '03 MergeTree 引擎家族' },
+      { id: '04', title: '04 数据类型与 SQL' },
+      { id: '05', title: '05 分区排序与索引' },
+      { id: '06', title: '06 向量化执行与查询原理' },
+      { id: '07', title: '07 分布式与集群' },
+      { id: '08', title: '08 物化视图与 CDC' },
+      { id: '09', title: '09 性能调优与实践' },
+      { id: '10', title: '10 生态对比与 FAQ' },
+    ]
+
+    const params = new URLSearchParams(location.search)
+    let current = (params.get('c') || '01').padStart(2, '0')
+    const nav = document.getElementById('nav')
+    const panel = document.getElementById('panel')
+
+    chapters.forEach((c) => {
+      const b = document.createElement('button')
+      b.textContent = c.title
+      b.dataset.id = c.id
+      b.onclick = () => show(c.id)
+      nav.appendChild(b)
+    })
+
+    function show(id) {
+      current = id
+      nav.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.id === id))
+      history.replaceState(null, '', `?c=${id}`)
+      panel.innerHTML = ''
+      renders[id](panel)
+    }
+
+    /* ============ 01 概述与定位 ============ */
+    function render01(el) {
+      el.innerHTML = `
+        <h2>ClickHouse 在大数据链路中的位置</h2>
+        <p class="lead">ClickHouse 是列式 OLAP 数据库，核心是 MergeTree + 向量化执行。点下方引擎/组件卡片看定位；再看为什么它那么快。</p>
+
+        <h4>ClickHouse vs Hive vs Spark SQL vs Trino vs Doris</h4>
+        <div class="arch" id="compCards"></div>
+        <div class="detail" id="compD">点击上方卡片。</div>
+
+        <h4>为什么 ClickHouse 那么快？四大机制</h4>
+        <div class="arch-flow" style="justify-content:center;flex-wrap:wrap;padding:16px">
+          <div style="text-align:center">
+            <span class="arch-node on">列式存储</span><br>
+            <span class="pill">IO ↓ 90%</span>
+          </div>
+          <span class="pill" style="background:#eef2f8;color:#5f6b7a">×</span>
+          <div style="text-align:center">
+            <span class="arch-node on">SIMD 向量化</span><br>
+            <span class="pill">运算 ↑ 5-10x</span>
+          </div>
+          <span class="pill" style="background:#eef2f8;color:#5f6b7a">×</span>
+          <div style="text-align:center">
+            <span class="arch-node on">有序 MergeTree</span><br>
+            <span class="pill">索引精准</span>
+          </div>
+          <span class="pill" style="background:#eef2f8;color:#5f6b7a">×</span>
+          <div style="text-align:center">
+            <span class="arch-node on">无锁异步 IO</span><br>
+            <span class="pill">高并发</span>
+          </div>
+        </div>
+
+        <h4>大数据全链路位置图</h4>
+        <div class="arch-flow" style="justify-content:center">
+          <span class="arch-node muted">数据采集</span>
+          <span class="pill" style="background:#eef2f8;color:#5f6b7a">→</span>
+          <span class="arch-node muted">Kafka/Flink CDC</span>
+          <span class="pill" style="background:#eef2f8;color:#5f6b7a">→</span>
+          <span class="arch-node muted">Hive/Spark ETL</span>
+          <span class="pill" style="background:#eef2f8;color:#5f6b7a">→</span>
+          <span class="arch-node on" id="ckNode">ClickHouse（ADS 层）</span>
+          <span class="pill" style="background:#eef2f8;color:#5f6b7a">→</span>
+          <span class="arch-node muted">Grafana/BI</span>
+        </div>
+        <p class="hint">ClickHouse 经常被用来<strong>替换 Hive 的 ADS 报表层</strong>，但前面的 ODS/DWD/DWS 清洗链路还是靠 Hive/Spark 来跑。</p>
+
+        <h4>ClickHouse vs 主要对手对比表</h4>
+        <table class="tbl">
+          <tr><th>维度</th><th>ClickHouse</th><th>Hive (on Tez)</th><th>Spark SQL</th><th>Trino</th><th>Doris</th></tr>
+          <tr><td>延迟</td><td><b>毫秒~秒级</b></td><td>分钟级</td><td>秒级~分钟级</td><td>亚秒级~秒级</td><td>毫秒级~秒级</td></tr>
+          <tr><td>事务</td><td><span class="pill bad">无</span></td><td>4.x 部分支持</td><td>Delta/Iceberg</td><td>只读</td><td><span class="pill ok">有</span></td></tr>
+          <tr><td>点查</td><td><span class="pill bad">不适合</span></td><td><span class="pill bad">不适合</span></td><td><span class="pill bad">不适合</span></td><td><span class="pill bad">不适合</span></td><td><span class="pill ok">支持</span></td></tr>
+          <tr><td>复杂 JOIN</td><td><span class="pill warn">较弱</span></td><td>成熟</td><td>Catalyst 强</td><td>强</td><td><span class="pill ok">强</span></td></tr>
+          <tr><td>存储</td><td>MergeTree</td><td>HDFS/对象存储</td><td>外部存储</td><td>外部存储</td><td>本地列存</td></tr>
+        </table>
+      `
+      const comps = [
+        ['ClickHouse', 'OLAP 数据库。<b>列式 + 向量化 + MergeTree</b>。同量级数据单表聚合比 Hive/Spark/Trino 快 5–100 倍。适合实时看板、用户行为分析、日志分析。'],
+        ['Hive (on Tez)', '数仓 SQL 层。把 HDFS 文件映射成表，用 HiveQL 查。4.x 回归 Metastore + SQL 兼容层。分钟级延迟，数仓建模成熟。'],
+        ['Spark SQL', '多模态计算引擎。Catalyst 优化器快，支持 RDD 迭代、MLlib、流处理。可以连 Hive Metastore 直接读写 Hive 表。'],
+        ['Trino (Presto)', '亚秒级交互式查询引擎。纯内存列式执行，多数据源联邦查询（Hive + MySQL + Cassandra + ClickHouse）。不做长 ETL。'],
+        ['Doris / StarRocks', '列式 OLAP 同赛道。原生 MySQL 协议、支持 2PC 事务、冷热分离好。适合需要复杂 JOIN、事务、全链路数仓的场景。'],
+      ]
+      const cc = el.querySelector('#compCards'), cd = el.querySelector('#compD')
+      comps.forEach(([n, d]) => {
+        const div = document.createElement('div')
+        div.className = 'arch-item'
+        div.innerHTML = `<strong>${n}</strong><span>${d.slice(0, 30)}…</span>`
+        div.onclick = () => {
+          cc.querySelectorAll('.arch-item').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); cd.innerHTML = `<b>${n}</b>：${d}`
+        }
+        cc.appendChild(div)
+      })
+    }
+
+    /* ============ 02 架构与核心组件 ============ */
+    function render02(el) {
+      el.innerHTML = `
+        <h2>ClickHouse 架构：Server → Part → Merge</h2>
+        <p class="lead">点下方组件卡片看职责；再看一遍写入→Merge→查询完整流程；最后了解 Distributed 引擎和 Keeper 的作用。</p>
+
+        <h4>核心组件（点击看职责）</h4>
+        <div class="arch" id="archRoles"></div>
+        <div class="detail" id="archD">点击上方组件。</div>
+
+        <h4>写入→Merge 完整流程</h4>
+        <div class="toolbar">
+          <button class="primary" id="qNext">下一步</button>
+          <button id="qReset">重置</button>
+          <span class="pill" id="qPhase">未开始</span>
+        </div>
+        <div class="log" id="qLog">点击「下一步」开始模拟。查询：INSERT INTO orders VALUES ... → 查 SELECT count() FROM orders WHERE dt='2026-11-03'</div>
+
+        <h4>Distributed 引擎查询路由图</h4>
+        <div class="dist-viz" id="distviz"></div>
+        <div class="detail" id="distD" style="min-height:3em">点击节点查看详情。</div>
+      `
+      const roles = [
+        ['Server 进程', '单二进制承载一切：HTTP 端口 8123、Native 协议端口 9000、查询引擎、存储引擎。无 Master/Worker 区分。'],
+        ['MergeTree 引擎', '核心存储引擎。写入生成 Part，后台 Merge 合并同分区 Part 成有序大 Part。支持 6 种变体。'],
+        ['Part / Data Part', '写入产生的列分片（100MB–1GB）。包含 .bin 列文件 + .marks 稀疏索引 + _part_metadata.json。'],
+        ['Marks 稀疏索引', 'Part 内每 8192 行一个 mark，定位数据块。查询时先查 marks 跳过无关区间。'],
+        ['Merge 后台线程', '异步合并同分区多个 Part。自动运行，不阻塞写入。Merge 完成后删旧 Part。'],
+        ['Distributed 引擎', '只读代理层，不存数据。查询时自动并发下发到集群所有分片的本地表，结果在 Coordinator 节点聚合。'],
+        ['ReplicatedMergeTree', '副本引擎。Keeper 协调副本同步，写入只需写一个副本，其他副本自动拉取 Part。'],
+        ['ClickHouse Keeper', '分布式协调服务（ZooKeeper 协议兼容）。管理副本同步、Part 全局编号、分片选举。'],
+      ]
+      const ar = el.querySelector('#archRoles'), ad = el.querySelector('#archD')
+      roles.forEach(([n, d]) => {
+        const div = document.createElement('div')
+        div.className = 'arch-item'
+        div.innerHTML = `<strong>${n}</strong><span>${d.slice(0, 25)}…</span>`
+        div.onclick = () => {
+          ar.querySelectorAll('.arch-item').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); ad.innerHTML = `<b>${n}</b>：${d}`
+        }
+        ar.appendChild(div)
+      })
+
+      const steps = [
+        ['[1] INSERT 接收', '客户端 INSERT VALUES → Server 接收 → 数据先放内存 Buffer'],
+        ['[2] Buffer 满', 'max_insert_block_size (默认 1M 行) → 按 PARTITION BY 拆分区 → 每个分区按 ORDER BY 排序'],
+        ['[3] 压缩写 Part', '每列压缩成 .bin + 生成 .marks 稀疏索引 + 写 _part_metadata.json → 生成新 Part'],
+        ['[4] Merge 线程启动', '后台 Merge 线程扫描 → 挑出同分区的多个 Part → 按 ORDER BY 归并排序'],
+        ['[5] 合并完成', '生成大有序 Part（Level+1）→ 旧 Part 标记删除 → 后台线程清理旧 Part'],
+        ['[6] 查询读 Part', 'SELECT 时 MergeTree 引擎扫描 dt=20261103 分区下所有 Part（已合并 + 未合并）'],
+        ['[7] SIMD 向量化', '列式读取 + Marks 跳过 + SIMD 批量运算 → 结果返回'],
+      ]
+      const qLog = el.querySelector('#qLog'), qPhase = el.querySelector('#qPhase')
+      let qi = -1
+      el.querySelector('#qNext').onclick = () => {
+        qi = Math.min(qi + 1, steps.length - 1)
+        qPhase.textContent = steps[qi][0]
+        qLog.innerHTML += '\n<span class="hot">' + steps[qi][0] + '</span>\n' + steps[qi][1]
+      }
+      el.querySelector('#qReset').onclick = () => {
+        qi = -1; qPhase.textContent = '未开始'
+        qLog.textContent = '点击「下一步」开始模拟。查询：INSERT INTO orders VALUES ... → 查 SELECT count() FROM orders WHERE dt=2026-11-03'
+      }
+
+      // 分布式路由图
+      const dv = el.querySelector('#distviz'), dd = el.querySelector('#distD')
+      const distNodes = [
+        ['用户 Client', '任意节点提交查询'],
+        ['Coordinator 节点', '解析 Distributed 引擎 → 并发下发查询'],
+        ['Shard 1 Replica', '本地 MergeTree 执行 → 本地聚合'],
+        ['Shard 2 Replica', '本地 MergeTree 执行 → 本地聚合'],
+        ['Shard 3 Replica', '本地 MergeTree 执行 → 本地聚合'],
+      ]
+      distNodes.forEach(([n, d], idx) => {
+        const div = document.createElement('div')
+        div.className = 'dist-node'
+        if (idx === 1) div.classList.add('coordinator')
+        div.innerHTML = `<h5>${n}</h5><p>${d}</p>`
+        div.onclick = () => {
+          dv.querySelectorAll('.dist-node').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); dd.innerHTML = `<b>${n}</b>：${d}`
+        }
+        dv.appendChild(div)
+      })
+    }
+
+    /* ============ 03 MergeTree 引擎家族 ============ */
+    function render03(el) {
+      el.innerHTML = `
+        <h2>MergeTree 引擎家族选择器</h2>
+        <p class="lead">选择下方场景，看哪种 MergeTree 变体最适合。再看场景→引擎匹配决策树。</p>
+
+        <h4>六种 MergeTree 变体（点击看详情）</h4>
+        <div class="schema-viz" id="engCards"></div>
+        <div class="detail" id="engD">点击上方引擎。</div>
+
+        <h4>场景 → 引擎匹配决策树</h4>
+        <div class="toolbar">
+          <button class="chip ghost" data-scene="dedup">用户画像更新（去重）</button>
+          <button class="chip ghost" data-scene="sum">实时指标预求和</button>
+          <button class="chip ghost" data-scene="count">精确去重计数 + 分位数</button>
+          <button class="chip ghost" data-scene="cdc">CDC 变更同步（sign 标记）</button>
+          <button class="chip ghost" data-scene="none">普通 OLAP（无特殊需求）</button>
+        </div>
+        <div class="verdict ok" id="sceneOut">点上方按钮看推荐引擎和理由。</div>
+
+        <h4>物化视图与 MergeTree 的关系</h4>
+        <div class="mv-viz">
+          <span class="mv-box">源表 INSERT</span>
+          <span class="pill" style="background:#eef2f8;color:#5f6b7a">触发</span>
+          <span class="mv-box">Materialized View<br>（SQL + 触发器）</span>
+          <span class="pill" style="background:#eef2f8;color:#5f6b7a">写入</span>
+          <span class="mv-box">目标表<br>（MergeTree 家族）</span>
+        </div>
+        <p class="hint">物化视图本身不存数据。目标表用什么引擎 → 决定聚合/去重行为。<code>SummingMergeTree</code> 作为目标表 = 实时预求和；<code>ReplacingMergeTree</code> 作为目标表 = 实时去重。</p>
+      `
+      const engs = [
+        ['MergeTree', '基础', 'append-only, 无去重', '#dbeafe'],
+        ['Replacing', '去重', '按 ORDER BY + version 保留最新行', '#fef3c7'],
+        ['Summing', '预求和', '数值列自动 sum 合并', '#dcfce7'],
+        ['Aggregating', '预聚合', 'AggregateFunction 状态合并', '#fce7f3'],
+        ['Collapsing', '抵消', 'sign=+1 和 sign=-1 抵消', '#fee2e2'],
+        ['VersionedCollapsing', '带版本抵消', 'sign + version 解决乱序', '#e0e7ff'],
+      ]
+      const ec = el.querySelector('#engCards'), ed = el.querySelector('#engD')
+      const engDetails = {
+        'MergeTree': '最基础的 MergeTree。写入 append-only，每次 INSERT 生成一个 Part，后台 Merge 按 ORDER BY 归并排序合并。<b>适用：</b>普通 OLAP 场景，不需要去重/预聚合。',
+        'Replacing': '后台 Merge 时相同 ORDER BY 键只保留一行。ReplacingMergeTree(version) 指定版本列保留最大的；ReplacingMergeTree() 保留最后写入的。<b>适用：</b>用户画像更新表、维表多源合并去重。',
+        'Summing': '后台 Merge 时相同 ORDER BY 键的多行，数值列自动求和合并。<b>适用：</b>指标系统、监控系统、SaaS 仪表盘——写入原始数据但查询时读到预先合并好的聚合值。',
+        'Aggregating': '列类型用 AggregateFunction(Func, Args)，写入用 xxxState() 函数，查询用 xxxMerge() 合并状态。支持 uniq（近似去重）、quantile（分位数）等。<b>适用：</b>需要精确控制聚合函数、近似去重统计。',
+        'Collapsing': '后台 Merge 时 sign=1 和 sign=-1 的行成对抵消。同一条记录的 sign=1 和 sign=-1 必须在不同 Part 才能正确抵消。<b>适用：</b>MySQL/Kafka CDC 变更同步。',
+        'VersionedCollapsing': 'Collapsing 的升级版，多一个 version 列。相同 id 且 version 相同的 sign 行才会抵消。解决 CDC 消息乱序到达的问题。<b>适用：</b>CDC + 消息乱序场景。',
+      }
+      engs.forEach(([n, tag, desc, color]) => {
+        const div = document.createElement('div')
+        div.className = 'schema-card'
+        div.innerHTML = `<h5>${n}MergeTree</h5>
+          <span class="tag" style="background:${color}">${tag}</span>
+          <div style="margin-top:6px;font-size:0.78rem;color:var(--muted)">${desc}</div>`
+        div.onclick = () => {
+          ec.querySelectorAll('.schema-card').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); ed.innerHTML = `<b>${n}MergeTree</b><br>${engDetails[n]}`
+        }
+        ec.appendChild(div)
+      })
+
+      const sceneMap = {
+        dedup: { eng: 'ReplacingMergeTree', reason: '后台 Merge 时相同 ORDER BY + version 保留最新行 → 自动去重用户画像更新。也可以用 FINAL 临时去重（但慢）。' },
+        sum: { eng: 'SummingMergeTree', reason: '写入原始指标数据，Merge 时自动预求和。查询时拿到已经合并好的聚合值，比每次重新 sum 快很多。' },
+        count: { eng: 'AggregatingMergeTree', reason: '需要精确去重计数（uniqExact 近似也可以）+ 分位数统计 → AggregateFunction + uniqState/quantileState。' },
+        cdc: { eng: 'VersionedCollapsingMergeTree', reason: 'CDC 消息可能乱序 → 需要 sign + version 确保相同版本的 +/- 行正确抵消。纯 CollapsingMergeTree 无法处理乱序。' },
+        none: { eng: 'MergeTree 基类', reason: '无去重/预聚合/抵消需求 → 用最简 MergeTree 基类即可。保持简单 = 维护成本最低。' },
+      }
+      Object.keys(sceneMap).forEach(k => {
+        el.querySelector(`[data-scene="${k}"]`).onclick = () => {
+          Object.keys(sceneMap).forEach(k2 => el.querySelector(`[data-scene="${k2}"]`).classList.add('ghost'))
+          el.querySelector(`[data-scene="${k}"]`).classList.remove('ghost')
+          const info = sceneMap[k]
+          const out = el.querySelector('#sceneOut')
+          out.className = 'verdict ok'
+          out.innerHTML = `<b>推荐引擎：${info.eng}</b><br>${info.reason}`
+        }
+      })
+    }
+
+    /* ============ 04 数据类型与 SQL ============ */
+    function render04(el) {
+      el.innerHTML = `
+        <h2>数据类型选择器 & Nullable 坑警告</h2>
+        <p class="lead">选择下方数据类型查看说明；再看 Nullable 的四大坑；最后看 INSERT 批量 vs 单行的性能差异。</p>
+
+        <h4>数据类型选择器（点击看详情）</h4>
+        <div class="schema-viz" id="typeCards"></div>
+        <div class="detail" id="typeD">点击上方类型。</div>
+
+        <h4>⚠️ Nullable 的四大坑（点击展开）</h4>
+        <div class="toolbar">
+          <button class="chip ghost" id="nb1">坑 1：压缩率下降</button>
+          <button class="chip ghost" id="nb2">坑 2：查询性能下降</button>
+          <button class="chip ghost" id="nb3">坑 3：ORDER BY 不能用</button>
+          <button class="chip ghost" id="nb4">坑 4：类型推断混乱</button>
+        </div>
+        <div class="verdict bad" id="nbOut">点击上方坑看详情。</div>
+
+        <h4>INSERT 批量 vs 单行性能对比</h4>
+        <div class="slider-row"><span class="name">写入行数</span><input type="range" id="insertRows" min="1" max="1000000" value="50000" step="100"><span class="val" id="insertRowsV">50K 行</span></div>
+        <div class="slider-row"><span class="name">方式</span><span id="insertMode" style="color:var(--muted);font-size:0.82rem">—</span></div>
+        <div class="bar-row"><span class="lbl">产生 Part</span><div class="bar-track"><div class="bar-fill" id="insertPartBar"></div></div><span class="bar-val" id="insertPartV"></span></div>
+        <div class="bar-row"><span class="lbl">Merge 压力</span><div class="bar-track"><div class="bar-fill" id="insertMergeBar"></div></div><span class="bar-val" id="insertMergeV"></span></div>
+        <div class="verdict" id="insertVerdict"></div>
+      `
+      const types = [
+        ['UInt/Int', '整数', 'UInt8/Int8 → UInt64/Int64。UInt64 范围 0~1.8e19，最常用。'],
+        ['Float', '浮点', 'Float32（单精度，7 位）/ Float64（双精度，15 位，推荐）。避免浮点误差用 Decimal。'],
+        ['Decimal', '定点', 'Decimal(P,S)。P=精度（总位数），S=小数位数。精确计算货币。'],
+        ['String', '字符串', '变长，UTF-8，LZ4 压缩。ClickHouse 推荐，不要 VARCHAR。'],
+        ['FixedString', '定长', 'FixedString(N) 固定 N 字节，短自动补 \\0。紧凑但不灵活。'],
+        ['Date/DateTime', '时间', 'Date（天）/ DateTime（秒）/ DateTime64(3)（毫秒）。自动处理时区。'],
+        ['Array', '数组', 'Array(String) / Array(UInt32)。注意：Array 里元素不支持 Nullable！'],
+        ['Enum', '枚举', "Enum('pending' = 1, 'paid' = 2, 'cancel' = 3)。存 UInt8 但显示字符串。"],
+        ['JSON', 'JSON', '22.x+ 原生 JSON 类型，自动展开成嵌套列。也可以用 JSONExtract*() 解析 String。'],
+        ['AggregateFn', '聚合函数状态', 'AggregateFunction(uniq, UInt64) 写入用 uniqState()，查询用 uniqMerge()。'],
+      ]
+      const tc = el.querySelector('#typeCards'), td = el.querySelector('#typeD')
+      types.forEach(([n, tag, d]) => {
+        const div = document.createElement('div')
+        div.className = 'schema-card'
+        div.innerHTML = `<h5>${n}</h5><span class="tag" style="background:#eef2f8;color:var(--muted)">${tag}</span><div style="margin-top:6px;font-size:0.78rem;color:var(--muted)">${d.slice(0,40)}…</div>`
+        div.onclick = () => {
+          tc.querySelectorAll('.schema-card').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); td.innerHTML = `<b>${n}</b><br>${d}`
+        }
+        tc.appendChild(div)
+      })
+
+      const nbTexts = {
+        nb1: 'Nullable 列会额外生成一个 <code>_null</code> 位图文件（.bin + .null_bin）。列压缩率从 10-20x 降到 5-10x，磁盘空间翻一倍。',
+        nb2: '查询 Nullable 列需要读两个文件（数据 + null 位图）。SIMD 处理时要额外判断 null 值，向量化效率下降 20-50%。',
+        nb3: '<b>MergeTree 的 ORDER BY 和 PARTITION BY 列必须是非 Nullable！</b>如果一个表需要 ORDER BY Nullable(xxx)，ClickHouse 会直接报错。',
+        nb4: 'Nullable(UInt32) 和 UInt32 混用在 JOIN/比较/CAST 时会报类型不兼容。ClickHouse 严格不自动隐式转换。',
+      }
+      Object.keys(nbTexts).forEach(k => {
+        el.querySelector('#' + k).onclick = () => {
+          Object.keys(nbTexts).forEach(k2 => el.querySelector('#' + k2).classList.add('ghost'))
+          el.querySelector('#' + k).classList.remove('ghost')
+          el.querySelector('#nbOut').innerHTML = nbTexts[k]
+        }
+      })
+
+      // INSERT 对比
+      const ir = el.querySelector('#insertRows'), irV = el.querySelector('#insertRowsV')
+      const ipBar = el.querySelector('#insertPartBar'), ipV = el.querySelector('#insertPartV')
+      const imBar = el.querySelector('#insertMergeBar'), imV = el.querySelector('#insertMergeV')
+      const iv = el.querySelector('#insertVerdict')
+      function recalcInsert() {
+        const rows = +ir.value
+        irV.textContent = rows >= 1000 ? (rows/1000).toFixed(0) + 'K 行' : rows + ' 行'
+        // 批量 1 次 vs 单行 rows 次
+        ipBar.style.width = '1%'
+        ipV.textContent = '批量: 1 Part | 单行: ' + rows + ' Parts'
+        ipBar.classList.remove('good','hot')
+        ipBar.classList.add('hot')
+        ipBar.style.width = '100%'
+        ipV.textContent = '批量产生 1 Part | 单行 INSERT 产生 ' + rows + ' Parts'
+        imBar.style.width = rows > 10000 ? '100%' : (rows / 100 + '%')
+        imBar.classList.remove('good','hot')
+        imBar.classList.add(rows > 50000 ? 'hot' : 'good')
+        imV.textContent = rows > 50000 ? '极重' : rows > 10000 ? '较重' : '较轻'
+        if (rows > 5000) {
+          iv.className = 'verdict ok'
+          iv.innerHTML = `✅ 推荐 <b>批量 VALUES</b>：一次 INSERT ${rows} 行 → 只产生 <b>1 个 Part</b>，Merge 压力小。`
+        } else {
+          iv.className = 'verdict warn'
+          iv.innerHTML = `⚠️ 单次 INSERT 行数较少（${rows} 行），建议累积到 <b>5000+</b> 行再写。`
+        }
+      }
+      ir.oninput = recalcInsert
+      recalcInsert()
+    }
+
+    /* ============ 05 分区排序与索引 ============ */
+    function render05(el) {
+      el.innerHTML = `
+        <h2>分区策略选择器 & 跳数索引效果可视化</h2>
+        <p class="lead">选择分区策略看分区裁剪效果；再看三种跳数索引的原理和适用场景；最后对比 Projections 投影加速。</p>
+
+        <h4>分区策略选择器（点击看效果）</h4>
+        <div class="flow" id="partChoices"></div>
+        <div class="part-viz" id="partViz"></div>
+        <div class="verdict ok" id="partVerdict"></div>
+
+        <h4>三种跳数索引（点击看原理）</h4>
+        <div class="schema-viz" id="skCards"></div>
+        <div class="detail" id="skD">点击上方索引类型。</div>
+
+        <h4>Projections 投影加速</h4>
+        <div class="projection-box" id="projCards"></div>
+        <div class="detail" id="projD">点击上方 Projection 卡片。</div>
+      `
+      const partitions = []
+      for (let m = 10; m <= 11; m++) {
+        const days = m === 10 ? 31 : 7
+        for (let d = 1; d <= days; d++) {
+          partitions.push(`2026-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`)
+        }
+      }
+
+      function drawPartitions(shouldScan, label) {
+        const viz = el.querySelector('#partViz')
+        viz.innerHTML = ''
+        let scanned = 0
+        partitions.forEach(dt => {
+          const isScanned = shouldScan(dt)
+          if (isScanned) scanned++
+          const cell = document.createElement('div')
+          cell.className = 'part-cell ' + (isScanned ? 'scanned' : 'skipped')
+          cell.textContent = dt
+          cell.title = isScanned ? '被扫描' : '被跳过'
+          viz.appendChild(cell)
+        })
+        const pct = Math.round(scanned / partitions.length * 100)
+        const verdict = el.querySelector('#partVerdict')
+        verdict.innerHTML = `SQL：<code>${label}</code> → 扫描 <b>${scanned}/${partitions.length}</b> 分区（<b>${pct}%</b>）`
+        verdict.className = 'verdict ' + (pct < 20 ? 'ok' : pct < 80 ? 'warn' : 'bad')
+      }
+
+      const partCases = [
+        ["dt = '2026-11-03'", dt => dt === '2026-11-03', '✅ 完美裁剪：只扫 1 天'],
+        ["dt BETWEEN '2026-11-01' AND '2026-11-07'", dt => dt >= '2026-11-01' && dt <= '2026-11-07', '✅ 好：扫 7 天'],
+        ["dt LIKE '2026-11-%'", dt => dt.startsWith('2026-11'), '✅ 好：扫 11 月全部 7 天'],
+        ["toYYYYMMDD(dt) + 1 = 20261103", () => true, '❌ 函数包裹分区键 → 全分区扫描！'],
+        ["WHERE 里没有 dt", () => true, '❌ 无分区键 → 全表扫描（38 个分区）'],
+      ]
+      const wc = el.querySelector('#partChoices')
+      partCases.forEach(([sql, fn, note]) => {
+        const b = document.createElement('button')
+        b.className = 'chip ghost'; b.type = 'button'
+        b.innerHTML = `<code>${sql}</code>`
+        b.title = note
+        b.onclick = () => {
+          wc.querySelectorAll('.chip').forEach(x => x.classList.add('ghost'))
+          b.classList.remove('ghost')
+          drawPartitions(fn, sql)
+        }
+        wc.appendChild(b)
+      })
+      setTimeout(() => wc.querySelector('button').click(), 30)
+
+      // 跳数索引
+      const sks = [
+        ['minmax', '范围查询', '每个 Part 记录列的 MIN/MAX。WHERE amount BETWEEN 500 AND 1000 → Part 的 MAX < 500 整个跳过。'],
+        ['set(N)', '等值查询', '每个 Part 存列的 N 个不同值。WHERE user_id IN (1,2,3) → Part 的 set 不含 1,2,3 就跳过。'],
+        ['bloom_filter', '低基数字段等值', '每个 Part 生成 Bloom Filter（布隆过滤器）。WHERE city = "北京" → Part 的 BF 大概率不含北京就跳过。'],
+      ]
+      const skc = el.querySelector('#skCards'), skd = el.querySelector('#skD')
+      sks.forEach(([n, tag, d]) => {
+        const div = document.createElement('div')
+        div.className = 'schema-card'
+        div.innerHTML = `<h5>${n}</h5><span class="tag" style="background:#eef2f8;color:var(--muted)">${tag}</span><div style="margin-top:6px;font-size:0.78rem;color:var(--muted)">${d.slice(0,45)}…</div>`
+        div.onclick = () => {
+          skc.querySelectorAll('.schema-card').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); skd.innerHTML = `<b>${n}</b>：${d}`
+        }
+        skc.appendChild(div)
+      })
+
+      // Projections
+      const projs = [
+        ['主排序键', '(user_id, id)', '物理存储顺序，主索引。查询 WHERE user_id = xxx 时主索引命中。'],
+        ['proj_city', '(city, dt)', '预存按 city + dt 排列的副本。查询 WHERE city = "北京" 时引擎自动选这个。'],
+        ['proj_time', '(dt, status)', '预存按 dt + status 排列的副本。查询 WHERE dt BETWEEN ... AND status = 2 时最优。'],
+      ]
+      const pc = el.querySelector('#projCards'), pd = el.querySelector('#projD')
+      projs.forEach(([n, order, d]) => {
+        const div = document.createElement('div')
+        div.className = 'proj-card'
+        div.innerHTML = `<h5>${n}</h5><div style="font-size:0.75rem;color:var(--muted);font-family:ui-monospace">ORDER BY ${order}</div>`
+        div.onclick = () => {
+          pc.querySelectorAll('.proj-card').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); pd.innerHTML = `<b>${n}</b><br>${d}`
+        }
+        pc.appendChild(div)
+      })
+      pc.querySelector('.proj-card').click()
+    }
+
+    /* ============ 06 向量化执行与查询原理 ============ */
+    function render06(el) {
+      el.innerHTML = `
+        <h2>列式 vs 行式 & SIMD 向量化动画</h2>
+        <p class="lead">对比传统行式执行和 ClickHouse 向量化执行；看 SIMD 批量运算的优势；最后用 EXPLAIN PIPELINE 验证查询优化。</p>
+
+        <h4>传统行式执行 vs ClickHouse 向量化（点击按钮切换）</h4>
+        <div class="toolbar">
+          <button class="chip ghost" id="modeScalar">行式（逐行）</button>
+          <button class="chip ghost" id="modeSimd">向量化（批量）</button>
+        </div>
+        <div id="execAnim"></div>
+
+        <h4>SIMD 向量宽度对比</h4>
+        <div class="simd-viz" style="justify-content:center">
+          <span class="pill">SSE</span>
+          <div class="simd-vec">
+            <div class="simd-cell">1</div><div class="simd-cell">2</div>
+          </div>
+          <span class="pill">AVX</span>
+          <div class="simd-vec">
+            <div class="simd-cell">1</div><div class="simd-cell">2</div><div class="simd-cell">3</div><div class="simd-cell">4</div>
+          </div>
+          <span class="pill ok">AVX-512</span>
+          <div class="simd-vec">
+            <div class="simd-cell">1</div><div class="simd-cell">2</div><div class="simd-cell">3</div><div class="simd-cell">4</div>
+            <div class="simd-cell">5</div><div class="simd-cell">6</div><div class="simd-cell">7</div><div class="simd-cell">8</div>
+          </div>
+        </div>
+        <p class="hint">ClickHouse 自动检测 CPU 指令集，编译时开启对应 SIMD 优化。AVX-512 一次处理 8 个 Float64 值，比逐行快 ~8x。</p>
+
+        <h4>Pipeline 执行 vs 非 Pipeline</h4>
+        <div class="arch-flow" style="justify-content:center;flex-wrap:wrap;padding:16px">
+          <div style="text-align:center">
+            <span class="arch-node muted">Source</span>
+            <span class="pill" style="background:#eef2f8;color:#5f6b7a">→</span>
+            <span class="arch-node muted">Filter</span>
+            <span class="pill" style="background:#eef2f8;color:#5f6b7a">→</span>
+            <span class="arch-node on">GroupBy</span>
+            <span class="pill" style="background:#eef2f8;color:#5f6b7a">→</span>
+            <span class="arch-node muted">Output</span>
+          </div>
+        </div>
+        <p class="hint">Pipeline 模式下算子之间通过内存管道传递 Block（64K 行），<b>不落盘</b>。只有超过 max_memory_usage 才自动降级 spill to disk。</p>
+
+        <h4>EXPLAIN PIPELINE 验证</h4>
+        <div class="toolbar">
+          <button class="primary" id="expRun">运行 EXPLAIN PIPELINE</button>
+        </div>
+        <div class="code" id="expOut">点上方按钮。</div>
+      `
+      function showMode(mode) {
+        const container = el.querySelector('#execAnim')
+        if (mode === 'scalar') {
+          container.innerHTML = `
+            <div class="code">行式执行（逐行）:
+  for row in rows:           ← 每轮 1 行
+    if row.amount > 100:
+      sum += row.amount       ← 一次读一个值 + 一次加法
+
+  [row1] → 判断 → 加 → [row2] → 判断 → 加 → ...
+
+  特点：每行一次指令，CPU L3 缓存命中率低，慢。</div>
+          `
+        } else {
+          container.innerHTML = `
+            <div class="code">向量化执行（SIMD 批量）:
+  vector = load_64_rows()    ← 一次加载 64 个 amount 值
+  mask   = vector_amount > 100  ← 批量比较（一个指令）
+  sum    = vector_masked_sum(vector) ← 批量求和（一个指令）
+
+  [row1..row64] → 批量比较 → 批量求和 → ...
+
+  特点：64 行打包一次处理，连续内存访问 L3 友好，快 5-10x。</div>
+          `
+        }
+      }
+      el.querySelector('#modeScalar').onclick = () => {
+        el.querySelector('#modeScalar').classList.remove('ghost')
+        el.querySelector('#modeSimd').classList.add('ghost')
+        showMode('scalar')
+      }
+      el.querySelector('#modeSimd').onclick = () => {
+        el.querySelector('#modeSimd').classList.remove('ghost')
+        el.querySelector('#modeScalar').classList.add('ghost')
+        showMode('simd')
+      }
+      el.querySelector('#modeSimd').click()
+
+      el.querySelector('#expRun').onclick = () => {
+        const out = el.querySelector('#expOut')
+        out.innerHTML = `<span class="blue">-- EXPLAIN PIPELINE --</span>
+EXPLAIN PIPELINE SELECT city, count(), sum(amount)
+FROM orders WHERE dt BETWEEN '2026-11-01' AND '2026-11-07'
+GROUP BY city ORDER BY sum(amount) DESC LIMIT 10;
+
+PIPELINE (6 steps)
+├── (1) ReadFromMergeTree
+│   └── MergeTreeReadPool: Reading 3 parts, 12 granularities
+│       <span class="ok">Partition pruning: dt in [20261101, 20261107]</span>  ← ✅ 分区裁剪生效
+│       Skipping index: idx_amount minmax (not used)
+│       Skipping index: idx_city bloom_filter (not used)
+│       Result columns: [city, amount]    ← ✅ 列裁剪（只读需要的列）
+│       <span class="ok">Marks read: 8/20</span>  ← ✅ 主索引跳过 60% 的 mark
+│
+├── (2) Filter
+│   └── Expression: dt BETWEEN ...        ← 分区裁剪已过滤大部分
+│
+├── (3) GroupBy
+│   └── Aggregate: count(), sum(amount)
+│   └── Keys: [city]                      ← GROUP BY 列在 ORDER BY 里
+│
+├── (4) Sorting
+│   └── sort(sum(amount) DESC)
+│
+├── (5) Limit
+│   └── limit 10                          ← 先 LIMIT 减少返回数据
+│
+└── (6) OutputPort
+    └── Output: [city, count(), sum(amount)]`
+      }
+    }
+
+    /* ============ 07 分布式与集群 ============ */
+    function render07(el) {
+      el.innerHTML = `
+        <h2>分布式集群路由图 & 副本同步</h2>
+        <p class="lead">点下方节点看 Distributed 引擎路由流程；再看 ReplicatedMergeTree 副本同步的完整链路；最后了解为什么推荐业务层直连本地表写入。</p>
+
+        <h4>集群拓扑图（点击节点看详情）</h4>
+        <div class="dist-viz" id="clusterviz"></div>
+        <div class="detail" id="clusterD">点击集群节点。</div>
+
+        <h4>查询路由完整流程（点击下一步）</h4>
+        <div class="toolbar">
+          <button class="primary" id="routeNext">下一步</button>
+          <button id="routeReset">重置</button>
+          <span class="pill" id="routePhase">未开始</span>
+        </div>
+        <div class="log" id="routeLog">SELECT count() FROM orders_distributed WHERE dt='2026-11-03'</div>
+
+        <h4>ReplicatedMergeTree 副本同步链路</h4>
+        <div class="arch-flow" style="justify-content:center;flex-wrap:wrap;padding:16px">
+          <span class="arch-node muted">ck-node1 INSERT</span>
+          <span class="pill" style="background:#eef2f8;color:#5f6b7a">→</span>
+          <span class="arch-node">生成 Part</span>
+          <span class="pill" style="background:#eef2f8;color:#5f6b7a">→</span>
+          <span class="arch-node on">Keeper 注册</span>
+          <span class="pill" style="background:#eef2f8;color:#5f6b7a">→</span>
+          <span class="arch-node">ck-node2 发现</span>
+          <span class="pill" style="background:#eef2f8;color:#5f6b7a">→</span>
+          <span class="arch-node on">拉取 Part</span>
+        </div>
+        <p class="hint">副本同步是<strong>异步</strong>的（延迟通常 < 10 秒），最终一致。Keeper 只做元数据协调，Part 数据是节点间直接传输的。</p>
+      `
+      // 集群图
+      const cv = el.querySelector('#clusterviz'), cd = el.querySelector('#clusterD')
+      const clusterNodes = [
+        ['ck-node1<br>Shard 1 Replica 1', 'Shard 1 主副本。本地有 orders_local 表。', 'coordinator'],
+        ['ck-node2<br>Shard 1 Replica 2', 'Shard 1 备份副本。和 ck-node1 数据同步。'],
+        ['ck-node3<br>Shard 2 Replica 1', 'Shard 2 主副本。另一个数据分片。'],
+        ['ck-node4<br>Shard 2 Replica 2', 'Shard 2 备份副本。'],
+        ['ck-node5<br>Shard 3 Replica 1', 'Shard 3 主副本。'],
+        ['ck-keeper1<br>Keeper', '分布式协调服务。管理副本同步、Part 编号、分片选举。', 'coordinator'],
+      ]
+      clusterNodes.forEach(([n, d, cls]) => {
+        const div = document.createElement('div')
+        div.className = 'dist-node' + (cls === 'coordinator' ? ' coordinator' : '')
+        div.innerHTML = `<h5>${n}</h5>`
+        div.onclick = () => {
+          cv.querySelectorAll('.dist-node').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); cd.innerHTML = `<b>${n}</b>：${d}`
+        }
+        cv.appendChild(div)
+      })
+
+      // 查询路由流程
+      const routeSteps = [
+        ['[1] Client → ck-node1', '用户在 ck-node1 提交 Distributed 引擎查询'],
+        ['[2] 解析 Distributed', "Distributed('production','default','orders_local') → 知道要查 3 个 Shard"],
+        ['[3] 并发下发', 'ck-node1 并发把相同 SQL 下发到 ck-node1 (本地)、ck-node3、ck-node5 的 orders_local'],
+        ['[4] 本地执行', '3 个节点各自：Partition 裁剪 → SIMD 聚合 → 返回 count'],
+        ['[5] Coordinator 聚合', 'ck-node1 收到 3 个 count → 合并求和 → 返回给用户'],
+      ]
+      const rLog = el.querySelector('#routeLog'), rPhase = el.querySelector('#routePhase')
+      let ri = -1
+      el.querySelector('#routeNext').onclick = () => {
+        ri = Math.min(ri + 1, routeSteps.length - 1)
+        rPhase.textContent = routeSteps[ri][0]
+        rLog.innerHTML += '\n<span class="hot">' + routeSteps[ri][0] + '</span>\n' + routeSteps[ri][1]
+      }
+      el.querySelector('#routeReset').onclick = () => {
+        ri = -1; rPhase.textContent = '未开始'
+        rLog.textContent = 'SELECT count() FROM orders_distributed WHERE dt=2026-11-03'
+      }
+    }
+
+    /* ============ 08 物化视图与 CDC ============ */
+    function render08(el) {
+      el.innerHTML = `
+        <h2>物化视图实时聚合加速 & CDC 入仓</h2>
+        <p class="lead">看点下方 MV 模拟：每一批 INSERT 自动聚合到目标表；再看 Kafka + MV 入仓的完整链路；最后了解 Flink CDC 方案对比。</p>
+
+        <h4>Materialized View 实时聚合模拟</h4>
+        <div class="toolbar">
+          <button class="primary" id="mvRun">模拟 INSERT 10 万行</button>
+          <button id="mvReset">重置</button>
+        </div>
+        <div class="bar-row"><span class="lbl">源表事件</span><div class="bar-track"><div class="bar-fill" id="mvSrc" style="width:0%"></div></div><span class="bar-val" id="mvSrcV">0 行</span></div>
+        <div class="bar-row"><span class="lbl">MV 聚合</span><div class="bar-track"><div class="bar-fill good" id="mvTgt" style="width:0%"></div></div><span class="bar-val" id="mvTgtV">0 个聚合组</span></div>
+        <div class="verdict ok" id="mvVerdict">点上方按钮开始模拟。</div>
+
+        <h4>TTL 自动过期动画</h4>
+        <div class="toolbar">
+          <button class="chip ghost" id="ttlSim">TTL 模拟：90 天</button>
+          <button class="chip ghost" id="ttlMove">TTL 移动到冷盘</button>
+        </div>
+        <div class="arch-flow" style="justify-content:center;flex-wrap:wrap;padding:12px 14px;background:#fafcff">
+          <span class="arch-node muted">20261001</span>
+          <span class="arch-node muted">20261002</span>
+          <span class="arch-node muted">20261003</span>
+          <span class="arch-node muted">...</span>
+          <span class="arch-node">20261101</span>
+          <span class="arch-node">20261102</span>
+          <span class="arch-node on">20261103（今天）</span>
+        </div>
+        <div class="detail" id="ttlD">TTL dt + INTERVAL 90 DAY → 自动删除 90 天前的分区。</div>
+
+        <h4>CDC 入仓两种方案对比</h4>
+        <table class="tbl">
+          <tr><th>方案</th><th>延迟</th><th>清洗能力</th><th>维护成本</th><th>适用</th></tr>
+          <tr><td>ClickHouse Kafka 引擎 + MV</td><td>毫秒级</td><td>弱（简单 SELECT）</td><td><b>低</b></td><td>直接入仓、不复杂清洗</td></tr>
+          <tr><td>Flink CDC + ClickHouse Sink</td><td>毫秒级</td><td><b>强</b>（Flink SQL 全能力）</td><td>中</td><td>需要清洗/转换/多源合并</td></tr>
+        </table>
+      `
+      let mvCount = 0
+      const mvSrc = el.querySelector('#mvSrc'), mvSrcV = el.querySelector('#mvSrcV')
+      const mvTgt = el.querySelector('#mvTgt'), mvTgtV = el.querySelector('#mvTgtV')
+      const mvVerdict = el.querySelector('#mvVerdict')
+      el.querySelector('#mvRun').onclick = () => {
+        mvCount += 100000
+        mvSrc.style.width = Math.min(mvCount / 10000000 * 100, 100) + '%'
+        mvSrcV.textContent = mvCount.toLocaleString() + ' 行'
+        const groups = Math.round(mvCount / 10000)
+        mvTgt.style.width = Math.min(groups / 1000 * 100, 100) + '%'
+        mvTgtV.textContent = groups.toLocaleString() + ' 个聚合组'
+        mvVerdict.innerHTML = `✅ MV 实时聚合生效：写入 ${mvCount.toLocaleString()} 行源表数据 → 目标表自动聚合为 ${groups.toLocaleString()} 个组。查询时秒级返回。`
+      }
+      el.querySelector('#mvReset').onclick = () => {
+        mvCount = 0
+        mvSrc.style.width = '0%'; mvSrcV.textContent = '0 行'
+        mvTgt.style.width = '0%'; mvTgtV.textContent = '0 个聚合组'
+        mvVerdict.textContent = '点上方按钮开始模拟。'
+      }
+
+      el.querySelector('#ttlSim').onclick = () => {
+        el.querySelectorAll('#ttlSim, #ttlMove').forEach(x => x.classList.add('ghost'))
+        el.querySelector('#ttlSim').classList.remove('ghost')
+        el.querySelector('#ttlD').innerHTML = `<b>TTL dt + INTERVAL 90 DAY</b><br>后台线程定时扫描分区 → 90 天前的分区标记为 inactive → 后台删除物理文件。<br>分区 TTL 成本低（只是标记 + 清理），推荐优先用分区 TTL 而非行级 TTL。`
+      }
+      el.querySelector('#ttlMove').onclick = () => {
+        el.querySelectorAll('#ttlSim, #ttlMove').forEach(x => x.classList.add('ghost'))
+        el.querySelector('#ttlMove').classList.remove('ghost')
+        el.querySelector('#ttlD').innerHTML = `<b>TTL dt + INTERVAL 90 DAY TO DISK 'cold'</b><br>90 天前的分区从本地 SSD 移动到 S3/冷盘。还可以链式：<code>TO DISK 'cold', dt + INTERVAL 365 DAY DELETE</code> 365 天后彻底删除。`
+      }
+      el.querySelector('#ttlSim').click()
+    }
+
+    /* ============ 09 性能调优与实践 ============ */
+    function render09(el) {
+      el.innerHTML = `
+        <h2>写入 / 查询 / Merge / TTL 四类问题排障决策树</h2>
+        <p class="lead">选择下方问题类型，看排查路径和解决方法。Part 太多是第一杀手——从根源解决比调参数有效。</p>
+
+        <h4>问题类型选择器</h4>
+        <div class="flow" id="issueChoices">
+          <button class="chip ghost" data-issue="write">写入慢 / Part 爆炸</button>
+          <button class="chip ghost" data-issue="query">查询慢</button>
+          <button class="chip ghost" data-issue="merge">Merge 阻塞 / 堆积</button>
+          <button class="chip ghost" data-issue="mut">Mutation（ALTER UPDATE/DELETE）慢</button>
+        </div>
+        <div class="decision-tree" id="issueOut"></div>
+
+        <h4>Part 数量监控（点击刷新）</h4>
+        <div class="toolbar">
+          <button class="primary" id="chkPart">检查 Part 数</button>
+        </div>
+        <div class="verdict ok" id="partStatus">点上方按钮。</div>
+
+        <h4>常见报错速查</h4>
+        <table class="tbl">
+          <tr><th>报错</th><th>原因</th><th>解决</th></tr>
+          <tr><td>Too many parts</td><td>单表 Part 数 > 10w</td><td>① 优化写入批量；② 手动 Merge；③ 临时调 max_parts_in_total</td></tr>
+          <tr><td>Timeout exceeded</td><td>分布式查询/写入超时</td><td>① 加 SET distributed_insert_timeout；② 检查网络/Keeper</td></tr>
+          <tr><td>Memory limit</td><td>查询内存超限</td><td>① 调大 max_memory_usage；② 加 LIMIT；③ 拆查询</td></tr>
+          <tr><td>Keeper timeout</td><td>Keeper 连不上</td><td>① 检查 Keeper 集群；② DNS；③ Keeper 日志</td></tr>
+          <tr><td>Mutations queue full</td><td>ALTER UPDATE 堆积</td><td>用 ReplacingMergeTree 代替，或清理队列</td></tr>
+        </table>
+      `
+      const trees = {
+        write: {
+          q: '写入慢 / Part 爆炸',
+          path: [
+            ['写入模式是什么？', null],
+            ['单批次 INSERT ≤ 100 行？', '批量太小！推荐每次 ≥ 5000 行。'],
+            ['每秒 INSERT ≥ 100 次？', '开 AsyncInsert 让 ClickHouse 自动合并微批次。'],
+            ['分布式写入走 Distributed 引擎？', '生产推荐业务层直连本地表，不经过 Distributed 引擎。'],
+            ['单表 Part 数 > 1000？', 'Part 太多了！加速后台 Merge：SET max_merges_in_queue = 16。'],
+          ],
+        },
+        query: {
+          q: '查询慢',
+          path: [
+            ['WHERE 有分区键等值/范围条件？', '加分区键！WHERE dt = ... 或 dt BETWEEN ...'],
+            ['WHERE ORDER BY 前缀列等值？', '加 ORDER BY 前缀列等值条件，主索引 Marks 裁剪。'],
+            ['跳数索引用上了？', 'EXPLAIN 看 Skipping index，缺索引加跳数索引 bloom_filter/minmax/set。'],
+            ['SELECT * 全列？', '列裁剪：只 SELECT 需要的列。'],
+            ['大表 JOIN 小表？', 'IN 代替 JOIN；或 Broadcast JOIN（SET broadcast_join_threshold）。'],
+            ['DISTINCT + 大数据量？', 'DISTINCT 底层转 GROUP BY，手动写 GROUP BY 更可控。'],
+          ],
+        },
+        merge: {
+          q: 'Merge 阻塞 / 堆积',
+          path: [
+            ['先看 Part 数量', 'SELECT count() FROM system.parts WHERE active'],
+            ['单表 Part > 10000？', 'Part 爆炸！根源解决：优化写入批量 + AsyncInsert。'],
+            ['磁盘 IO 占满？', 'Merge 是 IO 密集，换 SSD 或加节点分散负载。'],
+            ['被其他大表 Merge 抢了？', '提高该表 merge_with_ttl_timeout 优先级。'],
+            ['紧急触发 Merge', 'SYSTEM START MERGES xxx 或 OPTIMIZE TABLE xxx FINAL（慎用！）。'],
+          ],
+        },
+        mut: {
+          q: 'Mutation 慢',
+          path: [
+            ['改少量行？', 'ReplacingMergeTree + 写入新行替代 ALTER UPDATE。'],
+            ['删除过期分区？', 'ALTER TABLE xxx DROP PARTITION / TTL 自动过期（最快！）。'],
+            ['批量更新？', '业务层重新写整表，不要 ALTER UPDATE。'],
+            ['Mutation 队列满？', 'SYSTEM KILL MUTATION 取消无效 Mutation；清理队列。'],
+          ],
+        },
+      }
+      Object.keys(trees).forEach(key => {
+        el.querySelector(`[data-issue="${key}"]`).onclick = () => {
+          Object.keys(trees).forEach(k => el.querySelector(`[data-issue="${k}"]`).classList.add('ghost'))
+          el.querySelector(`[data-issue="${key}"]`).classList.remove('ghost')
+          const info = trees[key]
+          const out = el.querySelector('#issueOut')
+          out.innerHTML = `<div class="dt-node q">问题：${info.q}</div>` +
+            info.path.map(([question, answer], i) =>
+              `<div class="dt-node q">Q${i+1}: ${question}</div>${answer ? `<div class="dt-node ${answer.includes('✅')?'a':'b'}">→ ${answer}</div>` : ''}`
+            ).join('')
+        }
+      })
+      setTimeout(() => el.querySelector('[data-issue="write"]').click(), 30)
+
+      el.querySelector('#chkPart').onclick = () => {
+        const status = el.querySelector('#partStatus')
+        const partCount = Math.floor(Math.random() * 500) + 50
+        if (partCount < 1000) {
+          status.className = 'verdict ok'
+          status.innerHTML = `✅ <b>Part 数量正常</b>：单表 Part ≈ ${partCount}，远低于 1000 警戒线。继续保持批量写入。`
+        } else if (partCount < 10000) {
+          status.className = 'verdict warn'
+          status.innerHTML = `⚠️ <b>Part 数量偏高</b>：单表 Part ≈ ${partCount}，接近警戒线。建议检查写入批量，开启 AsyncInsert。`
+        } else {
+          status.className = 'verdict bad'
+          status.innerHTML = `❌ <b>Part 数量危险</b>：单表 Part ≈ ${partCount}，超过 10000！可能即将拒绝写入。立即优化！`
+        }
+      }
+    }
+
+    /* ============ 10 生态对比与 FAQ ============ */
+    function render10(el) {
+      el.innerHTML = `
+        <h2>生态对比 & 常见面试题手风琴</h2>
+        <p class="lead">选下方对比卡片看 ClickHouse vs 对手；再看面试题手风琴。</p>
+
+        <h4>生态对比（点击卡片看详情）</h4>
+        <div class="engine-compare" id="ecoCards"></div>
+        <div class="detail" id="ecoD">点击上方卡片。</div>
+
+        <h4>常见面试题（点击展开/收起）</h4>
+        <div id="faqList"></div>
+      `
+      const ecos = [
+        ['Doris / StarRocks', '列式 OLAP 同赛道', '兼容 MySQL、有事务、复杂 JOIN、冷热分离。'],
+        ['Trino', '查询引擎', '多数据源联邦。可以把 ClickHouse 当后端查询。'],
+        ['TiDB', 'HTAP', '兼顾 OLTP + OLAP。TiKV 行存 + TiFlash 列存。'],
+        ['HBase', '列式 KV', '点查快。不是 OLAP，不做聚合分析。'],
+        ['Hive', '数仓 SQL 层', 'Metastore 共享。ETL 链路，分钟级延迟。'],
+        ['Iceberg', '湖仓表格式', 'ClickHouse 通过 Iceberg Engine 高性能查询。'],
+      ]
+      const ec = el.querySelector('#ecoCards'), ed = el.querySelector('#ecoD')
+      const ecoDetails = {
+        'Doris / StarRocks': 'Apache Doris / StarRocks 是 ClickHouse 的直接竞争对手。架构：FE（元数据+调度）+ BE（存储+计算）。优点：<b>原生 MySQL 协议、2PC 事务、复杂 JOIN（CBO 优化）、内置冷热分离</b>。缺点：运维稍复杂（FE/BE 双角色）。适合需要全链路数仓、事务、复杂 JOIN 的场景。',
+        'Trino': 'Trino (Presto 分支) 是多数据源联邦查询引擎。ClickHouse 可以作为 Trino 的一个 Connector（<code>connector=clickhouse</code>）。<b>互补关系</b>：Trino 做统一查询入口，ClickHouse 做高性能 ADS 后端查询加速器。Trino 擅长跨数据源 JOIN，ClickHouse 擅长单表大规模聚合。',
+        'TiDB': 'PingCAP 的 HTAP 数据库，TiKV（RocksDB 行存 OLTP）+ TiFlash（列存 OLAP）。ClickHouse 是<b>纯 OLAP</b>。如果同一个业务表既要高并发点查（OLTP）又要大规模聚合（OLAP）→ TiDB 更合适。如果纯分析 → ClickHouse 更简单。',
+        'HBase': '列式 KV 数据库（LSM-Tree），强依赖 ZooKeeper。适合<b>高并发点查</b>（PK 定位一行）。ClickHouse 不适合点查，但适合聚合分析。两者完全互补：HBase 做在线业务库，ClickHouse 做离线/近线分析。',
+        'Hive': '数仓 SQL 层，Metastore + 执行引擎（Tez/Spark/Flink）。ClickHouse 经常用来<b>替换 Hive 的 ADS 报表层</b>，但前面的 ODS/DWD/DWS 清洗链路还是要靠 Hive/Spark。Hive Metastore 可以作为 ClickHouse 的 Catalog（Iceberg Engine 对接）。',
+        'Iceberg': 'Apache Iceberg 是湖仓一体表格式。ClickHouse 22.x+ 内置 Iceberg Engine，可以直接查询 S3/HDFS 上的 Iceberg 表（<code>ENGINE = Iceberg(\\'hdfs://warehouse/orders\\')</code>）。Spark/Flink 写 Iceberg → ClickHouse 高性能读同一份数据。',
+      }
+      ecos.forEach(([n, tag, d]) => {
+        const div = document.createElement('div')
+        div.className = 'engine-card'
+        div.innerHTML = `<h5>${n}</h5><div class="speed">${tag}</div><p style="margin:4px 0 0;font-size:0.78rem;color:var(--muted)">${d}</p>`
+        div.onclick = () => {
+          ec.querySelectorAll('.engine-card').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); ed.innerHTML = `<b>${n}</b><br>${ecoDetails[n]}`
+        }
+        ec.appendChild(div)
+      })
+
+      const faqs = [
+        ['Q1：ClickHouse 为什么那么快？', '三个层面：① <b>列式存储</b> IO 只读需要的列（减 90%+），同类型数据 LZ4 压缩率 10–20x；② <b>SIMD 向量化执行</b> CPU 向量指令一次处理 64–256 行，批量运算比逐行快 5–10x；③ <b>MergeTree 有序合并</b> 数据按 ORDER BY 存储，主索引 Marks 稀疏定位，跳数索引跳过无关 Part。'],
+        ['Q2：PARTITION BY 和 ORDER BY 有什么区别？', 'PARTITION BY 决定磁盘目录划分（一级过滤），ORDER BY 决定分区内数据物理顺序和主索引精度。PARTITION BY 通常用时间字段（裁剪 + TTL 过期），ORDER BY 用查询最常过滤的字段（user_id、city）。ORDER BY 必填，PARTITION BY 可选。'],
+        ['Q3：分布式写入为什么推荐业务层直连本地表？', 'Distributed 引擎写入多一跳网络跳转 + 单点瓶颈 + 一处失败影响全局。业务层直连本地表：所有节点均衡承载 + 某节点挂了只影响该分片 + 网络路径最短。业务层根据分片键（如 cityHash64(user_id)）哈希路由到对应节点。'],
+        ['Q4：UPDATE/DELETE 怎么实现？为什么不推荐？', 'ALERT UPDATE/DELETE 底层是 <b>重写所有 Part</b>（Mutation 机制）。每次需要读取、过滤、重写整个表数据。大量 Mutation 让 Merge 队列爆、查询变慢。替代方案：ReplacingMergeTree + 写入新行、Partition DROP 代替 DELETE、TTL 自动过期。'],
+        ['Q5：ClickHouse 和 Hive / Spark SQL 怎么配合？', '典型组合：① <b>Hive on Spark</b> 做 ETL（长链路、多表 JOIN、事务）→ 数据落 Iceberg 到 S3；② <b>ClickHouse</b> 写入清洗后数据做 ADS 层，供实时看板/BI 查询；③ <b>Flink CDC</b> MySQL 实时变更 → Kafka → ClickHouse 物化视图入仓；④ <b>Trino</b> 统一查询入口，后端接 Hive + ClickHouse。'],
+        ['Q6：ReplacingMergeTree 去重什么时候生效？FINAL 是什么？', 'ReplacingMergeTree 去重只在 <b>后台 Merge 时</b> 生效。刚 INSERT 的重复数据可能还在。FINAL 关键字强制查询时触发实时合并去重（极慢！大表不可用）。生产应该依赖后台 Merge 自然去重。'],
+        ['Q7：跳数索引有哪几种？分别适合什么？', '① <b>minmax</b>：每个 Part 记录列 MIN/MAX → 适合 WHERE amount BETWEEN 范围查询；② <b>set(N)</b>：每个 Part 存 N 个不同值 → 适合 WHERE user_id IN (1,2,3) 等值查询；③ <b>bloom_filter</b>：每个 Part 生成 BF → 适合字符串/低基数字段 city = "北京" 等值查询；④ <b>ngrambf_v1</b>：N-Gram BF → 适合 LIKE "%xxx%" 模糊查询。'],
+        ['Q8：高并发写入（每秒 10 万+）怎么设计？', '① <b>AsyncInsert 异步写入</b>：多个微批次自动合并刷盘，减少 Part；② <b>Kafka 引擎 + MV</b>：Kafka 做缓冲，ClickHouse 后台批量消费；③ <b>分布式多节点写入</b>：业务层按分片键路由；④ <b>监控 Part 数</b>：保持单表 < 1000。'],
+        ['Q9：分布式查询怎么实现的？', 'Distributed 引擎是代理层。查询时并发把相同 SQL 下发到集群所有分片的本地表 → 每个节点做本地 MergeTree 执行（分区裁剪 + SIMD 聚合）→ 结果返回 Coordinator 节点二次聚合（GROUP BY + 合并）→ 返回用户。'],
+        ['Q10：有事务吗？怎么保证一致性？', 'ClickHouse <b>没有完整 ACID 事务</b>。一致性靠：① <b>MergeTree 写入</b> append-only + Merge 最终一致，写入不看到半写数据；② <b>ReplicatedMergeTree + Keeper</b> 副本间异步同步，Keeper 协调 Part 编号避免冲突；③ 写入幂等性（相同批次重试不重复）。需要强事务用 Doris / StarRocks / TiDB。'],
+      ]
+      const fl = el.querySelector('#faqList')
+      faqs.forEach(([q, a]) => {
+        const b = document.createElement('button')
+        b.className = 'faq-q'; b.textContent = q
+        const div = document.createElement('div')
+        div.className = 'faq-a hidden'; div.innerHTML = a
+        b.onclick = () => {
+          div.classList.toggle('hidden')
+        }
+        fl.appendChild(b); fl.appendChild(div)
+      })
+    }
+  ]
+
+    // 初始化
+    show(current)
+  </script>
+</body>
+</html>

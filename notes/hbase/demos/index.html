@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Apache HBase · 交互式演示</title>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --panel: #fff;
+      --ink: #16202e;
+      --muted: #5f6b7a;
+      --line: rgba(22, 32, 46, 0.11);
+      --brand: #1d4ed8;
+      --brand-soft: rgba(29, 78, 216, 0.1);
+      --ok: #15803d;
+      --fail: #b91c1c;
+      --run: #0369a1;
+      --warn: #a16207;
+      --c0: #1d4ed8; --c1: #0f766e; --c2: #15803d; --c3: #7c3aed; --c4: #a16207;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", "PingFang SC", "Noto Sans SC", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 70% 40% at 0% 0%, var(--brand-soft), transparent 55%),
+        var(--bg);
+      min-height: 100vh;
+    }
+    .app {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 20px 16px 48px;
+      display: grid;
+      gap: 16px;
+    }
+    @media (min-width: 880px) {
+      .app { grid-template-columns: 210px 1fr; align-items: start; }
+    }
+    .brand h1 { margin: 0; font-size: 1.25rem; font-family: "Noto Serif SC", "Songti SC", serif; }
+    .brand p { margin: 4px 0 0; color: var(--muted); font-size: 0.85rem; line-height: 1.5; }
+    .nav { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+    @media (min-width: 880px) {
+      .nav {
+        flex-direction: column;
+        position: sticky; top: 12px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 10px;
+      }
+    }
+    .nav button {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 999px;
+      padding: 0.45rem 0.85rem;
+      font-size: 0.86rem;
+      cursor: pointer;
+      text-align: left;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    @media (min-width: 880px) {
+      .nav button { width: 100%; border-radius: 10px; border-color: transparent; background: transparent; }
+      .nav button:hover { background: #f1f5fb; }
+    }
+    .nav button.active { background: var(--brand-soft); border-color: var(--brand); color: var(--brand); font-weight: 600; }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 18px 18px 22px;
+      min-height: 440px;
+    }
+    .panel h2 { margin: 0 0 6px; font-size: 1.2rem; }
+    .panel h4 { margin: 18px 0 8px; font-size: 0.95rem; }
+    .lead { margin: 0 0 16px; color: var(--muted); font-size: 0.9rem; line-height: 1.6; }
+    .grid2 { display: grid; gap: 12px; }
+    @media (min-width: 700px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      background: #fafcff;
+    }
+    .card h3 { margin: 0 0 8px; font-size: 0.95rem; }
+    .card ul { margin: 0; padding-left: 1.1rem; color: var(--muted); font-size: 0.86rem; line-height: 1.55; }
+    .card.click { cursor: pointer; transition: border-color .2s, transform .2s; }
+    .card.click:hover { border-color: var(--brand); transform: translateY(-1px); }
+    .arch { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-top: 8px; }
+    .arch-item {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      cursor: pointer;
+      transition: border-color .2s, transform .2s;
+      background: #fff;
+    }
+    .arch-item:hover, .arch-item.on { border-color: var(--brand); transform: translateY(-1px); }
+    .arch-item strong { display: block; margin-bottom: 4px; }
+    .arch-item span { font-size: 0.8rem; color: var(--muted); line-height: 1.4; }
+    .detail {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: var(--brand-soft);
+      color: var(--ink);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      min-height: 3.2em;
+    }
+    .flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0; }
+    .chip {
+      border: none;
+      border-radius: 999px;
+      padding: 0.35rem 0.75rem;
+      background: var(--brand-soft);
+      color: var(--brand);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .chip.ghost { background: #eef2f8; color: var(--muted); font-weight: 500; }
+    .chip:hover { filter: brightness(0.97); }
+    .arrow { color: var(--muted); }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0 14px; }
+    .toolbar button, .toolbar label {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 8px;
+      padding: 0.4rem 0.75rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+    .toolbar button.primary { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600; }
+    .toolbar input[type=range] { accent-color: var(--brand); }
+    .toolbar .val { font-family: ui-monospace, Menlo, monospace; font-size: 0.85rem; color: var(--brand); font-weight: 700; min-width: 3.5em; }
+    .log {
+      margin-top: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      background: #16202e;
+      color: #e5eaf1;
+      border-radius: 10px;
+      padding: 10px 12px;
+      max-height: 260px;
+      overflow: auto;
+      white-space: pre-wrap;
+    }
+    .log .hot { color: #fb923c; }
+    .log .ok { color: #86efac; }
+    .hint { font-size: 0.8rem; color: var(--muted); margin-top: 8px; }
+    .hidden { display: none !important; }
+    table.tbl { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 8px; }
+    table.tbl th, table.tbl td { border-bottom: 1px solid var(--line); padding: 0.42rem 0.5rem; text-align: left; vertical-align: top; }
+    table.tbl th { color: var(--muted); font-weight: 600; }
+    .code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      background: #f4f6fa;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      overflow-x: auto;
+      white-space: pre;
+    }
+    .bar-row { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; font-family: ui-monospace, Menlo, monospace; margin-top: 4px; }
+    .bar-row .lbl { width: 110px; color: var(--muted); flex: none; }
+    .bar-track { flex: 1; background: #eaeef5; border-radius: 6px; height: 17px; overflow: hidden; }
+    .bar-fill { height: 100%; background: var(--run); border-radius: 6px; transition: width .5s ease; }
+    .bar-fill.hot { background: var(--fail); }
+    .bar-fill.good { background: var(--ok); }
+    .bar-val { width: 70px; flex: none; color: var(--muted); text-align: right; }
+    .faq-q {
+      width: 100%;
+      text-align: left;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.88rem;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .faq-q:hover { border-color: var(--brand); }
+    .faq-a {
+      margin: 4px 0 4px;
+      padding: 8px 12px;
+      border-left: 3px solid var(--brand);
+      background: var(--brand-soft);
+      border-radius: 0 8px 8px 0;
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+    .slider-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; font-size: 0.85rem; }
+    .slider-row .name { width: 180px; color: var(--muted); flex: none; }
+    .slider-row input { flex: 1; accent-color: var(--brand); }
+    .slider-row .val { width: 100px; font-family: ui-monospace, Menlo, monospace; color: var(--brand); font-weight: 700; text-align: right; }
+    .verdict { margin-top: 10px; padding: 10px 14px; border-radius: 10px; font-size: 0.88rem; line-height: 1.6; }
+    .verdict.ok { background: #f0fdf4; border: 1px solid rgba(21,128,61,.3); }
+    .verdict.warn { background: #fffbeb; border: 1px solid rgba(161,98,7,.35); }
+    .verdict.bad { background: #fef2f2; border: 1px solid rgba(185,28,28,.3); }
+    .kv { font-size: 0.85rem; line-height: 1.85; }
+    .kv b { color: var(--brand); font-family: ui-monospace, Menlo, monospace; }
+    .pill { display: inline-block; border-radius: 999px; padding: 0.1rem 0.55rem; font-size: 0.75rem; background: #eef2f8; color: var(--muted); }
+    .pill.ok { background: #dcfce7; color: var(--ok); }
+    .pill.bad { background: #fee2e2; color: var(--fail); }
+    .pill.warn { background: #fef3c7; color: var(--warn); }
+    .steps { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .step-dot {
+      border: 1px solid var(--line); background: #fff; border-radius: 8px;
+      padding: 0.35rem 0.6rem; font-size: 0.76rem; color: var(--muted);
+    }
+    .step-dot.on { border-color: var(--brand); background: var(--brand-soft); color: var(--brand); font-weight: 700; }
+    .matrix td, .matrix th { border: 1px solid var(--line); padding: 7px; text-align: center; font-size: 0.8rem; }
+    .matrix td { background: #fff; }
+    .hot-grid { display: grid; gap: 6px; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); margin-top: 10px; }
+    .hot-cell { border: 1px solid var(--line); border-radius: 6px; padding: 8px 4px; text-align: center; font-size: 0.72rem; font-family: ui-monospace, Menlo, monospace; }
+    .hot-cell .bar { height: 12px; border-radius: 4px; margin-top: 4px; }
+    .flow-arrow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 10px 0; }
+    .flow-box { border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; background: #fff; font-size: 0.82rem; font-weight: 600; text-align: center; min-width: 120px; }
+    .flow-box.active { border-color: var(--brand); background: var(--brand-soft); color: var(--brand); }
+    .flow-arrow .arrow { font-size: 1.2rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <div class="brand" style="margin-bottom:12px">
+        <h1>HBase 交互演示</h1>
+        <p>LSM-Tree · Region 分片 · RowKey 热点。点左侧章节，动手玩概念。</p>
+      </div>
+      <nav class="nav" id="nav"></nav>
+    </aside>
+    <main class="panel" id="panel"></main>
+  </div>
+
+  <script>
+    const chapters = [
+      { id: '01', title: '01 概述与定位' },
+      { id: '02', title: '02 架构与组件' },
+      { id: '03', title: '03 数据模型与 RowKey' },
+      { id: '04', title: '04 LSM-Tree 存储原理' },
+      { id: '05', title: '05 API 与 CRUD' },
+      { id: '06', title: '06 Region 管理与调优' },
+      { id: '07', title: '07 部署与集群规划' },
+      { id: '08', title: '08 运维与故障排查' },
+      { id: '09', title: '09 HBase 与周边组件' },
+      { id: '10', title: '10 生态对比与 FAQ' },
+    ]
+
+    const params = new URLSearchParams(location.search)
+    let current = (params.get('c') || '01').padStart(2, '0')
+    const nav = document.getElementById('nav')
+    const panel = document.getElementById('panel')
+
+    chapters.forEach((c) => {
+      const b = document.createElement('button')
+      b.textContent = c.title
+      b.dataset.id = c.id
+      b.onclick = () => show(c.id)
+      nav.appendChild(b)
+    })
+
+    function show(id) {
+      current = id
+      nav.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.id === id))
+      history.replaceState(null, '', `?c=${id}`)
+      panel.innerHTML = ''
+      renders[id](panel)
+    }
+
+    /* ============ 01 概述与定位 ============ */
+    function render01(el) {
+      el.innerHTML = `
+        <h2>HBase 在大数据里的位置</h2>
+        <p class="lead">点卡片看各自职责和适用场景。核心一句话：<b>HDFS 存、HBase 随机读写、Hive 做 SQL 批处理</b>。</p>
+        <div class="arch" id="trio"></div>
+        <div class="detail" id="trioD">点击上方组件。</div>
+        <h4>这个场景该用什么？</h4>
+        <div class="flow" id="decide"></div>
+        <div class="detail" id="decideD" style="min-height:2.8em">点一个场景。</div>
+      `
+      const roles = [
+        ['HDFS', '分布式文件系统，切块、多副本、跨机架。不做计算，不支持随机读写。适合海量文件存储和高吞吐。'],
+        ['HBase', '分布式列式 KV 数据库，LSM-Tree 高并发写、RowKey 有序、Region 分片。适合随机点查 + 范围 Scan + 高并发写。'],
+        ['Hive', '基于 HDFS 的 SQL 数仓，把 SQL 翻译成 MR/Tez/Spark。适合离线批处理、ETL、分钟级分析，不适合随机读写。'],
+        ['ZooKeeper', '分布式协调服务：选主、锁、配置、Watch。HBase 和 HDFS HA 都强依赖它。'],
+        ['Cassandra', '分布式宽列 KV，无主架构、可调一致性、原生多 DC。比 HBase 写吞吐更高，但架构更复杂。'],
+      ]
+      const trio = el.querySelector('#trio'), td = el.querySelector('#trioD')
+      roles.forEach(([n, d]) => {
+        const div = document.createElement('div')
+        div.className = 'arch-item'
+        div.innerHTML = `<strong>${n}</strong><span>${d.slice(0, 24)}…</span>`
+        div.onclick = () => {
+          trio.querySelectorAll('.arch-item').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); td.innerHTML = `<b>${n}</b>：${d}`
+        }
+        trio.appendChild(div)
+      })
+
+      const cases = [
+        ['按主键毫秒级点查用户画像', 'HBase/Phoenix，行存宽表，RowKey=user_id，毫秒级点查；如果要 SQL 查询则加 Phoenix。', 'ok'],
+        ['每天定时跑 SQL 报表', 'Hive / Spark SQL，分钟级延迟没问题，HDFS 批处理吞吐高；数据量大可用 Iceberg 湖仓一体。', 'ok'],
+        ['全球多 DC 主动-主动复制', 'Cassandra，无主架构 + 可调一致性，HBase 复制是主从模式不支持多 DC 主动-主动。', 'ok'],
+        ['实时聚合分析秒级出结果', 'ClickHouse / Doris 列式 OLAP，聚合查询极快；HBase 不做聚合，Hive 太慢。', 'ok'],
+        ['单机嵌入式 KV', 'RocksDB / LevelDB，极致低延迟微秒级；HBase 太重不适合单进程。', 'ok'],
+        ['复杂多条件全文搜索', 'Elasticsearch，倒排索引；HBase 没有二级索引，要搜只能全表扫。', 'ok'],
+      ]
+      const decide = el.querySelector('#decide'), dd = el.querySelector('#decideD')
+      cases.forEach(([q, a, cls]) => {
+        const b = document.createElement('button')
+        b.className = 'chip ghost'; b.type = 'button'; b.textContent = q
+        b.onclick = () => {
+          decide.querySelectorAll('.chip').forEach(x => x.classList.add('ghost'))
+          b.classList.remove('ghost')
+          dd.className = 'detail ' + cls
+          dd.innerHTML = a
+        }
+        decide.appendChild(b)
+      })
+    }
+
+    /* ============ 02 架构与组件 ============ */
+    function render02(el) {
+      el.innerHTML = `
+        <h2>HBase 架构：谁干什么</h2>
+        <p class="lead">点角色看职责；再看一次 Region 从 Split 到写入到 Compaction 的完整旅程。</p>
+        <div class="arch" id="roles"></div>
+        <div class="detail" id="roleD">点击上方角色。</div>
+        <h4>Region 生命周期：从 Split 到 Compaction</h4>
+        <div class="toolbar">
+          <button class="primary" id="rNext">下一步</button>
+          <button id="rReset">重置</button>
+          <span class="pill" id="rPhase">未开始</span>
+        </div>
+        <div class="steps" id="rSteps"></div>
+        <div class="log" id="rLog">点击「下一步」开始。</div>
+      `
+      const roles = [
+        ['HMaster', '管理进程：Region 分配/Split/Merge/迁移、hbase:meta 管理。<b>不扛读写</b>，客户端直连 RegionServer。HA 2 台，Active/Standby。'],
+        ['RegionServer', '干活的进程：管多个 Region、服务读写、Flush MemStore、Compaction HFile。数据路径核心。'],
+        ['ZooKeeper', '协调中心：/hbase/master 选主、/hbase/rs RS 注册列表、/hbase/meta-region-server 记录 meta 表在哪。<b>不存业务数据</b>。'],
+        ['hbase:meta', '特殊表：RowKey = (table, region_start)，Value = RegionServer 地址。客户端先查它路由到正确的 RegionServer。'],
+        ['WAL (HLog)', 'RegionServer 级预写日志：写 MemStore 前先 fsync WAL 到 HDFS，保证 RS 挂了数据不丢、可从 WAL 回放恢复。'],
+        ['MemStore', 'Region 内内存写缓冲（每个 CF 一个），默认 128MB 满了 Flush 成 HFile。写路径核心。'],
+        ['HFile (StoreFile)', 'Flush/Compaction 产物，有序 KV 文件，存 HDFS。带 Data Block Index + BloomFilter，读路径被查。'],
+        ['BlockCache', 'RegionServer 级堆外读缓存，缓存 HFile Data Block。命中率 >90% 正常，<70% 要警惕。'],
+      ]
+      const ra = el.querySelector('#roles'), rd = el.querySelector('#roleD')
+      roles.forEach(([n, d]) => {
+        const div = document.createElement('div')
+        div.className = 'arch-item'
+        div.innerHTML = `<strong>${n}</strong><span>${d.slice(0, 22)}…</span>`
+        div.onclick = () => {
+          ra.querySelectorAll('.arch-item').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); rd.innerHTML = `<b>${n}</b>：${d}`
+        }
+        ra.appendChild(div)
+      })
+
+      const steps = [
+        ['Client Write', '客户端 Put：查 meta（或缓存），知道 RowKey → Region → RegionServer'],
+        ['WAL Append', 'RegionServer 先把 Put 追加到 WAL（HDFS fsync），保证写落盘'],
+        ['MemStore Add', 'WAL 成功后，写入 Region 的 MemStore（内存追加，按 CF 分桶）'],
+        ['Ack Client', '返回成功给客户端。此时数据在 MemStore 还没 Flush 成 HFile'],
+        ['MemStore Full', 'MemStore 达到阈值（128MB/CF）或 RS 总 MemStore 超上限'],
+        ['Flush', '冻结 MemStore，顺序写出 HFile 到 HDFS，清空 MemStore，WAL 标记可回收'],
+        ['HFiles Accumulate', '多个 HFile 文件累积。读路径要逐个查 BloomFilter + Data Block Index'],
+        ['Compaction', 'HFile 数超过阈值（3 个）触发 Minor 合并成新的大 HFile。Major 还要清理墓碑/过期版本'],
+        ['Split', 'Region 总大小超阈值（10GB）→ Split 成 2 个 Region，各自管一半 RowKey 范围'],
+      ]
+      const rl = el.querySelector('#rLog'), rSteps = el.querySelector('#rSteps'), rPhase = el.querySelector('#rPhase')
+      steps.forEach(([n]) => {
+        const s = document.createElement('span')
+        s.className = 'step-dot'; s.textContent = n; rSteps.appendChild(s)
+      })
+      let ri = -1
+      el.querySelector('#rNext').onclick = () => {
+        ri = Math.min(ri + 1, steps.length - 1)
+        rSteps.querySelectorAll('.step-dot').forEach((x, i) => x.classList.toggle('on', i <= ri))
+        rPhase.textContent = steps[ri][0]
+        rl.innerHTML += (ri ? '\n' : '') + `<span class="${ri >= 4 ? 'hot' : ''}">[${ri + 1}] ${steps[ri][0]}</span>\n${steps[ri][1]}`
+      }
+      el.querySelector('#rReset').onclick = () => {
+        ri = -1; rPhase.textContent = '未开始'; rl.textContent = '点击「下一步」开始。'
+        rSteps.querySelectorAll('.step-dot').forEach(x => x.classList.remove('on'))
+      }
+    }
+
+    /* ============ 03 RowKey 设计与热点 ============ */
+    function render03(el) {
+      el.innerHTML = `
+        <h2>RowKey 模式 → 热点分布</h2>
+        <p class="lead">拖动滑块选择 RowKey 模式，看 16 台 RegionServer 的写入分布。<b>时间戳模式必然热点</b>（尾 Region 打满）。</p>
+        <div class="slider-row"><span class="name">RowKey 模式</span>
+          <select id="rkMode" style="flex:1; accent-color: var(--brand); padding: 0.4rem; border-radius: 8px; border: 1px solid var(--line);">
+            <option value="timestamp">① 纯时间戳（危险）</option>
+            <option value="autoincr">② 自增 ID（危险）</option>
+            <option value="salt">③ 加盐（推荐）</option>
+            <option value="hash">④ 哈希打散</option>
+            <option value="device">⑤ device_id + reverse(timestamp)</option>
+          </select>
+        </div>
+        <div class="slider-row"><span class="name">Region 数量</span><input type="range" id="rkRegions" min="4" max="64" value="16"><span class="val" id="rkRegionsV">16</span></div>
+        <h4>写入量分布（每台 RegionServer）</h4>
+        <div class="hot-grid" id="hotGrid"></div>
+        <div class="verdict" id="hotVerdict"></div>
+        <p class="hint">每台 RS 的写入量均匀度决定了集群的总吞吐。标准差越小越好。</p>
+      `
+      const modeSel = el.querySelector('#rkMode'), regSel = el.querySelector('#rkRegions')
+
+      function simulate(mode, nRegions) {
+        const dist = new Array(nRegions).fill(0)
+        for (let i = 0; i < nRegions * 100; i++) {
+          let target
+          switch (mode) {
+            case 'timestamp':
+            case 'autoincr':
+              target = nRegions - 1  // 永远写尾 Region
+              break
+            case 'salt':
+            case 'hash':
+              target = Math.floor(Math.random() * nRegions)  // 均匀分布
+              break
+            case 'device':
+              // 前 20% 设备有热点（80/20 分布），但整体按设备 ID 打散
+              const device = Math.floor(Math.random() * nRegions)
+              const isHot = Math.random() < 0.2
+              target = isHot ? device : Math.floor(Math.random() * nRegions)
+              break
+          }
+          dist[target]++
+        }
+        return dist
+      }
+
+      function drawHot() {
+        const mode = modeSel.value
+        const n = +regSel.value
+        el.querySelector('#rkRegionsV').textContent = n
+        const dist = simulate(mode, n)
+        const max = Math.max(...dist)
+        const avg = dist.reduce((a, b) => a + b, 0) / n
+        const grid = el.querySelector('#hotGrid')
+        grid.innerHTML = dist.map((v, i) => {
+          const pct = (v / max) * 100
+          const cls = pct > 95 ? 'hot' : (pct > 70 ? 'warn' : 'ok')
+          return `<div class="hot-cell">RS${String(i + 1).padStart(2, '0')}<div class="bar" style="width:${pct}%;background:${cls === 'hot' ? 'var(--fail)' : cls === 'warn' ? 'var(--warn)' : 'var(--ok)'}"></div>${Math.round(v)}<span class="pill ${cls === 'hot' ? 'bad' : cls === 'warn' ? 'warn' : 'ok'}">${pct > 90 ? '热' : pct > 60 ? '高' : ''}</span></div>`
+        }).join('')
+        const imbalance = max / avg
+        let vcls, vtxt
+        if (mode === 'timestamp' || mode === 'autoincr') {
+          vcls = 'bad'; vtxt = `<b>严重热点！</b> 最大/平均比 ${imbalance.toFixed(1)}×，一个 RS 干了所有人的活。正确做法：<b>时间戳只能做后缀，前缀必须是散列维度</b>（设备 ID、盐前缀、业务 ID）。`
+        } else if (mode === 'device') {
+          vcls = 'warn'; vtxt = `<b>基本均匀但有小幅热点</b>。device_id + reverse(timestamp) 是经典设计（设备聚合 + 时间有序），80/20 自然分布可接受。如果热点设备集中可以加盐。`
+        } else {
+          vcls = 'ok'; vtxt = `<b>分布均匀</b>，最大/平均比 ${imbalance.toFixed(2)}×。加盐/哈希打散到 ${n} 个 Region，写入不热点。但哈希会失去有序性，范围扫描不可用。`
+        }
+        const v = el.querySelector('#hotVerdict'); v.className = 'verdict ' + vcls; v.innerHTML = vtxt
+      }
+      modeSel.onchange = drawHot; regSel.oninput = drawHot; drawHot()
+    }
+
+    /* ============ 04 LSM-Tree 与存储原理 ============ */
+    function render04(el) {
+      el.innerHTML = `
+        <h2>LSM-Tree 动画：MemStore → HFile → Compaction</h2>
+        <p class="lead">点「下一步」看完整的数据写入旅程；再调 Compaction 阈值看 HFile 数量变化。</p>
+        <div class="toolbar">
+          <button class="primary" id="lsmRun">运行 100 次写入</button>
+          <button id="lsmReset">重置</button>
+        </div>
+        <div class="flow-arrow" id="lsmPath"></div>
+        <div class="log" id="lsmLog">等待运行……</div>
+        <h4>Compaction 策略调参</h4>
+        <div class="slider-row"><span class="name">Compaction 阈值</span><input type="range" id="cThresh" min="2" max="10" value="3"><span class="val" id="cThreshV">3</span></div>
+        <div class="slider-row"><span class="name">Flush 阈值</span><input type="range" id="fSize" min="64" max="256" value="128" step="16"><span class="val" id="fSizeV">128 MB</span></div>
+        <div class="kv" id="cOut"></div>
+        <p class="hint">Flush 太频繁 → HFile 多 → 读路径长；Flush 太大 → 阻塞时间长。Compaction 阈值太小 → IO 吃紧；太大 → 读路径爆炸。</p>
+      `
+      let memstoreUsed = 0, hfileCount = 0, running = false
+      const flushSizeMB = 128 * 1024 * 1024  // 128MB
+
+      function step(nextMB) {
+        memstoreUsed += nextMB
+        let flushed = 0
+        while (memstoreUsed >= flushSizeMB) {
+          memstoreUsed -= flushSizeMB
+          hfileCount++
+          flushed++
+        }
+        return flushed
+      }
+
+      el.querySelector('#lsmRun').onclick = () => {
+        if (running) return
+        running = true
+        const log = el.querySelector('#lsmLog')
+        log.innerHTML = ''
+        let i = 0
+        const timer = setInterval(() => {
+          if (i >= 20) {
+            clearInterval(timer); running = false
+            log.innerHTML += '\n<span class="ok">✓ 全部完成。' + hfileCount + ' 次 Flush 产生了 ' + hfileCount + ' 个 HFile（未 Compaction）。</span>'
+            return
+          }
+          const flushed = step(64 * 1024 * 1024)  // 每次写 64MB
+          log.innerHTML += `\n[${i + 1}] 写入 64MB → MemStore ${(memstoreUsed / 1024 / 1024).toFixed(0)} MB`
+          if (flushed > 0) {
+            log.innerHTML += ` → <span class="hot">Flush ${flushed} 次 → 新 HFile × ${flushed}</span>`
+          }
+          // 更新路径高亮
+          const steps = el.querySelector('#lsmPath').children
+          for (let s = 0; s < steps.length; s++) steps[s].classList.remove('active')
+          if (memstoreUsed > 0) steps[0].classList.add('active')
+          if (hfileCount > 0) steps[2].classList.add('active')
+          i++
+        }, 200)
+      }
+      el.querySelector('#lsmReset').onclick = () => {
+        running = false; memstoreUsed = 0; hfileCount = 0
+        el.querySelector('#lsmLog').textContent = '等待运行……'
+        const steps = el.querySelector('#lsmPath').children
+        for (let s = 0; s < steps.length; s++) steps[s].classList.remove('active')
+        updateComp()
+      }
+
+      // 初始路径框
+      const path = el.querySelector('#lsmPath')
+      path.innerHTML = `
+        <div class="flow-box active">① Write<br>Client Put</div>
+        <span class="arrow">→</span>
+        <div class="flow-box">② WAL<br>HDFS fsync</div>
+        <span class="arrow">→</span>
+        <div class="flow-box">③ MemStore<br>内存追加</div>
+        <span class="arrow">⇒</span>
+        <div class="flow-box">④ Flush → HFile<br>HDFS 顺序写</div>
+        <span class="arrow">⇒</span>
+        <div class="flow-box">⑤ Compaction<br>合并成大 HFile</div>
+      `
+
+      const cT = el.querySelector('#cThresh'), fS = el.querySelector('#fSize')
+      function updateComp() {
+        const ct = +cT.value, fs = +fS.value
+        el.querySelector('#cThreshV').textContent = ct
+        el.querySelector('#fSizeV').textContent = fs + ' MB'
+        const simulatedHFiles = hfileCount
+        const compactions = simulatedHFiles >= ct ? Math.floor(simulatedHFiles / ct) : 0
+        const remainingHFiles = simulatedHFiles - (compactions * (ct - 1))
+        el.querySelector('#cOut').innerHTML =
+          `当前 HFile 数 = <b>${simulatedHFiles}</b>（Flush 产生）<br>` +
+          `Compaction 阈值 = <b>${ct}</b>：每 ${ct} 个 HFile 合并成 1 个<br>` +
+          `Compaction 次数 ≈ <b>${compactions}</b>，合并后剩余 HFile ≈ <b>${remainingHFiles}</b><br>` +
+          `Flush 阈值 = <b>${fs} MB</b>：MemStore 满了立即 Flush`
+      }
+      cT.oninput = updateComp; fS.oninput = updateComp; updateComp()
+    }
+
+    /* ============ 05 API 与 CRUD ============ */
+    function render05(el) {
+      el.innerHTML = `
+        <h2>CRUD 流程模拟</h2>
+        <p class="lead">点「运行」模拟 Client → RegionServer 的交互，看数据流向。</p>
+        <div class="toolbar">
+          <select id="crudOp" style="border-radius:8px;border:1px solid var(--line);padding:0.4rem;">
+            <option value="put">Put（写入）</option>
+            <option value="get">Get（点查）</option>
+            <option value="scan">Scan（范围扫）</option>
+            <option value="del">Delete（删除）</option>
+          </select>
+          <button class="primary" id="crudRun">运行</button>
+        </div>
+        <div class="log" id="crudLog">选择操作并点「运行」。</div>
+        <h4>关键参数速查</h4>
+        <table class="tbl" id="crudTbl"></table>
+      `
+      const ops = {
+        put: [
+          ['[1] Client', '构造 Put(RowKey, CF:Qualifier, value) → 查 meta 缓存或 ZK'],
+          ['[2] Client → RS', 'RPC 发送 Put 请求到目标 RegionServer'],
+          ['[3] RegionServer', '① WAL Append（fsync 到 HDFS）'],
+          ['[4] RegionServer', '② MemStore Add（内存追加，按 CF 分桶）'],
+          ['[5] RegionServer', '③ 返回 Ack 给 Client'],
+          ['[6] 后台', 'MemStore 满（128MB/CF）→ Flush → 顺序写 HFile 到 HDFS'],
+        ],
+        get: [
+          ['[1] Client', '构造 Get(RowKey) → 查 meta → 定位 RegionServer'],
+          ['[2] RS: BlockCache', '查堆外 BlockCache（缓存 HFile Data Block）'],
+          ['[3] RS: MemStore', '查内存中未 Flush 的最新数据'],
+          ['[4] RS: HFile', '对每个 HFile 查 BloomFilter → 不在就跳过，在就定位 Data Block'],
+          ['[5] RS', 'MemStore + HFile 结果 Merge → 取最新版本 → 返回'],
+          ['[6] Client', '反序列化 Result → 拿到 Cell 列表'],
+        ],
+        scan: [
+          ['[1] Client', '构造 Scan(startRow, stopRow) → 查 meta → 拿到涉及的所有 Region 列表'],
+          ['[2] Client → RS', '逐个 RegionServer 发 OpenScanner RPC'],
+          ['[3] RegionServer', '定位 StartRow 对应 Cell → 返回第一批数据'],
+          ['[4] Client', 'setCaching(100) 默认 1，每批拉 100 行减少 RPC'],
+          ['[5] 后台', '每个 RegionServer 内部：BlockCache → MemStore → HFile 逐个遍历'],
+          ['[6] 注意', 'Scan 要避免全表扫：务必指定 startRow/stopRow、addFamily/Column、合适 Caching'],
+        ],
+        del: [
+          ['[1] Client', '构造 Delete(RowKey) → 指定要删的列/版本'],
+          ['[2] RegionServer', '① WAL Append（同 Put 一样先 fsync）'],
+          ['[3] RegionServer', '② MemStore Add（加 Tombstone 墓碑标记，不是真删）'],
+          ['[4] Get/Scan', '读到墓碑 → 知道这个版本被删了，返回时过滤掉'],
+          ['[5] Compaction', 'Major Compaction 时物理清除墓碑标记和过期版本'],
+        ],
+      }
+      el.querySelector('#crudRun').onclick = () => {
+        const op = el.querySelector('#crudOp').value
+        const steps = ops[op]
+        const log = el.querySelector('#crudLog')
+        log.innerHTML = ''
+        let i = 0
+        const timer = setInterval(() => {
+          if (i >= steps.length) { clearInterval(timer); return }
+          log.innerHTML += `\n${steps[i][0]} <span class="hot">→</span> ${steps[i][1]}`
+          i++
+        }, 400)
+      }
+
+      const params = [
+        ['Scan.setCaching(int)', '默认 1 → 每行一次 RPC！建议 100–500'],
+        ['Scan.setBatch(int)', '每行最多返回多少 Cell → 宽表时避免一行巨多列'],
+        ['Put.setDurability()', 'USE_DEFAULT / SKIP_WAL / ASYNC_WAL → 关闭 WAL 换性能但丢数据风险'],
+        ['TableName', '不可变对象，全局共享；Connection 同理'],
+        ['Connection', '重量级对象，<b>进程级只建一个</b>'],
+        ['BufferedMutator', '高频写首选，缓冲满自动刷'],
+      ]
+      el.querySelector('#crudTbl').innerHTML = '<tr><th>参数</th><th>说明</th></tr>' +
+        params.map(([a, b]) => `<tr><td><code>${a}</code></td><td>${b}</td></tr>`).join('')
+    }
+
+    /* ============ 06 调优：Compaction 与 Region 计算 ============ */
+    function render06(el) {
+      el.innerHTML = `
+        <h2>Compaction 策略选择器</h2>
+        <p class="lead">先看四种策略对比，再调参数看 Region 能承载多少。</p>
+        <div class="arch" id="comp"></div>
+        <div class="detail" id="compD">点击策略。</div>
+        <h4>Region 承载能力计算器</h4>
+        <div class="slider-row"><span class="name">RegionServer 堆</span><input type="range" id="sHeap" min="8" max="64" value="32" step="4"><span class="val" id="sHeapV">32 GB</span></div>
+        <div class="slider-row"><span class="name">CF 数量</span><input type="range" id="sCF" min="1" max="5" value="2"><span class="val" id="sCFV">2</span></div>
+        <div class="slider-row"><span class="name">BlockCache 占比</span><input type="range" id="sBC" min="20" max="50" value="40" step="5"><span class="val" id="sBCV">40%</span></div>
+        <div class="slider-row"><span class="name">MemStore 占比</span><input type="range" id="sMS" min="20" max="50" value="40" step="5"><span class="val" id="sMSV">40%</span></div>
+        <div class="kv" id="sOut"></div>
+        <p class="hint">BlockCache + MemStore 不能超过 80%（预留 20% 给 JVM）。单 RS Region 建议上限 100–200。</p>
+      `
+      const strats = [
+        ['ExploringCompactionPolicy', '默认 2.5+，分层合并。小文件优先合并，合并产物逐级向上，IO 平滑、读路径稳定。<b>大多数生产首选</b>。'],
+        ['RatioBasedCompactionPolicy', '旧默认，按大小比选文件。实现简单但小文件可能不被优先合并，生产已很少用。'],
+        ['FIFOCompactionPolicy', '按时间淘汰最老的文件，不合并只丢弃。适合<b>时序数据、只追加不修改、只查新数据</b>的场景。'],
+        ['DateTieredCompactionPolicy', '按时间分 Tier：新 Tier 频繁合并、老 Tier 稀疏合并。适合<b>时序数据冷热分层</b>：近期数据读多写多，远期数据只读。'],
+      ]
+      const cb = el.querySelector('#comp'), cd = el.querySelector('#compD')
+      strats.forEach(([n, d]) => {
+        const div = document.createElement('div')
+        div.className = 'arch-item'
+        div.innerHTML = `<strong>${n}</strong><span>${d.slice(0, 30)}…</span>`
+        div.onclick = () => {
+          cb.querySelectorAll('.arch-item').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); cd.innerHTML = `<b>${n}</b>：${d}`
+        }
+        cb.appendChild(div)
+      })
+
+      const heap = el.querySelector('#sHeap'), cf = el.querySelector('#sCF'), bc = el.querySelector('#sBC'), ms = el.querySelector('#sMS')
+      function calc() {
+        const h = +heap.value, c = +cf.value, b = +bc.value / 100, m = +ms.value / 100
+        el.querySelector('#sHeapV').textContent = h + ' GB'
+        el.querySelector('#sCFV').textContent = c
+        el.querySelector('#sBCV').textContent = (b * 100) + '%'
+        el.querySelector('#sMSV').textContent = (m * 100) + '%'
+        const msGB = h * m
+        const singleRegionMS = 128 / 1024 * c  // GB，每个 CF 128MB
+        const maxRegions = Math.floor(msGB / singleRegionMS)
+        const totalStoreMB = maxRegions * c * 10  // 约数：Region 数 × CF × 平均 HFile 数 × 平均文件大小
+        const totalBlockCache = h * b
+        let verdict
+        if (maxRegions > 200) verdict = `⚠️ Region 过多：${maxRegions} > 200 建议上限。考虑加 RegionServer 或调大 Region 阈值。`
+        else if (maxRegions > 100) verdict = `✅ Region 数 ${maxRegions}，在安全范围（< 200）。`
+        else verdict = `✅ Region 数 ${maxRegions}，较低，集群利用率可能不满。`
+        el.querySelector('#sOut').innerHTML =
+          `总堆 ${h} GB，MemStore 占 <b>${msGB.toFixed(1)} GB</b>，BlockCache <b>${totalBlockCache.toFixed(1)} GB</b><br>` +
+          `每个 Region 每个 CF 有独立 MemStore（默认 128MB）<br>` +
+          `${c} CF × 128MB = 每个 Region MemStore <b>${(singleRegionMS * 1024).toFixed(0)} MB</b><br>` +
+          `RegionServer 最多承载 ≈ <b>${maxRegions}</b> 个 Region<br>` +
+          `<span class="pill ${maxRegions > 200 ? 'bad' : 'ok'}">${verdict}</span>`
+      }
+      ;[heap, cf, bc, ms].forEach(x => x.oninput = calc); calc()
+    }
+
+    /* ============ 07 部署：集群规模 → 参数 ============ */
+    function render07(el) {
+      el.innerHTML = `
+        <h2>集群规模 → 参数建议</h2>
+        <p class="lead">拖动滑块选择规模，得到一份 HMaster / RegionServer / ZooKeeper 的配置建议。</p>
+        <div class="slider-row"><span class="name">RegionServer 数量</span><input type="range" id="pRS" min="3" max="60" value="15"><span class="val" id="pRSV">15 台</span></div>
+        <div class="slider-row"><span class="name">单 RS 堆内存</span><input type="range" id="pHeap" min="16" max="64" value="32" step="4"><span class="val" id="pHeapV">32 GB</span></div>
+        <div class="slider-row"><span class="name">单 RS 物理内存</span><input type="range" id="pPhys" min="32" max="128" value="64" step="8"><span class="val" id="pPhysV">64 GB</span></div>
+        <div class="slider-row"><span class="name">HDFS DataNode 数量</span><input type="range" id="pDN" min="3" max="60" value="15"><span class="val" id="pDNV">15 台</span></div>
+        <div class="slider-row"><span class="name">ZooKeeper 数量</span><input type="range" id="pZK" min="3" max="7" value="5" step="2"><span class="val" id="pZKV">5 台</span></div>
+        <div class="kv" id="pOut"></div>
+        <h4>关键配置片段</h4>
+        <div class="flow" id="cfgTabs"></div>
+        <div class="code" id="cfgView"></div>
+        <p class="hint">RegionServer 跟 DataNode 混布（数据本地性 + Short-Circuit Read）；HMaster 和 ZooKeeper 独立部署；<b>必须禁用 swap</b>。</p>
+      `
+      const rs = el.querySelector('#pRS'), heap = el.querySelector('#pHeap'), phys = el.querySelector('#pPhys'), dn = el.querySelector('#pDN'), zk = el.querySelector('#pZK')
+      function plan() {
+        const nrs = +rs.value, h = +heap.value, ph = +phys.value, ndn = +dn.value, nz = +zk.value
+        el.querySelector('#pRSV').textContent = nrs + ' 台'
+        el.querySelector('#pHeapV').textContent = h + ' GB'
+        el.querySelector('#pPhysV').textContent = ph + ' GB'
+        el.querySelector('#pDNV').textContent = ndn + ' 台'
+        el.querySelector('#pZKV').textContent = nz + ' 台'
+        const handlers = nrs <= 10 ? 100 : nrs <= 30 ? 150 : 200
+        const bcSize = Math.floor(h * 0.40)  // GB
+        const msSize = Math.floor(h * 0.40)
+        const leftover = ph - h
+        let hmsize = h >= 32 ? '6GB' : h >= 16 ? '4GB' : '2GB'
+        el.querySelector('#pOut').innerHTML =
+          `ZooKeeper：<b>${nz} 台</b>（2F+1，独立部署）<br>` +
+          `HMaster：<b>2 台</b>（HA，独立，堆建议 ${hmsize}）<br>` +
+          `RegionServer × DataNode：<b>${nrs} 台混布</b>（数据本地性）<br>` +
+          `RS 堆 ${h} GB：BlockCache ≈ <b>${bcSize} GB</b>、MemStore ≈ <b>${msSize} GB</b>、系统预留 ${leftover} GB<br>` +
+          `hbase.regionserver.handler.count ≈ <b>${handlers}</b>（RPC 线程）<br>` +
+          `Swap：<b>必须禁用</b>（vm.swappiness=0）<br>` +
+          `GC：G1GC（-XX:+UseG1GC -XX:MaxGCPauseMillis=100）<br>` +
+          `HDFS：开 Short-Circuit Read + 预留 15% 磁盘空间`
+      }
+      ;[rs, heap, phys, dn, zk].forEach(x => x.oninput = plan); plan()
+
+      const cfgs = {
+        'hbase-site.xml': `<configuration>
+  <property><name>hbase.zookeeper.quorum</name><value>zk1,zk2,zk3,zk4,zk5</value></property>
+  <property><name>hbase.regionserver.handler.count</name><value>200</value></property>
+  <property><name>hbase.regionserver.global.memstore.size</name><value>0.40</value></property>
+  <property><name>hfile.block.cache.size</name><value>0.40</value></property>
+  <property><name>hbase.regionserver.wal.impl</name><value>AsyncFSWAL</value></property>
+  <property><name>hbase.hregion.max.filesize</name><value>10737418240</value></property>
+  <property><name>hbase.hstore.compactionThreshold</name><value>3</value></property>
+  <property><name>hbase.hregion.majorcompaction</name><value>0</value></property>
+</configuration>`,
+        'hdfs-site.xml': `<configuration>
+  <property><name>dfs.client.read.shortcircuit</name><value>true</value></property>
+  <property><name>dfs.domain.socket.path</name><value>/var/run/hadoop-hdfs/dn_socket</value></property>
+  <property><name>dfs.datanode.du.reserved</name><value>107374182400</value></property>
+  <property><name>dfs.replication</name><value>3</value></property>
+  <property><name>dfs.datanode.handler.count</name><value>100</value></property>
+</configuration>`,
+        'hbase-env.sh': `export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+export HBASE_MANAGES_ZK=false
+export HBASE_REGIONSERVER_OPTS="
+  -Xms24g -Xmx24g
+  -XX:+UseG1GC
+  -XX:MaxGCPauseMillis=100
+  -XX:G1HeapRegionSize=16m
+  -XX:+AlwaysPreTouch
+  -XX:+DisableExplicitGC
+  -XX:+ExitOnOutOfMemoryError
+  -XX:+HeapDumpOnOutOfMemoryError
+  -XX:HeapDumpPath=/var/log/hbase/
+"`,
+        'sysctl.conf': `vm.swappiness = 0          # 必须：禁用 swap
+net.ipv4.tcp_tw_reuse = 1   # 高并发 TIME_WAIT
+net.core.somaxconn = 32768 # 增大 backlog
+vm.overcommit_memory = 1    # 配合 JVM overcommit
+fs.file-max = 65536         # 文件句柄上限`,
+      }
+      const tabs = el.querySelector('#cfgTabs'), view = el.querySelector('#cfgView')
+      Object.keys(cfgs).forEach((name, i) => {
+        const b = document.createElement('button')
+        b.className = 'chip' + (i ? ' ghost' : ''); b.type = 'button'; b.textContent = name
+        b.onclick = () => {
+          tabs.querySelectorAll('.chip').forEach(x => x.classList.toggle('ghost', x.textContent !== name))
+          view.textContent = cfgs[name]
+        }
+        tabs.appendChild(b)
+      })
+      view.textContent = cfgs['hbase-site.xml']
+    }
+
+    /* ============ 08 排障：症状 → 原因 → 处理 ============ */
+    function render08(el) {
+      el.innerHTML = `
+        <h2>症状 → 原因 → 处理</h2>
+        <p class="lead">点一个症状，给出根因、排查步骤和处理方向。</p>
+        <div class="flow" id="symptoms"></div>
+        <div class="verdict bad" id="symD" style="min-height:5em">点上方症状。</div>
+        <h4>排障动线</h4>
+        <div class="steps" id="flowSteps"></div>
+        <div class="code" id="flowCode">客户端 → RS → HDFS → ZK → HMaster，逐层定位。</div>
+        <h4>关键监控指标</h4>
+        <div id="metrics"></div>
+      `
+      const symptoms = [
+        ['客户端大量 SocketTimeoutException', '根因 ①：RegionServer GC 暂停超时（> 60s）无法发心跳 → HMaster 以为它挂了 → 触发 Region 重分配 → 客户端收到 NotServingRegionException。查 GC 日志、jstat -gcutil、调整 G1GC MaxGCPauseMillis=100、检查堆分配。根因 ②：HDFS DataNode 慢盘（iostat 看 await）→ WAL fsync 慢 → 写阻塞。根因 ③：Swap 被换出（vm.swappiness 必须 0）→ 任何一页被换回来延迟秒级。'],
+        ['Compaction Queue 长时间排满', '根因 ①：IO 瓶颈（datanode iostat、df -h、网络带宽）→ 换 SSD 或加 DataNode 磁盘。根因 ②：Compaction 策略太松 → 调小 hstore.compaction.max.size 或换 ExploringCompactionPolicy。根因 ③：Major Compaction 没开 → 墓碑堆积 → 读路径爆炸。根因 ④：写流量持续高 → Flush 产生 HFile 的速度 > 合并速度 → 加 RS 或限流。'],
+        ['RegionServer 心跳超时被误判挂掉', '最常见根因：Swap。次常见：GC 暂停 > session timeout（默认 60s）。排查：jps 看进程还在 → tail GC 日志（-XX:+PrintGCDetails）→ 看 Swap 使用（free -m）。处理：禁用 swap、调 GC 参数、加堆、减 Region 数量。'],
+        ['MemStore 写阻塞（Blocked updates）', 'RS 总 MemStore 超全局上限（堆 × global.memstore.size）。查 hbase-regionserver.log 搜 "Blocked updates"。处理：加堆内存、调大 global.memstore.size、减少 Region 数量、调小 memstore.block.multiplier。'],
+        ['BlockCache 命中率 < 70%', '根因 ①：Compaction 不及时 → HFile 太多 → 每个 HFile 都要查 → 命中率掉。根因 ②：堆不够 BlockCache 装。根因 ③：RowKey 设计导致随机读 → 无法缓存。处理：先手动 Major Compaction、加堆、检查 RowKey 设计。'],
+        ['HMaster Active 挂了但切换慢', '查 ZooKeeper 日志看 session timeout、Region in Transition 数量、Standby HMaster 堆内存。正常切换几秒，RIT 多可能要分钟级。'],
+        ['RegionServer 启动后 Region 全部重新 Open', '可能的原因：ZK session timeout 太短（RS 启动时还没连上就超时）；或网络不稳定导致心跳丢失。排查 ZK 日志的 session expire、RS 的 leases 超时。'],
+        ['hbase:meta 损坏', '极罕见。查 ZK /hbase/meta-region-server、hbase shell status "detailed"。备份 HDFS /hbase 目录、重放 WAL、或从备份恢复。'],
+      ]
+      const symBox = el.querySelector('#symptoms'), sd = el.querySelector('#symD')
+      symptoms.forEach(([q, a]) => {
+        const b = document.createElement('button')
+        b.className = 'chip ghost'; b.type = 'button'; b.textContent = q
+        b.onclick = () => {
+          symBox.querySelectorAll('.chip').forEach(x => x.classList.add('ghost'))
+          b.classList.remove('ghost')
+          sd.textContent = a
+        }
+        symBox.appendChild(b)
+      })
+
+      const steps = ['客户端报错', 'RegionServer', 'HDFS DataNode', 'ZooKeeper', 'HMaster']
+      el.querySelector('#flowSteps').innerHTML = steps.map((s, i) => `<span class="step-dot ${i === 0 ? 'on' : ''}">${i + 1}.${s}</span>`).join('<span class="arrow">→</span>')
+
+      const metrics = [
+        ['MemStore Size', 'RS 堆 × global.memstore.size 上限，超了阻塞写'],
+        ['BlockCache Hit Ratio', '> 90% 正常，< 70% 检查 HFile 数或堆'],
+        ['Number of Regions / RS', '50–200 安全，> 200 Flush/Compaction 风暴风险'],
+        ['Number of StoreFiles / Store', '< 5 正常，> 10 读路径爆炸'],
+        ['GC Pause Time', '< 1s 正常，> 10s 心跳超时风险'],
+        ['Compaction Queue Size', '< 10 正常，> 50 IO 瓶颈或策略问题'],
+        ['ZK Outrequests Latency', '> 20ms 说明 ZK 慢，影响 meta 路由和心跳'],
+      ]
+      el.querySelector('#metrics').innerHTML = '<table class="tbl"><tr><th>指标</th><th>看什么</th></tr>' +
+        metrics.map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join('') + '</table>'
+    }
+
+    /* ============ 09 组件对比选择器 ============ */
+    function render09(el) {
+      el.innerHTML = `
+        <h2>需求 → 组件推荐</h2>
+        <p class="lead">点一个需求，推荐组件并说明理由；再看四大产品的核心差异。</p>
+        <div class="flow" id="needs"></div>
+        <div class="verdict ok" id="needD">点上方需求。</div>
+        <h4>HBase vs Cassandra vs RocksDB vs ClickHouse</h4>
+        <table class="tbl matrix" id="compTbl"></table>
+        <h4>二级索引方案（点卡片了解）</h4>
+        <div class="arch" id="idx"></div>
+        <div class="detail" id="idxD" style="min-height:3em">点击方案。</div>
+      `
+      const needs = [
+        ['海量用户画像，高并发点查', 'HBase + Phoenix，RowKey=user_id 点查毫秒级；Phoenix 自动建二级索引支持 SQL 按属性查询。'],
+        ['全球多 DC 主动-主动复制', 'Cassandra，无主架构 + Qorum 读写 + Gossip 协议，原生多 DC 顶级能力；HBase 主从复制做不到主动-主动。'],
+        ['单机嵌入式 KV，微秒级延迟', 'RocksDB（TiDB / CockroachDB / Pika 的底层），LSM-Tree 成熟、C++ 实现、极低开销；HBase 太重不适合。'],
+        ['实时聚合分析，秒级出结果', 'ClickHouse 列式 OLAP，按列存储极速 Scan + 聚合；Doris/StarRocks 类似。HBase 不做聚合。'],
+        ['全文搜索 + HBase 存储', 'ES 做搜索，HBase 存完整数据。客户端先查 ES 拿 rowkey 列表再 Batch Get HBase；或把 ES 索引同步到 HBase（CDC）。'],
+        ['时序数据监控每秒 10 万', 'OpenTSDB（基于 HBase）或 VictoriaMetrics / Mimir。HBase RowKey=device_id+reverse(timestamp) 实现按设备聚合 + 时间有序。'],
+        ['离线 ETL + SQL 报表', 'Hive on Spark / Spark SQL + Iceberg 湖仓一体，分钟级延迟。需要随机读写时再关联 HBase。'],
+      ]
+      const needBox = el.querySelector('#needs'), nd = el.querySelector('#needD')
+      needs.forEach(([q, a]) => {
+        const b = document.createElement('button')
+        b.className = 'chip ghost'; b.type = 'button'; b.textContent = q
+        b.onclick = () => {
+          needBox.querySelectorAll('.chip').forEach(x => x.classList.add('ghost'))
+          b.classList.remove('ghost')
+          nd.innerHTML = `推荐：${a}`
+        }
+        needBox.appendChild(b)
+      })
+
+      const t = [
+        ['维度', 'HBase', 'Cassandra', 'RocksDB', 'ClickHouse'],
+        ['架构', '主从（HMaster+RS）', '无主 P2P', '嵌入式库', 'MPP OLAP'],
+        ['延迟', '毫秒', '毫秒', '微秒', '毫秒~秒'],
+        ['写入', '高并发随机', '极高随机', '极高追加', '高吞吐 Append'],
+        ['读', '点查+范围 Scan', '点查+有序 Scan', '点查+范围', '列式 Scan+聚合'],
+        ['Join', '不支持', '不支持', '不支持', '内存 Join'],
+        ['二级索引', '无', 'CQL 原生', '无', '跳数索引'],
+        ['依赖', 'HDFS+ZK', '无', '无', '无'],
+        ['适合', '画像/时序/计数', '全球多DC业务', '单机/嵌入式', 'BI/报表/聚合'],
+      ]
+      const box = el.querySelector('#compTbl')
+      box.innerHTML = t.map((r, i) => `<tr>${r.map(c => i ? `<td>${c}</td>` : `<th>${c}</th>`).join('')}</tr>`).join('')
+
+      const idxs = [
+        ['Phoenix', '最主流。在 HBase 里自动建独立的索引表（索引列值 + rowkey 做 RowKey），写时自动同步。支持 Single/Multi/Covered/Local 索引。缺点：写放大、比原生 API 慢 2–5×。'],
+        ['自建索引表', '最简单。再建一张 HBase 表，RowKey = 索引列值 + 原 RowKey。双写主表+索引表。优点：完全可控、无黑盒；缺点：手动维护一致性、写放大。'],
+        ['ES + CDC', '最灵活。用 HBase WAL 订阅 / Flink CDC / Spark Streaming 把变更同步到 ES。应用先查 ES 拿 rowkey 列表再 Batch Get HBase。优点：ES 查询能力强；缺点：链路长、最终一致。'],
+        ['OpenTSDB', '时序专用。不是通用二级索引，而是用特定的 RowKey 设计（metric+tags+timestamp）把 HBase 变成时序数据库。'],
+      ]
+      const ib = el.querySelector('#idx'), id = el.querySelector('#idxD')
+      idxs.forEach(([n, d]) => {
+        const div = document.createElement('div')
+        div.className = 'arch-item'
+        div.innerHTML = `<strong>${n}</strong><span>${d.slice(0, 28)}…</span>`
+        div.onclick = () => {
+          ib.querySelectorAll('.arch-item').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); id.innerHTML = `<b>${n}</b>：${d}`
+        }
+        ib.appendChild(div)
+      })
+    }
+
+    /* ============ 10 FAQ（手风琴） ============ */
+    function render10(el) {
+      el.innerHTML = `
+        <h2>高频面试题</h2>
+        <p class="lead">点击问题展开答案。整理自 HBase 2.5/2.6 官方文档 + 实战经验。</p>
+        <div id="faq"></div>
+      `
+      const faqs = [
+        ['HBase 和 HDFS 是什么关系？', 'HBase 运行在 HDFS 之上。HFile（数据文件）和 WAL（预写日志）都存 HDFS。HBase 的 RegionServer 和 HDFS DataNode 通常混布，这样 RegionServer 读 HFile 可以走数据本地性 + Short-Circuit Read（直读磁盘、绕过 DataNode RPC）。'],
+        ['HMaster 挂了会丢数据吗？读写会中断吗？', '不会丢数据（数据在 HDFS + WAL 里）。读写不会中断（客户端直连 RegionServer，不经过 HMaster）。但 HMaster 挂了期间 Region 的分配/Split/Move/故障恢复会暂停。HA 集群 Standby 60s 后自动顶上去。'],
+        ['RegionServer 挂了会丢数据吗？', '通常不会。写操作的持久化链路是：WAL fsync → MemStore → Ack 客户端。WAL 已经落 HDFS，RegionServer 重启或在新机器上恢复时，从 WAL 回放 MemStore 未 Flush 的部分。风险点：如果关了 WAL（SKIP_WAL）就会丢。'],
+        ['LSM-Tree 和 B+ 树的核心差异？', 'B+ 树是单树结构、随机 IO 写；LSM-Tree 是多层文件系统、写追加到内存 MemStore（O(1)）、满了顺序 Flush 成 HFile（顺序写）、多 HFile 再 Compaction 合并。LSM 写好读差，B+ 树读好写差。Compaction 是 LSM 的核心维护机制。'],
+        ['为什么 HBase 不能用时间戳做 RowKey？', '时间戳单调递增，新写入永远落在 RowKey 范围的尾部 → 尾部 Region 持续热点 → 其他 Region 闲得慌。正确做法：时间戳只能做后缀，前缀必须是散列维度（设备 ID、用户 ID、盐前缀）。经典时序 RowKey：device_id + reverse(timestamp_ms)。'],
+        ['HBase 和 Cassandra 的核心区别？', 'HBase 是主从架构（HMaster + RegionServer 依赖 HDFS+ZK），强一致；Cassandra 是无主架构（P2P Gossip），可调一致性（ONE/QUORUM/ALL），原生多 DC。HBase 更依赖 Hadoop 生态，Cassandra 架构更独立。选哪个取决于生态绑定和多 DC 需求。'],
+        ['HBase 和 RocksDB 什么关系？', '没有直接关系。两者都是 LSM-Tree 的实现，但层级不同：HBase 是分布式系统（Region 分片 + 多 RS 集群），RocksDB 是嵌入式库（单进程组件）。TiDB/CockroachDB/Pika 都用 RocksDB 做底层存储引擎。'],
+        ['为什么 HBase Cluster 必须禁用 Swap？', 'RegionServer 进程任何一页被 swap 出去，换回来的延迟可能到秒级 → 无法发心跳 → HMaster 以为它挂了 → 触发 Region 重分配 → 集群抖动。这是 HBase 运维最难排查的问题之一（偶发性、难复现）。生产必须 vm.swappiness=0。'],
+        ['Compaction 队列满了怎么处理？', '先手动 Major Compaction 缓解（选业务低谷）。然后查根因：IO 瓶颈（HDFS DataNode 磁盘 await）、Compaction 策略太松（调小 threshold 或换 ExploringCompactionPolicy）、HFile max.size 太大、写流量超过合并能力（加 RS 或限流）。'],
+        ['BlockCache 命中率低怎么办？', '先手动 Major Compaction 看 HFile 数量——Compaction 不及时是最常见原因（多个 HFile 每个都查 BloomFilter + 定位 Block）。然后看堆内存够不够（加堆或调大 block.cache.size）。还要检查 RowKey 设计（随机读无法缓存）。'],
+        ['二级索引有哪几种实现方式？', '四种主流。① Phoenix（自动维护索引表，SQL 化）；② 自建索引表（双写主表+索引表，完全可控）；③ ES + CDC（灵活的全文搜索）；④ OpenTSDB（时序专用 RowKey 设计）。没有哪种万能，根据查询模式选。'],
+        ['BulkLoad 和正常 Put 有什么区别？什么时候用？', 'BulkLoad 绕过 WAL + Flush + Compaction，直接在客户端生成 HFile 然后 move 到 HDFS。比正常 Put 快 10–100×，适合批量数据导入（Spark 并行生成 HFile）。风险：绕过 WAL，如果 BulkLoad 还没完成 RegionServer 挂了可能元数据不一致。实时增量不能用 BulkLoad。'],
+        ['HBase on K8s 成熟吗？', '不成熟。2.6 仍无官方 Operator，社区有第三方（Bitnami hbase-operator）。核心挑战：StatefulSet 持久化替代 HDFS、Pod 漂移影响 RegionServer 心跳、ZooKeeper Operator 不稳定。当前主流做法：核心 HBase 集群仍跑物理机/VM，K8s 跑其他业务；或干脆用 Cassandra 替代（无主架构更适合弹性伸缩）。'],
+        ['HBase 和 ClickHouse 怎么选？', '互补不替代。HBase：随机点查 + 范围 Scan（毫秒级），适合画像/时序/计数。ClickHouse：列式聚合分析（极速 Scan+聚合），适合 BI/报表。常见混合：HBase 存明细随机查，ClickHouse 存聚合做报表。'],
+      ]
+      const fb = el.querySelector('#faq')
+      faqs.forEach(([q, a]) => {
+        const btn = document.createElement('button')
+        btn.className = 'faq-q'; btn.textContent = 'Q：' + q
+        const ans = document.createElement('div')
+        ans.className = 'faq-a hidden'; ans.textContent = 'A：' + a
+        btn.onclick = () => ans.classList.toggle('hidden')
+        fb.appendChild(btn); fb.appendChild(ans)
+      })
+    }
+
+    const renders = {
+      '01': render01, '02': render02, '03': render03, '04': render04, '05': render05,
+      '06': render06, '07': render07, '08': render08, '09': render09, '10': render10,
+    }
+
+    show(current in renders ? current : '01')
+  </script>
+</body>
+</html>

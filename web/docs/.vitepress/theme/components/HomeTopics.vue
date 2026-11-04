@@ -15,10 +15,20 @@ const chapterCount = (id: string) => topicStats[id] ?? 0
 
 const countIn = (cat: TopicCategory) => topics.filter((t) => t.category === cat).length
 
+/** topics.ts 原始下标（大数据类按此顺序 = 学习路线图顺序） */
+const topicIndex = topics.reduce<Record<string, number>>((acc, t, i) => {
+  acc[t.id] = i
+  return acc
+}, {})
+
 const sortTopics = (list: typeof topics) =>
   [...list].sort((a, b) => {
     if (a.status === 'coming' && b.status !== 'coming') return 1
     if (b.status === 'coming' && a.status !== 'coming') return -1
+    // 大数据类按 topics.ts 顺序（即学习路线图）；其他类按拼音
+    if (a.category === '大数据' && b.category === '大数据') {
+      return (topicIndex[a.id] ?? 0) - (topicIndex[b.id] ?? 0)
+    }
     return a.title.localeCompare(b.title, 'zh-CN')
   })
 
@@ -83,6 +93,25 @@ const activeHint = computed(() =>
               {{ filter === '全部' ? '主题' : filter }}
             </h1>
             <p class="home-main__hint">{{ activeHint }} · {{ readyCount }} 个可学</p>
+          </div>
+        </div>
+
+        <div v-if="filter === '全部' || filter === '大数据'" class="home-roadmap">
+          <div class="home-roadmap__title">📚 大数据学习路线图（建议从上到下依次学习）</div>
+          <div class="home-roadmap__flow">
+            <span class="home-roadmap__step">① Hadoop 底座</span>
+            <span class="home-roadmap__arrow">→</span>
+            <span class="home-roadmap__step">② Hive 数仓 SQL</span>
+            <span class="home-roadmap__arrow">→</span>
+            <span class="home-roadmap__step">③ Spark / ④ Flink 计算</span>
+            <span class="home-roadmap__arrow">→</span>
+            <span class="home-roadmap__step">⑤ Kafka 实时管道</span>
+            <span class="home-roadmap__arrow">→</span>
+            <span class="home-roadmap__step">⑥ 湖仓一体 Iceberg</span>
+            <span class="home-roadmap__arrow">→</span>
+            <span class="home-roadmap__step">⑦ HBase / ⑧ ClickHouse 数据访问</span>
+            <span class="home-roadmap__arrow">→</span>
+            <span class="home-roadmap__step">⑨ 海豚调度编排</span>
           </div>
         </div>
 

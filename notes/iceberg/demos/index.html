@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Apache Iceberg · 交互式演示</title>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --panel: #fff;
+      --ink: #16202e;
+      --muted: #5f6b7a;
+      --line: rgba(22, 32, 46, 0.11);
+      --brand: #1d4ed8;
+      --brand-soft: rgba(29, 78, 216, 0.1);
+      --ok: #15803d;
+      --fail: #b91c1c;
+      --run: #0369a1;
+      --warn: #a16207;
+      --c0: #1d4ed8; --c1: #0f766e; --c2: #15803d; --c3: #7c3aed; --c4: #a16207;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", "PingFang SC", "Noto Sans SC", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 70% 40% at 0% 0%, var(--brand-soft), transparent 55%),
+        var(--bg);
+      min-height: 100vh;
+    }
+    .app { max-width: 1120px; margin: 0 auto; padding: 20px 16px 48px; display: grid; gap: 16px; }
+    @media (min-width: 880px) { .app { grid-template-columns: 210px 1fr; align-items: start; } }
+    .brand h1 { margin: 0; font-size: 1.25rem; font-family: "Noto Serif SC", "Songti SC", serif; }
+    .brand p { margin: 4px 0 0; color: var(--muted); font-size: 0.85rem; line-height: 1.5; }
+    .nav { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+    @media (min-width: 880px) {
+      .nav {
+        flex-direction: column; position: sticky; top: 12px;
+        background: var(--panel); border: 1px solid var(--line);
+        border-radius: 14px; padding: 10px;
+      }
+    }
+    .nav button {
+      border: 1px solid var(--line); background: var(--panel); border-radius: 999px;
+      padding: 0.45rem 0.85rem; font-size: 0.86rem; cursor: pointer;
+      text-align: left; color: var(--ink); white-space: nowrap;
+    }
+    @media (min-width: 880px) {
+      .nav button { width: 100%; border-radius: 10px; border-color: transparent; background: transparent; }
+      .nav button:hover { background: #f1f5fb; }
+    }
+    .nav button.active { background: var(--brand-soft); border-color: var(--brand); color: var(--brand); font-weight: 600; }
+    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px 18px 22px; min-height: 440px; }
+    .panel h2 { margin: 0 0 6px; font-size: 1.2rem; }
+    .panel h4 { margin: 18px 0 8px; font-size: 0.95rem; }
+    .lead { margin: 0 0 16px; color: var(--muted); font-size: 0.9rem; line-height: 1.6; }
+    .grid2 { display: grid; gap: 12px; }
+    @media (min-width: 700px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+    .grid3 { display: grid; gap: 10px; }
+    @media (min-width: 700px) { .grid3 { grid-template-columns: repeat(3, 1fr); } }
+    .card { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; background: #fafcff; }
+    .card h3 { margin: 0 0 8px; font-size: 0.95rem; }
+    .card ul { margin: 0; padding-left: 1.1rem; color: var(--muted); font-size: 0.86rem; line-height: 1.55; }
+    .arch { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-top: 8px; }
+    .arch-item {
+      border: 1px solid var(--line); border-radius: 12px; padding: 12px;
+      cursor: pointer; transition: border-color .2s, transform .2s; background: #fff;
+    }
+    .arch-item:hover, .arch-item.on { border-color: var(--brand); transform: translateY(-1px); }
+    .arch-item strong { display: block; margin-bottom: 4px; }
+    .arch-item span { font-size: 0.8rem; color: var(--muted); line-height: 1.4; }
+    .detail {
+      margin-top: 12px; padding: 12px 14px; border-radius: 10px;
+      background: var(--brand-soft); color: var(--ink); font-size: 0.9rem;
+      line-height: 1.6; min-height: 3.2em;
+    }
+    .flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0; }
+    .chip {
+      border: none; border-radius: 999px; padding: 0.35rem 0.75rem;
+      background: var(--brand-soft); color: var(--brand); font-size: 0.82rem;
+      font-weight: 600; cursor: pointer;
+    }
+    .chip.ghost { background: #eef2f8; color: var(--muted); font-weight: 500; }
+    .chip:hover { filter: brightness(0.97); }
+    .arrow { color: var(--muted); }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0 14px; }
+    .toolbar button, .toolbar label {
+      border: 1px solid var(--line); background: #fff; border-radius: 8px;
+      padding: 0.4rem 0.75rem; font-size: 0.85rem; cursor: pointer;
+    }
+    .toolbar button.primary { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600; }
+    .toolbar input[type=range] { accent-color: var(--brand); }
+    .toolbar .val { font-family: ui-monospace, Menlo, monospace; font-size: 0.85rem; color: var(--brand); font-weight: 700; min-width: 3.5em; }
+    .log {
+      margin-top: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.78rem; line-height: 1.55; background: #16202e; color: #e5eaf1;
+      border-radius: 10px; padding: 10px 12px; max-height: 260px; overflow: auto; white-space: pre-wrap;
+    }
+    .log .hot { color: #fb923c; }
+    .log .ok { color: #86efac; }
+    .log .blue { color: #60a5fa; }
+    .hint { font-size: 0.8rem; color: var(--muted); margin-top: 8px; }
+    .hidden { display: none !important; }
+    table.tbl { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 8px; }
+    table.tbl th, table.tbl td { border-bottom: 1px solid var(--line); padding: 0.42rem 0.5rem; text-align: left; vertical-align: top; }
+    table.tbl th { color: var(--muted); font-weight: 600; }
+    .code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.78rem;
+      line-height: 1.55; background: #f4f6fa; border: 1px solid var(--line);
+      border-radius: 10px; padding: 10px 12px; overflow-x: auto; white-space: pre;
+    }
+    .bar-row { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; font-family: ui-monospace, Menlo, monospace; margin-top: 4px; }
+    .bar-row .lbl { width: 64px; color: var(--muted); flex: none; }
+    .bar-track { flex: 1; background: #eaeef5; border-radius: 6px; height: 17px; overflow: hidden; }
+    .bar-fill { height: 100%; background: var(--run); border-radius: 6px; transition: width .5s ease; }
+    .bar-fill.hot { background: var(--fail); }
+    .bar-fill.good { background: var(--ok); }
+    .bar-val { width: 90px; flex: none; color: var(--muted); }
+    .faq-q {
+      width: 100%; text-align: left; border: 1px solid var(--line); background: #fff;
+      border-radius: 10px; padding: 10px 12px; font-size: 0.88rem; cursor: pointer; margin-top: 8px;
+    }
+    .faq-q:hover { border-color: var(--brand); }
+    .faq-a {
+      margin: 4px 0 4px; padding: 8px 12px; border-left: 3px solid var(--brand);
+      background: var(--brand-soft); border-radius: 0 8px 8px 0; font-size: 0.85rem; line-height: 1.6;
+    }
+    .slider-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; font-size: 0.85rem; }
+    .slider-row .name { width: 180px; color: var(--muted); flex: none; }
+    .slider-row input { flex: 1; accent-color: var(--brand); }
+    .slider-row .val { width: 100px; font-family: ui-monospace, Menlo, monospace; color: var(--brand); font-weight: 700; text-align: right; }
+    .verdict { margin-top: 10px; padding: 10px 14px; border-radius: 10px; font-size: 0.88rem; line-height: 1.6; }
+    .verdict.ok { background: #f0fdf4; border: 1px solid rgba(21,128,61,.3); }
+    .verdict.warn { background: #fffbeb; border: 1px solid rgba(161,98,7,.35); }
+    .verdict.bad { background: #fef2f2; border: 1px solid rgba(185,28,28,.3); }
+    .kv { font-size: 0.85rem; line-height: 1.85; }
+    .kv b { color: var(--brand); font-family: ui-monospace, Menlo, monospace; }
+    .pill { display: inline-block; border-radius: 999px; padding: 0.1rem 0.55rem; font-size: 0.75rem; background: #eef2f8; color: var(--muted); }
+    .pill.ok { background: #dcfce7; color: var(--ok); }
+    .pill.bad { background: #fee2e2; color: var(--fail); }
+    .pill.warn { background: #fef3c7; color: var(--warn); }
+
+    /* 01 三代对比 */
+    .era-card { border: 2px solid var(--line); border-radius: 12px; padding: 14px; background: #fafcff; cursor: pointer; transition: all .2s; }
+    .era-card.on { border-color: var(--brand); background: var(--brand-soft); }
+    .era-card h5 { margin: 0 0 6px; font-size: 0.98rem; color: var(--brand); }
+    .era-card p { margin: 0; font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
+    .pain-item { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: #fff; cursor: pointer; margin-top: 6px; }
+    .pain-item:hover, .pain-item.on { border-color: var(--brand); background: var(--brand-soft); }
+    .pain-item strong { font-size: 0.88rem; }
+    .pain-item span { display: block; font-size: 0.78rem; color: var(--muted); margin-top: 3px; }
+
+    /* 02 元数据五层 */
+    .meta-stack { display: grid; gap: 8px; margin-top: 10px; }
+    .meta-layer {
+      border: 1px solid var(--line); border-left: 4px solid var(--brand);
+      border-radius: 10px; padding: 10px 12px; background: #fafcff; cursor: pointer; transition: all .2s;
+    }
+    .meta-layer:hover, .meta-layer.on { background: var(--brand-soft); transform: translateX(3px); }
+    .meta-layer strong { font-size: 0.9rem; }
+    .meta-layer span { display: block; font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+    .snap-tree { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 10px; }
+    .snap-node { border: 1px solid var(--brand); background: var(--brand-soft); color: var(--brand); border-radius: 10px; padding: 8px 12px; font-size: 0.8rem; font-family: ui-monospace, Menlo, monospace; cursor: pointer; }
+    .snap-node.on { background: var(--brand); color: #fff; }
+    .snap-line { color: var(--muted); }
+
+    /* 03 manifest 裁剪 */
+    .file-grid { display: grid; gap: 6px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); margin-top: 10px; }
+    .file-box { border: 1px solid var(--line); border-radius: 8px; padding: 8px; font-size: 0.72rem; font-family: ui-monospace, Menlo, monospace; background: #fafcff; line-height: 1.4; }
+    .file-box.scanned { border-color: var(--fail); background: #fef2f2; }
+    .file-box.skipped { border-color: var(--ok); background: #f0fdf4; opacity: .65; }
+    .file-box b { display: block; color: var(--ink); margin-bottom: 2px; }
+
+    /* 04 并发写 */
+    .writer-row { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; margin-top: 10px; }
+    .writer-box { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: #fafcff; font-size: 0.8rem; line-height: 1.5; }
+    .writer-box.win { border-color: var(--ok); background: #f0fdf4; }
+    .writer-box.lose { border-color: var(--fail); background: #fef2f2; }
+    .pointer-box { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 10px; font-family: ui-monospace, Menlo, monospace; font-size: 0.8rem; }
+    .ptr { border: 2px solid var(--line); border-radius: 8px; padding: 6px 10px; background: #fff; }
+    .ptr.on { border-color: var(--brand); background: var(--brand-soft); color: var(--brand); font-weight: 700; }
+
+    /* 05 分区 */
+    .part-opts { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 12px; }
+    .spec-row { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-top: 8px; background: #fafcff; font-size: 0.82rem; }
+    .spec-row.new { border-color: var(--ok); background: #f0fdf4; }
+    .dir-list { font-family: ui-monospace, Menlo, monospace; font-size: 0.75rem; color: var(--muted); margin-top: 6px; line-height: 1.6; }
+
+    /* 06 时间轴 */
+    .timeline { display: flex; gap: 4px; align-items: center; margin: 12px 0; }
+    .tl-dot { flex: 1; height: 8px; border-radius: 4px; background: #dbe3ef; }
+    .tl-dot.on { background: var(--brand); }
+    .tl-labels { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--muted); font-family: ui-monospace, Menlo, monospace; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-top: 8px; }
+    .data-table td, .data-table th { border-bottom: 1px dashed var(--line); padding: 6px 8px; text-align: left; }
+
+    /* 07 列 ID */
+    .schema-row { display: grid; grid-template-columns: 70px 1fr 1fr; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; margin-top: 6px; font-size: 0.8rem; font-family: ui-monospace, Menlo, monospace; background: #fafcff; }
+    .schema-row.changed { border-color: var(--brand); background: var(--brand-soft); }
+
+    /* 08 集成 */
+    .eco-grid { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); margin-top: 8px; }
+    .eco-node { border: 1px solid var(--line); border-radius: 10px; padding: 10px; background: #fff; text-align: center; font-size: 0.82rem; cursor: pointer; transition: all .2s; }
+    .eco-node:hover, .eco-node.on { border-color: var(--brand); background: var(--brand-soft); color: var(--brand); font-weight: 600; }
+
+    /* 09 小文件 */
+    .small-files { display: grid; gap: 4px; grid-template-columns: repeat(auto-fill, minmax(46px, 1fr)); margin-top: 10px; }
+    .sf { height: 34px; border-radius: 6px; background: #dbeafe; border: 1px solid #93c5fd; display: flex; align-items: center; justify-content: center; font-size: 0.62rem; color: #1e40af; font-family: ui-monospace, Menlo, monospace; transition: all .3s; }
+    .sf.big { background: #dcfce7; border-color: #86efac; color: var(--ok); font-weight: 700; }
+    .sf.fade { opacity: 0; transform: scale(.6); }
+
+    /* 10 对比大表 */
+    .cmp { width: 100%; border-collapse: collapse; font-size: 0.78rem; margin-top: 8px; }
+    .cmp th, .cmp td { border: 1px solid var(--line); padding: 7px 8px; text-align: left; vertical-align: top; }
+    .cmp th { background: #f4f6fa; color: var(--muted); }
+    .cmp tr:nth-child(even) td { background: #fafcff; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <div class="brand" style="margin-bottom:12px">
+        <h1>Apache Iceberg 交互演示</h1>
+        <p>开放表格式 = 元数据树 + 快照。点左侧章节，动手玩概念。</p>
+      </div>
+      <nav class="nav" id="nav"></nav>
+    </aside>
+    <main class="panel" id="panel"></main>
+  </div>
+
+  <script>
+    const chapters = [
+      { id: '01', title: '01 概述与湖仓一体' },
+      { id: '02', title: '02 架构与元数据层级' },
+      { id: '03', title: '03 表格式与文件组织' },
+      { id: '04', title: '04 ACID 与快照隔离' },
+      { id: '05', title: '05 分区演进与隐藏分区' },
+      { id: '06', title: '06 Time Travel 与版本管理' },
+      { id: '07', title: '07 Schema 演进与数据类型' },
+      { id: '08', title: '08 与 Spark/Flink/Hive 集成' },
+      { id: '09', title: '09 性能优化与实践' },
+      { id: '10', title: '10 生态对比与 FAQ' },
+    ]
+
+    const params = new URLSearchParams(location.search)
+    let current = (params.get('c') || '01').padStart(2, '0')
+    const nav = document.getElementById('nav')
+    const panel = document.getElementById('panel')
+
+    chapters.forEach((c) => {
+      const b = document.createElement('button')
+      b.textContent = c.title
+      b.dataset.id = c.id
+      b.onclick = () => show(c.id)
+      nav.appendChild(b)
+    })
+
+    function show(id) {
+      current = id
+      nav.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.id === id))
+      history.replaceState(null, '', '?c=' + id)
+      panel.innerHTML = ''
+      renders[id](panel)
+    }
+
+    /* ============ 01 概述与湖仓一体 ============ */
+    function render01(el) {
+      el.innerHTML = `
+        <h2>为什么要湖仓一体</h2>
+        <p class="lead">数据湖便宜但没事务，数仓有事务但贵且封闭。湖仓一体 = 对象存储 + 开放表格式 + 多引擎。点卡片看差异。</p>
+
+        <h4>三代架构（点击看特点）</h4>
+        <div class="grid3" id="eraCards"></div>
+        <div class="detail" id="eraD">点击上方卡片。</div>
+
+        <h4>Hive 表的四大痛点（点击看 Iceberg 的解法）</h4>
+        <div id="painList"></div>
+        <div class="detail" id="painD">点击上方痛点。</div>
+
+        <h4>Iceberg / Hudi / Delta 怎么选</h4>
+        <div class="flow" id="cmpChips"></div>
+        <div class="detail" id="cmpD" style="min-height:3em">点击上方格式。</div>
+
+        <h4>Iceberg 表的最小结构</h4>
+        <div class="code">data/          ← Parquet 数据文件（默认 128MB）
+metadata/
+  00003.metadata.json   ← Schema + 分区 spec + 快照列表
+  snap-xxx.avro         ← Manifest List（快照的所有 Manifest）
+  xxx-m0.avro           ← Manifest（一批 Data File + 每列 min/max）
+Catalog                ← 只存「表名 → metadata.json 路径」的指针</div>
+      `
+      const eras = [
+        ['数据湖（Hive 表）', '廉价存储 + 裸文件。没有 ACID、没有版本、分区就是目录。适合存原始数据和算法样本，不适合直接做数仓。'],
+        ['数据仓库', '专有存储 + 完整事务 + 优化器。体验好但成本高、格式封闭、存算耦合，数据规模一大就贵。'],
+        ['湖仓一体（Iceberg）', '对象存储 + 开放表格式 + 多引擎。既有数据湖的成本，又有数仓的 ACID、Schema 演进和 Time Travel。'],
+      ]
+      const ec = el.querySelector('#eraCards'), ed = el.querySelector('#eraD')
+      eras.forEach(([n, d]) => {
+        const div = document.createElement('div')
+        div.className = 'era-card'
+        div.innerHTML = '<h5>' + n + '</h5><p>' + d.slice(0, 26) + '…</p>'
+        div.onclick = () => {
+          ec.querySelectorAll('.era-card').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); ed.innerHTML = '<b>' + n + '</b>：' + d
+        }
+        ec.appendChild(div)
+      })
+
+      const pains = [
+        ['无 ACID', '不能行级 UPDATE/DELETE，并发写互相覆盖，失败留下脏文件。', 'Iceberg：不可变文件 + 快照隔离 + v2 delete file，支持 MERGE/UPDATE/DELETE。'],
+        ['分区演进难', '分区是物理目录，天改小时要重写全表，SQL 还必须写分区列。', 'Iceberg：隐藏分区 + partition spec 演进，历史数据不重写，查询只写业务列。'],
+        ['小文件', '流式/微批产出海量小文件，Hive 没有内建合并，查询 open 开销爆炸。', 'Iceberg：写入控制目标文件大小 + rewrite_data_files 定期 compaction。'],
+        ['无 Time Travel', '覆盖写后无法回滚、无法对比历史、无法审计。', 'Iceberg：不可变 Snapshot + VERSION AS OF / TIMESTAMP AS OF + rollback。'],
+      ]
+      const pl = el.querySelector('#painList'), pd = el.querySelector('#painD')
+      pains.forEach(([n, p, s]) => {
+        const div = document.createElement('div')
+        div.className = 'pain-item'
+        div.innerHTML = '<strong>' + n + '</strong><span>' + p + '</span>'
+        div.onclick = () => {
+          pl.querySelectorAll('.pain-item').forEach(x => x.classList.remove('on'))
+          div.classList.add('on')
+          pd.innerHTML = '<b>痛点：' + n + '</b><br>' + p + '<br><br><span class="pill ok">Iceberg 解法</span> ' + s
+        }
+        pl.appendChild(div)
+      })
+
+      const cmps = [
+        ['Apache Iceberg', '元数据树 + Manifest，无中心日志。隐藏分区、分区演进、多引擎最广。通用湖仓首选。'],
+        ['Apache Hudi', 'Timeline + 索引，MOR Upsert 最成熟、增量拉取最强。CDC 入湖首选。'],
+        ['Delta Lake', 'Delta Log + Spark 深度集成。Databricks 生态最佳，其他引擎支持较弱。'],
+      ]
+      const cc = el.querySelector('#cmpChips'), cd = el.querySelector('#cmpD')
+      cmps.forEach(([n, d]) => {
+        const b = document.createElement('button')
+        b.className = 'chip ghost'; b.type = 'button'; b.textContent = n
+        b.onclick = () => {
+          cc.querySelectorAll('.chip').forEach(x => x.classList.add('ghost'))
+          b.classList.remove('ghost'); cd.innerHTML = '<b>' + n + '</b>：' + d
+        }
+        cc.appendChild(b)
+      })
+    }
+
+    /* ============ 02 架构与元数据层级 ============ */
+    function render02(el) {
+      el.innerHTML = `
+        <h2>五层元数据：从表名到数据文件</h2>
+        <p class="lead">Catalog 只存一个指针。查询时逐层下钻、逐层裁剪，最终只 open 需要的文件。点每一层看职责。</p>
+
+        <div class="meta-stack" id="metaStack"></div>
+        <div class="detail" id="metaD" style="min-height:4em">点击上方任意一层。</div>
+
+        <h4>快照版本树（点击查看）</h4>
+        <div class="snap-tree" id="snapTree"></div>
+        <div class="detail" id="snapD" style="min-height:3em">点击上方快照。</div>
+
+        <h4>一次提交的原子切换</h4>
+        <div class="pointer-box" id="ptrBox">
+          <span>Catalog 指针：</span>
+          <span class="ptr on">00002.metadata.json</span>
+          <span class="arrow">→</span>
+          <span class="ptr">00003.metadata.json（新）</span>
+        </div>
+        <div class="toolbar" style="margin-top:10px">
+          <button class="primary" id="commitBtn">模拟提交</button>
+          <button id="commitReset">重置</button>
+        </div>
+        <div class="log" id="commitLog">写 Data File → 写 Manifest → 写 Manifest List → 写 metadata.json，全部不可见；最后一步 CAS 换指针才生效。</div>
+      `
+      const layers = [
+        ['Catalog', '只存「表名 → 当前 metadata.json 路径」，提供原子 CAS。Hive Metastore / REST / Glue / Nessie / JDBC。'],
+        ['Metadata File（metadata.json）', '表的完整定义：Schema、partition spec、快照列表、表属性。每次提交写新版本，旧版本不删。'],
+        ['Manifest List（snap-*.avro）', '本次快照包含哪些 Manifest，以及每个 Manifest 的分区摘要。第一层裁剪。'],
+        ['Manifest File（*-m0.avro）', '一批 Data File 的路径、分区、record_count、每列 min/max/null_count。第二层裁剪。'],
+        ['Data File（*.parquet）', '真正的列式数据文件，默认目标 128MB。文件内 Row Group 还能做第三层裁剪。'],
+      ]
+      const ms = el.querySelector('#metaStack'), md = el.querySelector('#metaD')
+      layers.forEach(([n, d], i) => {
+        const div = document.createElement('div')
+        div.className = 'meta-layer'
+        div.innerHTML = '<strong>' + (i + 1) + '. ' + n + '</strong><span>' + d.slice(0, 34) + '…</span>'
+        div.onclick = () => {
+          ms.querySelectorAll('.meta-layer').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); md.innerHTML = '<b>' + n + '</b><br>' + d
+        }
+        ms.appendChild(div)
+      })
+
+      const snaps = [
+        ['1001', 'append 2 files', '初始写入，新增 m0/m1 两个 Manifest。'],
+        ['1002', 'delete 1 file', '删除一个文件，新增 m2；m0/m1 仍被复用。'],
+        ['1003', 'append 5 files', '再新增 m3；快照 1003 复用 m0/m1/m2。'],
+      ]
+      const st = el.querySelector('#snapTree'), sd = el.querySelector('#snapD')
+      snaps.forEach(([id, op, d], i) => {
+        const n = document.createElement('div')
+        n.className = 'snap-node'; n.textContent = 'snap ' + id
+        n.onclick = () => {
+          st.querySelectorAll('.snap-node').forEach(x => x.classList.remove('on'))
+          n.classList.add('on'); sd.innerHTML = '<b>Snapshot ' + id + '</b> <span class="pill">' + op + '</span><br>' + d
+        }
+        st.appendChild(n)
+        if (i < snaps.length - 1) {
+          const line = document.createElement('span'); line.className = 'snap-line'; line.textContent = '→'
+          st.appendChild(line)
+        }
+      })
+
+      const ptrs = el.querySelectorAll('#ptrBox .ptr')
+      const cl = el.querySelector('#commitLog')
+      el.querySelector('#commitBtn').onclick = () => {
+        ptrs[0].classList.remove('on'); ptrs[1].classList.add('on')
+        cl.innerHTML += '\n<span class="ok">[OK]</span> Catalog CAS 00002 → 00003 成功，新快照立即可见；旧快照仍可读。'
+      }
+      el.querySelector('#commitReset').onclick = () => {
+        ptrs[0].classList.add('on'); ptrs[1].classList.remove('on')
+        cl.textContent = '写 Data File → 写 Manifest → 写 Manifest List → 写 metadata.json，全部不可见；最后一步 CAS 换指针才生效。'
+      }
+    }
+
+    /* ============ 03 表格式与文件组织 ============ */
+    function render03(el) {
+      el.innerHTML = `
+        <h2>Manifest 统计信息如何跳过文件</h2>
+        <p class="lead">Manifest 里每个 Data File 都记录了分区值和每列 min/max。选择一个查询，看看哪些文件会被跳过。</p>
+
+        <h4>Manifest 内容（简化）</h4>
+        <table class="tbl" id="mfTable"></table>
+
+        <h4>选择一个查询</h4>
+        <div class="flow" id="qChips"></div>
+        <div class="verdict" id="qResult">点击上方查询。</div>
+
+        <h4>文件扫描效果</h4>
+        <div class="file-grid" id="fileGrid"></div>
+        <p class="hint">绿色 = 被 min/max 跳过，红色 = 需要扫描。分区裁剪（Manifest List）还会在此之上再跳过整批文件。</p>
+
+        <h4>两种删除模式</h4>
+        <table class="tbl">
+          <tr><th>模式</th><th>写</th><th>读</th><th>适用</th></tr>
+          <tr><td>COW</td><td>重写整个 Data File（写放大）</td><td>快</td><td>读多写少、批量修正</td></tr>
+          <tr><td>MOR</td><td>写 delete file（position/equality）</td><td>慢，要 merge，需 compaction</td><td>高频 CDC、流式 Upsert</td></tr>
+        </table>
+      `
+      const files = [
+        { name: 'f1', day: '11-01', rec: 120000, minId: 1, maxId: 5000, minAmt: 0.5, maxAmt: 999 },
+        { name: 'f2', day: '11-01', rec: 98000, minId: 5001, maxId: 9999, minAmt: 1, maxAmt: 200 },
+        { name: 'f3', day: '11-02', rec: 110000, minId: 1, maxId: 8000, minAmt: 0.1, maxAmt: 1200 },
+        { name: 'f4', day: '11-02', rec: 76000, minId: 8001, maxId: 12000, minAmt: 2, maxAmt: 50 },
+        { name: 'f5', day: '11-03', rec: 130000, minId: 3000, maxId: 15000, minAmt: 5, maxAmt: 800 },
+        { name: 'f6', day: '11-03', rec: 88000, minId: 1, maxId: 2000, minAmt: 0.5, maxAmt: 30 },
+      ]
+      const tbl = el.querySelector('#mfTable')
+      let html = '<tr><th>文件</th><th>分区 ts_day</th><th>record_count</th><th>order_id min/max</th><th>amount min/max</th></tr>'
+      files.forEach(f => {
+        html += '<tr><td>' + f.name + '.parquet</td><td>' + f.day + '</td><td>' + f.rec + '</td><td>' + f.minId + ' / ' + f.maxId + '</td><td>' + f.minAmt + ' / ' + f.maxAmt + '</td></tr>'
+      })
+      tbl.innerHTML = html
+
+      const queries = [
+        { label: 'ts 在 11-01', test: f => f.day === '11-01', desc: '分区 + min/max 双重裁剪' },
+        { label: 'order_id 1000~2000', test: f => !(f.maxId < 1000 || f.minId > 2000), desc: '看 order_id 的 min/max 是否相交' },
+        { label: 'amount > 500', test: f => f.maxAmt > 500, desc: 'max < 500 的文件可以整块跳过' },
+        { label: 'ts=11-02 且 id<3000', test: f => f.day === '11-02' && f.minId < 3000, desc: '多条件同时裁剪' },
+      ]
+      const chips = el.querySelector('#qChips')
+      const grid = el.querySelector('#fileGrid')
+      const result = el.querySelector('#qResult')
+
+      function draw(fn) {
+        grid.innerHTML = ''
+        let scanned = 0
+        files.forEach(f => {
+          const ok = fn(f)
+          if (ok) scanned++
+          const d = document.createElement('div')
+          d.className = 'file-box ' + (ok ? 'scanned' : 'skipped')
+          d.innerHTML = '<b>' + f.name + '.parquet</b>day=' + f.day + '<br>id ' + f.minId + '~' + f.maxId + '<br>amt ' + f.minAmt + '~' + f.maxAmt + '<br>' + (ok ? '扫描' : '跳过')
+          grid.appendChild(d)
+        })
+        const pct = Math.round(scanned / files.length * 100)
+        result.className = 'verdict ' + (pct <= 50 ? 'ok' : 'warn')
+        result.innerHTML = '<b>扫描 ' + scanned + ' / ' + files.length + ' 个文件（' + pct + '%）</b><br>' +
+          '分区裁剪先按 ts_day 跳过整批，文件裁剪再按列 min/max 跳过单个文件。若统计信息缺失或表达式不可下推，裁剪就会失效。'
+      }
+      queries.forEach((q, i) => {
+        const b = document.createElement('button')
+        b.className = 'chip' + (i === 0 ? '' : ' ghost'); b.type = 'button'; b.textContent = q.label
+        b.onclick = () => {
+          chips.querySelectorAll('.chip').forEach(x => x.classList.add('ghost'))
+          b.classList.remove('ghost'); draw(q.test)
+        }
+        chips.appendChild(b)
+      })
+      draw(queries[0].test)
+    }
+
+    /* ============ 04 ACID 与快照隔离 ============ */
+    function render04(el) {
+      el.innerHTML = `
+        <h2>两个写者的乐观锁与 retry</h2>
+        <p class="lead">Iceberg 不加业务锁：两个写者各自写文件，提交时用 Catalog CAS 换指针；冲突的一方重新基于最新快照提交。点「下一步」看完整过程。</p>
+
+        <div class="writer-row">
+          <div class="writer-box" id="w1"><b>Writer 1</b><br><span id="w1s">读取 snapshot N</span></div>
+          <div class="writer-box" id="w2"><b>Writer 2</b><br><span id="w2s">读取 snapshot N</span></div>
+        </div>
+        <div class="pointer-box" id="ptrRow">
+          <span>Catalog 当前指针：</span><span class="ptr on" id="curPtr">snapshot N</span>
+        </div>
+
+        <div class="toolbar" style="margin-top:12px">
+          <button class="primary" id="stepBtn">下一步</button>
+          <button id="resetBtn">重置</button>
+          <span class="pill" id="stepTag">未开始</span>
+        </div>
+        <div class="log" id="stepLog">点击「下一步」开始模拟两个写者并发提交。</div>
+
+        <h4>冲突检测规则</h4>
+        <table class="tbl">
+          <tr><th>操作</th><th>冲突条件</th></tr>
+          <tr><td>append（只加文件）</td><td>几乎不冲突，并发 append 可合并</td></tr>
+          <tr><td>overwrite（按分区覆盖）</td><td>两个写者覆盖同一分区</td></tr>
+          <tr><td>delete / update</td><td>要改的文件已被别人改过</td></tr>
+          <tr><td>compaction</td><td>要重写的文件已被删除 → 自动跳过</td></tr>
+        </table>
+
+        <h4>为什么能满足 ACID</h4>
+        <div class="kv">
+          <b>A</b> 原子性：只有 CAS 换指针是生效点<br>
+          <b>C</b> 一致性：新 metadata 引用完整的一组 manifest<br>
+          <b>I</b> 隔离性：每个查询绑定一个完整 snapshot<br>
+          <b>D</b> 持久性：指针切换成功即持久
+        </div>
+      `
+      const steps = [
+        ['W1/W2 读 snapshot N', '两个写者都拿到当前快照 N，各自开始写 Data File。', '读取 N', '读取 N', 'snapshot N', ''],
+        ['各自写文件（不可见）', 'W1 写 dt=11-01，W2 写 dt=11-02；新文件对读者完全不可见。', '写 dt=11-01 文件', '写 dt=11-02 文件', 'snapshot N', ''],
+        ['W1 先 CAS 成功', 'W1 提交 N→N+1，Catalog 指针切换成功，新快照立即可见。', 'CAS N→N+1 ✅', '准备 CAS N→N+2', 'snapshot N+1', 'win-w1'],
+        ['W2 CAS 失败', 'W2 仍基于 N 提交，但指针已是 N+1 → CommitFailedException。', '已提交', 'CAS 失败 ❌', 'snapshot N+1', 'lose-w2'],
+        ['W2 rebase 重试', 'W2 重新读取 N+1，把已写好的文件重新生成 manifest/metadata（不重写 Data File）。', '已提交', '基于 N+1 重新提交', 'snapshot N+1', ''],
+        ['W2 CAS 成功', 'N+1→N+2 提交成功。最终两个分区都在，且没有丢数据。', '已提交', 'CAS N+1→N+2 ✅', 'snapshot N+2', 'win-both'],
+      ]
+      let i = -1
+      const log = el.querySelector('#stepLog')
+      const tag = el.querySelector('#stepTag')
+      const w1 = el.querySelector('#w1'), w2 = el.querySelector('#w2')
+      const w1s = el.querySelector('#w1s'), w2s = el.querySelector('#w2s')
+      const curPtr = el.querySelector('#curPtr')
+
+      function reset() {
+        i = -1; tag.textContent = '未开始'; curPtr.textContent = 'snapshot N'
+        w1.className = 'writer-box'; w2.className = 'writer-box'
+        w1s.textContent = '读取 snapshot N'; w2s.textContent = '读取 snapshot N'
+        log.textContent = '点击「下一步」开始模拟两个写者并发提交。'
+      }
+      el.querySelector('#stepBtn').onclick = () => {
+        i = Math.min(i + 1, steps.length - 1)
+        const s = steps[i]
+        tag.textContent = s[0]
+        w1s.textContent = s[2]; w2s.textContent = s[3]; curPtr.textContent = s[4]
+        w1.className = 'writer-box'; w2.className = 'writer-box'
+        if (s[5] === 'win-w1' || s[5] === 'win-both') w1.classList.add('win')
+        if (s[5] === 'lose-w2') w2.classList.add('lose')
+        log.innerHTML += '\n<span class="hot">[' + (i + 1) + '] ' + s[0] + '</span>\n' + s[1]
+      }
+      el.querySelector('#resetBtn').onclick = reset
+      reset()
+    }
+
+    /* ============ 05 分区演进与隐藏分区 ============ */
+    function render05(el) {
+      el.innerHTML = `
+        <h2>隐藏分区与 spec 演进</h2>
+        <p class="lead">分区由转换函数从业务列派生，不是真实列。切换分区策略，看看历史数据是否需要重写。</p>
+
+        <div class="part-opts" id="partOpts"></div>
+        <div class="verdict" id="partVerdict">选择一种分区策略。</div>
+
+        <h4>分区 spec 与数据布局</h4>
+        <div id="specBox"></div>
+
+        <h4>查询如何裁剪</h4>
+        <div class="code">-- 只写业务列，无需知道分区布局
+SELECT * FROM orders WHERE ts >= TIMESTAMP '2026-11-01 00:00:00';
+
+-- 引擎按 spec 自动转换：
+--   spec 0 (day)  → partition.ts_day = 20028
+--   spec 1 (hour) → partition.ts_hour = 480672
+-- 每个 Manifest 记录自己的 spec_id，混合布局也能正确裁剪</div>
+      `
+      const opts = [
+        ['按天 days(ts)', 'day', '每天一个分区，单分区 1~10GB 时最佳。'],
+        ['按小时 hours(ts)', 'hour', '适合单日数据量 10~100GB 的实时表。'],
+        ['按天 + 16 桶', 'bucket', '时间 + 高基数打散，适合 CDC 表。'],
+      ]
+      const box = el.querySelector('#partOpts')
+      const verdict = el.querySelector('#partVerdict')
+      const specBox = el.querySelector('#specBox')
+
+      function draw(kind) {
+        let specs = ''
+        let v = ''
+        if (kind === 'day') {
+          specs = '<div class="spec-row"><b>spec 0</b>：day(ts) <span class="pill ok">历史数据</span><div class="dir-list">data/ts_day=2026-11-01/xxx.parquet<br>data/ts_day=2026-11-02/xxx.parquet</div></div>'
+          v = '<b>按天分区</b>：分区数 = 天数。改成按小时时需要 <b>新增 spec</b>，历史数据不重写；新数据按新布局写。'
+        } else if (kind === 'hour') {
+          specs = '<div class="spec-row"><b>spec 0</b>：day(ts) <span class="pill">历史</span><div class="dir-list">data/ts_day=2026-11-01/...（旧数据继续按天）</div></div>' +
+            '<div class="spec-row new"><b>spec 1</b>：hour(ts) <span class="pill ok">新数据</span><div class="dir-list">data/ts_hour=2026-11-01-10/...（新布局）</div></div>'
+          v = '<b>演进到按小时</b>：<code>ADD/REPLACE PARTITION FIELD</code> 只改元数据，历史数据零重写。查询仍按各自 spec 裁剪。'
+        } else {
+          specs = '<div class="spec-row"><b>spec 0</b>：day(ts) + bucket(16, user_id)<span class="pill ok">新布局</span><div class="dir-list">data/ts_day=2026-11-01/bucket=07/xxx.parquet</div></div>'
+          v = '<b>时间 + 分桶</b>：分区数 = 天数 × 16。注意总分区数不要超过 10 万，否则元数据开销明显。'
+        }
+        specBox.innerHTML = specs
+        verdict.className = 'verdict ok'
+        verdict.innerHTML = v + '<br><span class="hint">切换策略只改 partition spec，不触发 rewrite_data_files。</span>'
+      }
+      opts.forEach(([label, kind, desc], idx) => {
+        const b = document.createElement('button')
+        b.className = 'chip' + (idx === 0 ? '' : ' ghost'); b.type = 'button'; b.textContent = label
+        b.onclick = () => {
+          box.querySelectorAll('.chip').forEach(x => x.classList.add('ghost'))
+          b.classList.remove('ghost')
+          verdict.className = 'verdict'
+          verdict.textContent = desc
+          setTimeout(() => draw(kind), 120)
+        }
+        box.appendChild(b)
+      })
+      draw('day')
+    }
+
+    /* ============ 06 Time Travel 与版本管理 ============ */
+    function render06(el) {
+      el.innerHTML = `
+        <h2>时间轴：选择任意快照</h2>
+        <p class="lead">每个 Snapshot 都是一份不可变的历史。拖动滑块，看表在不同时刻的数据；查询语句会跟着变化。</p>
+
+        <div class="toolbar">
+          <label>Snapshot</label>
+          <input type="range" id="snapSlider" min="0" max="4" value="4" style="flex:1;max-width:320px" />
+          <span class="val" id="snapVal">1005</span>
+        </div>
+        <div class="timeline" id="tl"></div>
+        <div class="tl-labels" id="tlLabels"></div>
+
+        <div class="verdict ok" id="snapInfo"></div>
+        <table class="data-table" id="dataTable"></table>
+
+        <h4>Time Travel 语句</h4>
+        <div class="code" id="ttSql"></div>
+
+        <h4>branch 与 tag</h4>
+        <div class="grid2">
+          <div class="card"><h3>branch（可写）</h3><ul><li>从当前快照派生，可继续写入</li><li>实验、回测、灰度发布</li><li>FAST FORWARD 合并回 main</li></ul></div>
+          <div class="card"><h3>tag（只读）</h3><ul><li>固定指向某个快照</li><li>审计、月末归档、模型训练基线</li><li>RETAIN 365 DAYS 控制保留</li></ul></div>
+        </div>
+        <div class="code">ALTER TABLE orders CREATE BRANCH experiment;
+INSERT INTO orders.branch_experiment VALUES (...);
+ALTER TABLE orders CREATE TAG audit_2026_11 RETAIN 365 DAYS;
+SELECT * FROM orders VERSION AS OF 'audit_2026_11';</div>
+      `
+      const snaps = [
+        { id: '1001', op: 'append', time: '10-30 10:00', rows: ['1  A  99', '2  B  20'] },
+        { id: '1002', op: 'append', time: '10-31 09:00', rows: ['1  A  99', '2  B  20', '3  C  50'] },
+        { id: '1003', op: 'delete', time: '11-01 08:00', rows: ['1  A  99', '3  C  50'] },
+        { id: '1004', op: 'update', time: '11-01 12:00', rows: ['1  A 120', '3  C  50'] },
+        { id: '1005', op: 'append', time: '11-02 09:00', rows: ['1  A 120', '3  C  50', '4  D  88'] },
+      ]
+      const slider = el.querySelector('#snapSlider')
+      const val = el.querySelector('#snapVal')
+      const info = el.querySelector('#snapInfo')
+      const table = el.querySelector('#dataTable')
+      const sql = el.querySelector('#ttSql')
+      const tl = el.querySelector('#tl')
+      const labels = el.querySelector('#tlLabels')
+
+      snaps.forEach(() => {
+        const d = document.createElement('div'); d.className = 'tl-dot'; tl.appendChild(d)
+      })
+      labels.innerHTML = '<span>' + snaps[0].time + '</span><span>' + snaps[2].time + '</span><span>' + snaps[4].time + '</span>'
+
+      function draw(idx) {
+        const s = snaps[idx]
+        val.textContent = s.id
+        info.innerHTML = '<b>Snapshot ' + s.id + '</b> · ' + s.op + ' · ' + s.time +
+          '<br>读这个快照的数据：查询在开始时就绑定了它，后续写入不影响本次结果。'
+        let h = '<tr><th>order_id</th><th>user</th><th>amount</th></tr>'
+        s.rows.forEach(r => {
+          const p = r.split(/\s+/)
+          h += '<tr><td>' + p[0] + '</td><td>' + p[1] + '</td><td>' + p[2] + '</td></tr>'
+        })
+        table.innerHTML = h
+        sql.textContent = "-- 按 snapshot id\nSELECT * FROM orders VERSION AS OF " + s.id + ";\n\n" +
+          "-- 按时间戳（取该时刻之前最近的快照）\nSELECT * FROM orders TIMESTAMP AS OF '" + s.time + "';"
+        tl.querySelectorAll('.tl-dot').forEach((d, i) => d.classList.toggle('on', i <= idx))
+      }
+      slider.oninput = () => draw(Number(slider.value))
+      draw(4)
+    }
+
+    /* ============ 07 Schema 演进与数据类型 ============ */
+    function render07(el) {
+      el.innerHTML = `
+        <h2>列 ID：Schema 演进不读错列</h2>
+        <p class="lead">数据文件里记录的是列 ID，不是列名。点按钮做演进，观察「文件中的列 1/2/3」如何稳定映射到新 Schema。</p>
+
+        <div class="toolbar">
+          <button class="primary" id="addCol">加列 channel</button>
+          <button id="dropCol">删列 channel</button>
+          <button id="renameCol">重命名 amount</button>
+          <button id="typeCol">改类型 amount</button>
+          <button id="resetCol">重置</button>
+        </div>
+
+        <h4>当前 Schema</h4>
+        <div id="schemaRows"></div>
+
+        <h4>数据文件里的固定列（按 ID）</h4>
+        <div class="code" id="fileCols"></div>
+
+        <div class="log" id="schemaLog">初始 Schema：order_id(1) / user_id(2) / amount(3)。</div>
+        <p class="hint">无论怎么演进，数据文件里的列 ID 不变；旧文件缺的列读为 null，多出的列被忽略，所以不需要重写数据。</p>
+      `
+      let cols = [
+        { id: 1, name: 'order_id', type: 'long' },
+        { id: 2, name: 'user_id', type: 'long' },
+        { id: 3, name: 'amount', type: 'decimal(12,2)' },
+      ]
+      let nextId = 4
+      let amountWide = false
+      const rows = el.querySelector('#schemaRows')
+      const fileCols = el.querySelector('#fileCols')
+      const log = el.querySelector('#schemaLog')
+
+      function draw(changedId) {
+        rows.innerHTML = ''
+        cols.forEach(c => {
+          const d = document.createElement('div')
+          d.className = 'schema-row' + (c.id === changedId ? ' changed' : '')
+          d.innerHTML = '<span>id=' + c.id + '</span><span>' + c.name + '</span><span>' + c.type + '</span>'
+          rows.appendChild(d)
+        })
+        const base = [{ id: 1, n: 'order_id' }, { id: 2, n: 'user_id' }, { id: 3, n: 'amount' }]
+        fileCols.textContent = base.map(b => {
+          const cur = cols.find(c => c.id === b.id)
+          return 'Data File 列 ' + b.id + '（原始 ' + b.n + '）  →  Schema 映射为 ' + (cur ? cur.name + ':' + cur.type : '（已删除，忽略）')
+        }).join('\n')
+      }
+      el.querySelector('#addCol').onclick = () => {
+        if (cols.some(c => c.name === 'channel')) { log.innerHTML += '\n<span class="hot">channel 已存在</span>'; return }
+        cols.push({ id: nextId, name: 'channel', type: 'string' })
+        log.innerHTML += '\n<span class="ok">ADD COLUMN channel</span>：分配新列 ID=' + nextId + '，旧文件该列读为 null，不重写。'
+        nextId++; draw(nextId - 1)
+      }
+      el.querySelector('#dropCol').onclick = () => {
+        const i = cols.findIndex(c => c.name === 'channel')
+        if (i < 0) { log.innerHTML += '\n<span class="hot">没有 channel 列可删</span>'; return }
+        const id = cols[i].id
+        cols.splice(i, 1)
+        log.innerHTML += '\n<span class="ok">DROP COLUMN channel</span>：只删元数据，列 ID=' + id + ' 永不复用；数据文件里的列仍在。'
+        draw()
+      }
+      el.querySelector('#renameCol').onclick = () => {
+        const c = cols.find(c => c.id === 3)
+        if (!c) return
+        c.name = c.name === 'amount' ? 'total_amount' : 'amount'
+        log.innerHTML += '\n<span class="ok">RENAME COLUMN</span>：列 ID=3 不变，只改名字 → 历史数据自动映射。'
+        draw(3)
+      }
+      el.querySelector('#typeCol').onclick = () => {
+        const c = cols.find(c => c.id === 3)
+        if (!c) return
+        amountWide = !amountWide
+        c.type = amountWide ? 'decimal(18,2)' : 'decimal(12,2)'
+        log.innerHTML += '\n<span class="ok">ALTER COLUMN TYPE</span>：' + c.type + '（安全提升，旧文件读取时自动转换）。'
+        draw(3)
+      }
+      el.querySelector('#resetCol').onclick = () => {
+        cols = [
+          { id: 1, name: 'order_id', type: 'long' },
+          { id: 2, name: 'user_id', type: 'long' },
+          { id: 3, name: 'amount', type: 'decimal(12,2)' },
+        ]
+        nextId = 4; amountWide = false
+        log.textContent = '初始 Schema：order_id(1) / user_id(2) / amount(3)。'
+        draw()
+      }
+      draw()
+    }
+
+    /* ============ 08 与 Spark/Flink/Hive 集成 ============ */
+    function render08(el) {
+      el.innerHTML = `
+        <h2>多引擎共读一张表</h2>
+        <p class="lead">所有引擎共享同一个 Catalog 和 warehouse。点引擎看配置；再看 Flink 的两阶段提交如何做到 exactly-once。</p>
+
+        <div class="eco-grid" id="ecoGrid"></div>
+        <div class="detail" id="ecoD" style="min-height:4em">点击上方引擎。</div>
+
+        <h4>Flink 流式写入 exactly-once</h4>
+        <div class="toolbar">
+          <button class="primary" id="flinkNext">下一步</button>
+          <button id="flinkReset">重置</button>
+          <span class="pill" id="flinkTag">未开始</span>
+        </div>
+        <div class="log" id="flinkLog">点击「下一步」看 checkpoint 两阶段提交。</div>
+
+        <h4>版本兼容矩阵</h4>
+        <table class="tbl">
+          <tr><th>Iceberg</th><th>Spark</th><th>Flink</th><th>Hive</th></tr>
+          <tr><td>1.4.x</td><td>3.3 / 3.4</td><td>1.16 / 1.17</td><td>4.0（只读）</td></tr>
+          <tr><td>1.5.x</td><td>3.4 / 3.5</td><td>1.17 / 1.18</td><td>4.0（只读）</td></tr>
+          <tr><td>1.6.x</td><td>3.5</td><td>1.18 / 1.19</td><td>4.0（只读）</td></tr>
+        </table>
+        <p class="hint">runtime jar 的主版本后缀必须与引擎主版本严格匹配；Scala 版本（2.12 / 2.13）也要对齐。</p>
+      `
+      const engines = [
+        ['Spark', '批 ETL 和表维护主力。需要 iceberg-spark-runtime jar + IcebergSparkSessionExtensions。', 'spark.sql.extensions=org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions\nspark.sql.catalog.ice=org.apache.iceberg.spark.SparkCatalog\nspark.sql.catalog.ice.type=hive'],
+        ['Flink', '实时写入入口。checkpoint 两阶段提交保证 exactly-once。', "CREATE CATALOG ice WITH (\n  'type'='iceberg',\n  'catalog-type'='hive',\n  'uri'='thrift://hms:9083'\n);"],
+        ['Hive 4', '只读兼容存量 SQL。需要 iceberg-hive-runtime 与开关。', 'iceberg.engine.hive.enabled=true\n# cp iceberg-hive-runtime-*.jar $HIVE_HOME/auxlib/'],
+        ['Trino', '交互式查询，内置 Iceberg connector，无需额外 jar。', 'connector.name=iceberg\niceberg.catalog.type=hive_metastore\nhive.metastore.uri=thrift://hms:9083'],
+      ]
+      const grid = el.querySelector('#ecoGrid'), d = el.querySelector('#ecoD')
+      engines.forEach(([n, desc, code]) => {
+        const div = document.createElement('div')
+        div.className = 'eco-node'; div.textContent = n
+        div.onclick = () => {
+          grid.querySelectorAll('.eco-node').forEach(x => x.classList.remove('on'))
+          div.classList.add('on')
+          d.innerHTML = '<b>' + n + '</b>：' + desc + '<div class="code" style="margin-top:8px;font-size:0.72rem">' + code + '</div>'
+        }
+        grid.appendChild(div)
+      })
+
+      const steps = [
+        ['checkpoint 开始', '算子状态快照：记录当前写出的文件、已提交快照。'],
+        ['写 pending 文件', '本次 checkpoint 内写出的 Data File 进入 pending 状态，对读者不可见。'],
+        ['checkpoint 完成', 'JobManager 确认成功，回调 notifyCheckpointComplete。'],
+        ['真正 commit', 'Iceberg 写 manifest/metadata 并切换指针 → 数据可见；失败重启时未提交文件被清理。'],
+      ]
+      let i = -1
+      const log = el.querySelector('#flinkLog'), tag = el.querySelector('#flinkTag')
+      el.querySelector('#flinkNext').onclick = () => {
+        i = Math.min(i + 1, steps.length - 1)
+        tag.textContent = steps[i][0]
+        log.innerHTML += '\n<span class="hot">[' + (i + 1) + '] ' + steps[i][0] + '</span>\n' + steps[i][1]
+      }
+      el.querySelector('#flinkReset').onclick = () => {
+        i = -1; tag.textContent = '未开始'
+        log.textContent = '点击「下一步」看 checkpoint 两阶段提交。'
+      }
+    }
+
+    /* ============ 09 性能优化与实践 ============ */
+    function render09(el) {
+      el.innerHTML = `
+        <h2>小文件治理与分区计算器</h2>
+        <p class="lead">先在左边模拟 compaction 合并小文件，再用计算器根据数据量选择分区策略。</p>
+
+        <h4>小文件模拟</h4>
+        <div class="toolbar">
+          <button class="primary" id="compactBtn">执行 compaction</button>
+          <button id="fileReset">重置</button>
+          <span class="pill" id="fileStat">32 个 4MB 文件</span>
+        </div>
+        <div class="small-files" id="smallFiles"></div>
+        <div class="verdict" id="fileVerdict">32 个文件 → 每次查询至少 32 次 open + footer 解析。</div>
+
+        <h4>分区策略计算器</h4>
+        <div class="slider-row"><span class="name">单日数据量</span><input type="range" id="gbSlider" min="1" max="1000" value="100" /><span class="val" id="gbVal">100 GB</span></div>
+        <div class="toolbar">
+          <label>保留天数
+            <select id="daysSel"><option value="30">30</option><option value="90">90</option><option value="365">365</option><option value="1095" selected>1095</option></select>
+          </label>
+          <label>查询模式
+            <select id="patSel"><option value="time">按时间</option><option value="biz">按业务维度</option><option value="both">时间 + 业务</option></select>
+          </label>
+        </div>
+        <div class="verdict" id="calcOut"></div>
+      `
+      let compacted = false
+      const grid = el.querySelector('#smallFiles')
+      const stat = el.querySelector('#fileStat')
+      const verdict = el.querySelector('#fileVerdict')
+
+      function drawFiles() {
+        grid.innerHTML = ''
+        if (compacted) {
+          for (let i = 0; i < 4; i++) {
+            const d = document.createElement('div')
+            d.className = 'sf big'; d.textContent = '128M'
+            d.style.gridColumn = 'span 4'; d.style.height = '48px'
+            grid.appendChild(d)
+          }
+        } else {
+          for (let i = 0; i < 32; i++) {
+            const d = document.createElement('div')
+            d.className = 'sf'; d.textContent = '4M'
+            grid.appendChild(d)
+          }
+        }
+      }
+      el.querySelector('#compactBtn').onclick = () => {
+        if (compacted) { verdict.className = 'verdict warn'; verdict.textContent = '已经合并过了。'; return }
+        compacted = true
+        grid.querySelectorAll('.sf').forEach(x => x.classList.add('fade'))
+        setTimeout(() => {
+          drawFiles()
+          stat.textContent = '4 个 128MB 文件'
+          verdict.className = 'verdict ok'
+          verdict.innerHTML = '<b>compaction 完成：</b>32 个 4MB → 4 个 128MB。<br>读取 open 次数 32→4，Manifest entry 32→4，查询扫描开销显著下降。'
+        }, 320)
+      }
+      el.querySelector('#fileReset').onclick = () => {
+        compacted = false; drawFiles()
+        stat.textContent = '32 个 4MB 文件'
+        verdict.className = 'verdict'
+        verdict.textContent = '32 个文件 → 每次查询至少 32 次 open + footer 解析。'
+      }
+      drawFiles()
+
+      const gb = el.querySelector('#gbSlider'), gbVal = el.querySelector('#gbVal')
+      const daysSel = el.querySelector('#daysSel'), patSel = el.querySelector('#patSel')
+      const out = el.querySelector('#calcOut')
+
+      function calc() {
+        const daily = Number(gb.value)
+        const days = Number(daysSel.value)
+        const pat = patSel.value
+        gbVal.textContent = daily + ' GB'
+        const total = daily * days
+        let strategy = '不分区'
+        let parts = 1
+        if (total >= 10) {
+          if (daily < 10) { strategy = 'days(ts)'; parts = days }
+          else if (daily < 100) { strategy = 'hours(ts)'; parts = days * 24 }
+          else { strategy = 'hours(ts) + bucket(32, 高基数列)'; parts = days * 24 * 32 }
+          if (pat === 'biz') strategy += ' + truncate/bucket(业务列)'
+        }
+        const tooMany = parts > 100000
+        out.className = 'verdict ' + (tooMany ? 'bad' : total < 10 ? 'warn' : 'ok')
+        out.innerHTML = '<b>建议：' + strategy + '</b><br>' +
+          '总量 ≈ ' + total + ' GB；预计分区数 ≈ ' + parts.toLocaleString() + '；单分区约 ' +
+          (parts > 0 ? Math.max(1, Math.round(total / parts)) : total) + ' GB。' +
+          (tooMany ? '<br><span class="pill bad">分区数过多</span> 建议改用更粗粒度或减少 bucket 数。' : '<br><span class="pill ok">健康</span> 单分区 1~10GB、总数 < 10 万较为理想。')
+      }
+      gb.oninput = calc; daysSel.onchange = calc; patSel.onchange = calc
+      calc()
+    }
+
+    /* ============ 10 生态对比与 FAQ ============ */
+    function render10(el) {
+      el.innerHTML = `
+        <h2>四种表格式对比与面试 FAQ</h2>
+        <p class="lead">先看大表定位，再展开高频面试题。选型的核心不是「谁最强」，而是「谁最匹配你的引擎和写入模式」。</p>
+
+        <h4>Iceberg / Hudi / Delta / Paimon</h4>
+        <table class="cmp">
+          <tr><th>维度</th><th>Iceberg</th><th>Hudi</th><th>Delta Lake</th><th>Paimon</th></tr>
+          <tr><td>元数据</td><td>元数据树 + Manifest</td><td>Timeline</td><td>_delta_log JSON</td><td>快照 + Manifest</td></tr>
+          <tr><td>写入</td><td>COW + MOR</td><td>COW + MOR（最强）</td><td>COW（+DV）</td><td>COW + MOR（LSM）</td></tr>
+          <tr><td>隐藏分区</td><td>✅</td><td>❌</td><td>❌</td><td>✅</td></tr>
+          <tr><td>分区演进</td><td>✅ 不重写</td><td>有限</td><td>有限</td><td>✅</td></tr>
+          <tr><td>增量读</td><td>✅</td><td>✅ 最强</td><td>✅ CDF</td><td>✅</td></tr>
+          <tr><td>多引擎</td><td>最广</td><td>较广</td><td>Spark 最佳</td><td>Flink 最佳</td></tr>
+          <tr><td>最强场景</td><td>开放多引擎湖仓</td><td>CDC Upsert</td><td>Databricks</td><td>Flink 流批一体</td></tr>
+        </table>
+
+        <h4>选型一句话</h4>
+        <div class="grid3">
+          <div class="card"><h3>选 Iceberg</h3><ul><li>Spark/Flink/Trino/Hive 都要读</li><li>要隐藏分区与分区演进</li><li>要 Time Travel / 分支</li></ul></div>
+          <div class="card"><h3>选 Hudi</h3><ul><li>高频 CDC Upsert</li><li>增量拉取是刚需</li><li>已有 Hudi / EMR 生态</li></ul></div>
+          <div class="card"><h3>选 Delta / Paimon</h3><ul><li>Delta：Databricks/Spark 深度绑定</li><li>Paimon：Flink 流批一体</li><li>按团队技术栈决定</li></ul></div>
+        </div>
+
+        <h4>常见面试题（点击展开）</h4>
+        <div id="faqBox"></div>
+      `
+      const faqs = [
+        ['Iceberg 为什么能实现 ACID？', '元数据文件不可变，提交时通过 Catalog CAS 原子切换 metadata_location 指针；读查询绑定某个 snapshot，因此满足原子性与隔离性。'],
+        ['Iceberg 的元数据分几层？', 'Catalog → metadata.json → Manifest List → Manifest → Data File。逐层索引、逐层裁剪，避免打开所有文件。'],
+        ['隐藏分区相比 Hive 分区有什么优势？', '分区由 days(ts) 等转换函数派生，不是真实列；查询不用写分区列；partition spec 可演进且历史数据不重写。'],
+        ['Schema 演进为什么安全？', '用列 ID 而不是列名定位列；ID 分配后永不复用，改名/删列/加列都不影响历史文件读取。'],
+        ['COW 和 MOR 的区别？', 'COW 重写整个文件，读快写慢；MOR 写 delete file + 新数据文件，写快读慢，需要 compaction。'],
+        ['Iceberg 和 Hudi / Delta 怎么选？', '多引擎开放共享选 Iceberg；高频 CDC Upsert / 增量拉取选 Hudi；Databricks/Spark 深度绑定选 Delta；Flink 流批一体选 Paimon。'],
+        ['Flink 写 Iceberg 怎么保证 exactly-once？', '基于 checkpoint 的两阶段提交：checkpoint 期间写 pending 文件，notifyCheckpointComplete 后才真正 commit；失败重启清理未提交文件。'],
+        ['小文件怎么治理？', '写入控制 128MB 目标文件与 hash 分发；定期 rewrite_data_files（binpack）；配合 expire_snapshots 清理快照。'],
+        ['Iceberg 查询为什么快？', '分区裁剪 → 文件 min/max 裁剪 → Parquet Row Group 裁剪，再加列裁剪。'],
+        ['Hive 能读 Iceberg 吗？', 'Hive 4 支持只读（iceberg-hive-runtime + iceberg.engine.hive.enabled=true）；Hive 3 及以下不支持。'],
+      ]
+      const box = el.querySelector('#faqBox')
+      faqs.forEach(([q, a], i) => {
+        const b = document.createElement('button')
+        b.className = 'faq-q'; b.innerHTML = 'Q' + (i + 1) + '. ' + q
+        const ans = document.createElement('div')
+        ans.className = 'faq-a hidden'; ans.textContent = a
+        b.onclick = () => ans.classList.toggle('hidden')
+        box.appendChild(b); box.appendChild(ans)
+      })
+    }
+
+    const renders = {
+      '01': render01, '02': render02, '03': render03, '04': render04,
+      '05': render05, '06': render06, '07': render07, '08': render08,
+      '09': render09, '10': render10,
+    }
+
+    // init
+    show(current)
+  </script>
+</body>
+</html>

@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Apache Hive · 交互式演示</title>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --panel: #fff;
+      --ink: #16202e;
+      --muted: #5f6b7a;
+      --line: rgba(22, 32, 46, 0.11);
+      --brand: #1d4ed8;
+      --brand-soft: rgba(29, 78, 216, 0.1);
+      --ok: #15803d;
+      --fail: #b91c1c;
+      --run: #0369a1;
+      --warn: #a16207;
+      --c0: #1d4ed8; --c1: #0f766e; --c2: #15803d; --c3: #7c3aed; --c4: #a16207;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", "PingFang SC", "Noto Sans SC", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 70% 40% at 0% 0%, var(--brand-soft), transparent 55%),
+        var(--bg);
+      min-height: 100vh;
+    }
+    .app {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 20px 16px 48px;
+      display: grid;
+      gap: 16px;
+    }
+    @media (min-width: 880px) {
+      .app { grid-template-columns: 210px 1fr; align-items: start; }
+    }
+    .brand h1 { margin: 0; font-size: 1.25rem; font-family: "Noto Serif SC", "Songti SC", serif; }
+    .brand p { margin: 4px 0 0; color: var(--muted); font-size: 0.85rem; line-height: 1.5; }
+    .nav { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+    @media (min-width: 880px) {
+      .nav {
+        flex-direction: column;
+        position: sticky; top: 12px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 10px;
+      }
+    }
+    .nav button {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 999px;
+      padding: 0.45rem 0.85rem;
+      font-size: 0.86rem;
+      cursor: pointer;
+      text-align: left;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    @media (min-width: 880px) {
+      .nav button { width: 100%; border-radius: 10px; border-color: transparent; background: transparent; }
+      .nav button:hover { background: #f1f5fb; }
+    }
+    .nav button.active { background: var(--brand-soft); border-color: var(--brand); color: var(--brand); font-weight: 600; }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 18px 18px 22px;
+      min-height: 440px;
+    }
+    .panel h2 { margin: 0 0 6px; font-size: 1.2rem; }
+    .panel h4 { margin: 18px 0 8px; font-size: 0.95rem; }
+    .lead { margin: 0 0 16px; color: var(--muted); font-size: 0.9rem; line-height: 1.6; }
+    .grid2 { display: grid; gap: 12px; }
+    @media (min-width: 700px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      background: #fafcff;
+    }
+    .card h3 { margin: 0 0 8px; font-size: 0.95rem; }
+    .card ul { margin: 0; padding-left: 1.1rem; color: var(--muted); font-size: 0.86rem; line-height: 1.55; }
+    .arch { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-top: 8px; }
+    .arch-item {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      cursor: pointer;
+      transition: border-color .2s, transform .2s;
+      background: #fff;
+    }
+    .arch-item:hover, .arch-item.on { border-color: var(--brand); transform: translateY(-1px); }
+    .arch-item strong { display: block; margin-bottom: 4px; }
+    .arch-item span { font-size: 0.8rem; color: var(--muted); line-height: 1.4; }
+    .detail {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: var(--brand-soft);
+      color: var(--ink);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      min-height: 3.2em;
+    }
+    .flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0; }
+    .chip {
+      border: none;
+      border-radius: 999px;
+      padding: 0.35rem 0.75rem;
+      background: var(--brand-soft);
+      color: var(--brand);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .chip.ghost { background: #eef2f8; color: var(--muted); font-weight: 500; }
+    .chip:hover { filter: brightness(0.97); }
+    .arrow { color: var(--muted); }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0 14px; }
+    .toolbar button, .toolbar label {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 8px;
+      padding: 0.4rem 0.75rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+    .toolbar button.primary { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600; }
+    .toolbar input[type=range] { accent-color: var(--brand); }
+    .toolbar .val { font-family: ui-monospace, Menlo, monospace; font-size: 0.85rem; color: var(--brand); font-weight: 700; min-width: 3.5em; }
+    .log {
+      margin-top: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      background: #16202e;
+      color: #e5eaf1;
+      border-radius: 10px;
+      padding: 10px 12px;
+      max-height: 260px;
+      overflow: auto;
+      white-space: pre-wrap;
+    }
+    .log .hot { color: #fb923c; }
+    .log .ok { color: #86efac; }
+    .log .blue { color: #60a5fa; }
+    .hint { font-size: 0.8rem; color: var(--muted); margin-top: 8px; }
+    .hidden { display: none !important; }
+    table.tbl { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 8px; }
+    table.tbl th, table.tbl td { border-bottom: 1px solid var(--line); padding: 0.42rem 0.5rem; text-align: left; vertical-align: top; }
+    table.tbl th { color: var(--muted); font-weight: 600; }
+    .code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      background: #f4f6fa;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      overflow-x: auto;
+      white-space: pre;
+    }
+    .bar-row { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; font-family: ui-monospace, Menlo, monospace; margin-top: 4px; }
+    .bar-row .lbl { width: 64px; color: var(--muted); flex: none; }
+    .bar-track { flex: 1; background: #eaeef5; border-radius: 6px; height: 17px; overflow: hidden; }
+    .bar-fill { height: 100%; background: var(--run); border-radius: 6px; transition: width .5s ease; }
+    .bar-fill.hot { background: var(--fail); }
+    .bar-fill.good { background: var(--ok); }
+    .bar-val { width: 90px; flex: none; color: var(--muted); }
+    .faq-q {
+      width: 100%;
+      text-align: left;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.88rem;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .faq-q:hover { border-color: var(--brand); }
+    .faq-a {
+      margin: 4px 0 4px;
+      padding: 8px 12px;
+      border-left: 3px solid var(--brand);
+      background: var(--brand-soft);
+      border-radius: 0 8px 8px 0;
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+    .slider-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; font-size: 0.85rem; }
+    .slider-row .name { width: 180px; color: var(--muted); flex: none; }
+    .slider-row input { flex: 1; accent-color: var(--brand); }
+    .slider-row .val { width: 100px; font-family: ui-monospace, Menlo, monospace; color: var(--brand); font-weight: 700; text-align: right; }
+    .verdict { margin-top: 10px; padding: 10px 14px; border-radius: 10px; font-size: 0.88rem; line-height: 1.6; }
+    .verdict.ok { background: #f0fdf4; border: 1px solid rgba(21,128,61,.3); }
+    .verdict.warn { background: #fffbeb; border: 1px solid rgba(161,98,7,.35); }
+    .verdict.bad { background: #fef2f2; border: 1px solid rgba(185,28,28,.3); }
+    .kv { font-size: 0.85rem; line-height: 1.85; }
+    .kv b { color: var(--brand); font-family: ui-monospace, Menlo, monospace; }
+    .pill { display: inline-block; border-radius: 999px; padding: 0.1rem 0.55rem; font-size: 0.75rem; background: #eef2f8; color: var(--muted); }
+    .pill.ok { background: #dcfce7; color: var(--ok); }
+    .pill.bad { background: #fee2e2; color: var(--fail); }
+    .pill.warn { background: #fef3c7; color: var(--warn); }
+
+    /* 数仓分层专用 */
+    .dw-layer {
+      display: grid; gap: 8px; grid-template-columns: 1fr;
+      margin-top: 8px;
+    }
+    @media (min-width: 700px) { .dw-layer { grid-template-columns: 1fr 1fr 1fr 1fr; } }
+    .dw-box {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      background: #fafcff;
+      cursor: pointer;
+      transition: border-color .2s, transform .2s;
+    }
+    .dw-box:hover, .dw-box.on { border-color: var(--brand); transform: translateY(-1px); }
+    .dw-box h5 { margin: 0 0 4px; font-size: 0.9rem; color: var(--brand); }
+    .dw-box p { margin: 0; font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
+    .dw-box .dir { font-family: ui-monospace, Menlo, monospace; font-size: 0.75rem; color: var(--ink); margin-top: 6px; }
+
+    /* 架构专用 */
+    .arch-flow {
+      display: flex; flex-wrap: wrap; gap: 4px; align-items: center;
+      border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+      background: #fafcff; margin-top: 8px;
+    }
+    .arch-node {
+      border: 1px solid var(--brand);
+      background: var(--brand-soft);
+      border-radius: 8px;
+      padding: 0.4rem 0.7rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--brand);
+      cursor: pointer;
+      text-align: center;
+      min-width: 60px;
+    }
+    .arch-node.on { background: var(--brand); color: #fff; }
+    .arch-node.muted { background: transparent; border-color: var(--line); color: var(--muted); }
+
+    /* 存储格式专用 */
+    .format-compare { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-top: 8px; }
+    .fmt-card { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; background: #fafcff; cursor: pointer; transition: border-color .2s, transform .2s; }
+    .fmt-card:hover, .fmt-card.on { border-color: var(--brand); transform: translateY(-1px); }
+    .fmt-card h5 { margin: 0 0 6px; font-size: 0.95rem; color: var(--brand); }
+    .fmt-card .tag { display: inline-block; border-radius: 999px; padding: 0.05rem 0.5rem; font-size: 0.72rem; margin-right: 4px; }
+
+    /* 分区裁剪可视化 */
+    .part-viz { display: grid; gap: 6px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); margin-top: 10px; }
+    .part-cell {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 0.82rem;
+      background: #fafcff;
+      font-family: ui-monospace, Menlo, monospace;
+      text-align: center;
+    }
+    .part-cell.scanned { background: #fee2e2; border-color: var(--fail); color: var(--fail); font-weight: 600; }
+    .part-cell.skipped { background: #dcfce7; border-color: var(--ok); color: var(--ok); }
+
+    /* 执行引擎专用 */
+    .engine-compare { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-top: 8px; }
+    .engine-card { border: 2px solid var(--line); border-radius: 12px; padding: 14px; background: #fafcff; cursor: pointer; transition: all .2s; text-align: center; }
+    .engine-card.on { border-color: var(--brand); background: var(--brand-soft); }
+    .engine-card h5 { margin: 0 0 4px; font-size: 1rem; color: var(--brand); }
+    .engine-card .speed { font-size: 0.75rem; color: var(--muted); }
+    .dag-box { border: 1px solid var(--line); border-radius: 10px; padding: 12px; background: #16202e; color: #e5eaf1; font-family: ui-monospace, Menlo, monospace; font-size: 0.78rem; margin-top: 10px; }
+
+    /* Compaction 专用 */
+    .acid-files { display: grid; gap: 6px; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); margin-top: 10px; }
+    .acid-file {
+      border: 1.5px solid var(--brand);
+      border-radius: 8px;
+      padding: 12px 8px;
+      font-size: 0.75rem;
+      background: var(--brand-soft);
+      font-family: ui-monospace, Menlo, monospace;
+      text-align: center;
+      transition: opacity .3s;
+    }
+    .acid-file.base { background: #f0fdf4; border-color: var(--ok); color: var(--ok); }
+    .acid-file.delta { background: #fef3c7; border-color: var(--warn); color: var(--warn); }
+    .acid-file.merged { opacity: 0; }
+
+    /* Metastore 连接图 */
+    .ms-hub {
+      border: 2px solid var(--brand);
+      border-radius: 16px;
+      padding: 14px 18px;
+      background: var(--brand-soft);
+      text-align: center;
+      margin: 14px auto;
+      max-width: 280px;
+    }
+    .ms-hub strong { font-size: 1rem; color: var(--brand); }
+    .ms-hub p { margin: 4px 0 0; font-size: 0.78rem; color: var(--muted); }
+    .ms-clients { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); margin-top: 6px; }
+    .ms-client {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      background: #fff;
+      text-align: center;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: border-color .2s, transform .2s;
+    }
+    .ms-client:hover, .ms-client.on { border-color: var(--brand); transform: translateY(-1px); background: var(--brand-soft); color: var(--brand); font-weight: 600; }
+
+    .env-eco { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+    .eco-node {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      background: #fff;
+      text-align: center;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .eco-node:hover, .eco-node.on { border-color: var(--brand); background: var(--brand-soft); color: var(--brand); font-weight: 600; }
+
+    .table-row { display: grid; grid-template-columns: 1.2fr 1fr; gap: 8px; font-size: 0.82rem; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <div class="brand" style="margin-bottom:12px">
+        <h1>Apache Hive 交互演示</h1>
+        <p>Metastore + SQL 兼容层。点左侧章节，动手玩概念。</p>
+      </div>
+      <nav class="nav" id="nav"></nav>
+    </aside>
+    <main class="panel" id="panel"></main>
+  </div>
+
+  <script>
+    const chapters = [
+      { id: '01', title: '01 概述与定位' },
+      { id: '02', title: '02 架构与核心组件' },
+      { id: '03', title: '03 数据模型与存储格式' },
+      { id: '04', title: '04 SQL 与分区管理' },
+      { id: '05', title: '05 数仓分层设计' },
+      { id: '06', title: '06 执行引擎与 Tez/Spark 切换' },
+      { id: '07', title: '07 性能调优' },
+      { id: '08', title: '08 ACID 与事务' },
+      { id: '09', title: '09 Hive 与周边组件' },
+      { id: '10', title: '10 生态对比与 FAQ' },
+    ]
+
+    const params = new URLSearchParams(location.search)
+    let current = (params.get('c') || '01').padStart(2, '0')
+    const nav = document.getElementById('nav')
+    const panel = document.getElementById('panel')
+
+    chapters.forEach((c) => {
+      const b = document.createElement('button')
+      b.textContent = c.title
+      b.dataset.id = c.id
+      b.onclick = () => show(c.id)
+      nav.appendChild(b)
+    })
+
+    function show(id) {
+      current = id
+      nav.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.id === id))
+      history.replaceState(null, '', `?c=${id}`)
+      panel.innerHTML = ''
+      renders[id](panel)
+    }
+
+    /* ============ 01 概述与定位 ============ */
+    function render01(el) {
+      el.innerHTML = `
+        <h2>Hive 在大数据链路中的位置</h2>
+        <p class="lead">Hive 把「HDFS 上的一堆文件」变成「有名字、有结构的表」，然后让你用 SQL 来查。点下面的引擎/组件卡片看定位。</p>
+
+        <h4>Hive vs Spark SQL vs Trino 对比</h4>
+        <div class="arch" id="compCards"></div>
+        <div class="detail" id="compD">点击上方卡片。</div>
+
+        <h4>大数据全链路位置图</h4>
+        <div class="arch-flow" style="justify-content:center">
+          <span class="arch-node muted">数据采集</span>
+          <span class="pill" style="background:#eef2f8;color:#5f6b7a">→</span>
+          <span class="arch-node muted">Kafka/Flink CDC</span>
+          <span class="pill" style="background:#eef2f8;color:#5f6b7a">→</span>
+          <span class="arch-node">HDFS / 对象存储</span>
+          <span class="pill" style="background:#eef2f8;color:#5f6b7a">→</span>
+          <span class="arch-node on" id="hiveNode">Hive（数仓 SQL 层）</span>
+          <span class="pill" style="background:#eef2f8;color:#5f6b7a">→</span>
+          <span class="arch-node muted">Spark/Tez/Trino 执行</span>
+          <span class="pill" style="background:#eef2f8;color:#5f6b7a">→</span>
+          <span class="arch-node muted">业务报表/BI</span>
+        </div>
+        <p class="hint">Hive 本身不存数据也不跑计算：<b>数据在 HDFS/对象存储</b>，<b>计算交给 Tez/Spark/Trino</b>，它只做「翻译 SQL + 管理元数据」。</p>
+
+        <h4>Hive vs 传统数仓 vs Spark SQL</h4>
+        <table class="tbl">
+          <tr><th>维度</th><th>Hive (on Tez)</th><th>传统数仓</th><th>Spark SQL</th></tr>
+          <tr><td>存储</td><td>HDFS/对象存储</td><td>DBMS 自有存储</td><td>外部存储</td></tr>
+          <tr><td>延迟</td><td>分钟级</td><td>秒级~亚秒级</td><td>秒级</td></tr>
+          <tr><td>成本</td><td>低（廉价机器）</td><td>高（专有硬件）</td><td>中</td></tr>
+          <tr><td>迭代支持</td><td>无（DAG 一次跑）</td><td>好</td><td>好</td></tr>
+          <tr><td>SQL 兼容</td><td>HiveQL 方言</td><td>标准 SQL</td><td>接近标准 SQL</td></tr>
+        </table>
+      `
+      const comps = [
+        ['Hive (on Tez/Spark)', '本质是 <b>Metastore + SQL 兼容层</b>。不存数据、不跑计算。数据在 HDFS/对象存储，计算交给 Tez/Spark/Trino。分钟级延迟，数仓建模成熟。'],
+        ['Spark SQL', '多模态计算引擎。Catalyst 优化器快，支持 RDD 迭代、MLlib、流处理。可以连 Hive Metastore 直接读写 Hive 表。'],
+        ['Trino (Presto)', '亚秒级交互式查询引擎。纯内存列式执行，多数据源联邦查询（Hive + MySQL + Cassandra + ...）。不做长 ETL。'],
+        ['ClickHouse', 'OLAP 数据库，自带 MergeTree 存储引擎。单表聚合极快、列存压缩好。适合 ADS 报表层，不擅长复杂 JOIN。'],
+        ['HBase', '分布式 KV 数据库。列存、强依赖 ZooKeeper。点查快、高并发写好。不是数仓，不做聚合分析。'],
+      ]
+      const cc = el.querySelector('#compCards'), cd = el.querySelector('#compD')
+      comps.forEach(([n, d]) => {
+        const div = document.createElement('div')
+        div.className = 'arch-item'
+        div.innerHTML = `<strong>${n}</strong><span>${d.slice(0, 30)}…</span>`
+        div.onclick = () => {
+          cc.querySelectorAll('.arch-item').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); cd.innerHTML = `<b>${n}</b>：${d}`
+        }
+        cc.appendChild(div)
+      })
+    }
+
+    /* ============ 02 架构与核心组件 ============ */
+    function render02(el) {
+      el.innerHTML = `
+        <h2>Hive 架构：从 Client 到 HDFS</h2>
+        <p class="lead">点下方每个组件卡片看职责；再看一遍查询完整链路；最后了解 Metastore 三种部署模式。</p>
+
+        <h4>核心组件（点击看职责）</h4>
+        <div class="arch" id="archRoles"></div>
+        <div class="detail" id="archD">点击上方组件。</div>
+
+        <h4>一次查询的完整链路</h4>
+        <div class="toolbar">
+          <button class="primary" id="qNext">下一步</button>
+          <button id="qReset">重置</button>
+          <span class="pill" id="qPhase">未开始</span>
+        </div>
+        <div class="log" id="qLog">点击「下一步」开始模拟。查询：<code>SELECT COUNT(*) FROM orders WHERE dt='2026-11-01'</code></div>
+
+        <h4>Metastore 三种部署模式对比</h4>
+        <div class="flow" id="msModes"></div>
+        <div class="detail" id="msModeD" style="min-height:3em">点击上方模式。</div>
+      `
+      const roles = [
+        ['Beeline / JDBC Client', 'Hive 4.x 唯一官方入口（<code>hive</code> CLI 已废弃）。Beeline 通过 JDBC 协议连 HiveServer2，端口 <b>10000</b>。'],
+        ['HiveServer2', '入口网关：管理会话、鉴权、解析 SQL、调度查询到执行引擎。端口 10000（JDBC）+ 10001（Web UI）。4.x 默认用 Tez。'],
+        ['Compiler (Calcite)', 'SQL → 执行计划：Parse → AST → 语义分析（查 Metastore 拿表结构）→ 优化 → 生成物理计划。4.x 用 Apache Calcite。'],
+        ['Metastore', '元数据服务：表、列、分区、Bucket、Storage Handler 的真相所在。端口 <b>9083</b>（Thrift 协议）。可部署为 Remote 模式被 Spark/Flink/Trino 共享。'],
+        ['Execution Engine', '真正跑查询：Tez（4.x 默认，DAG）、Spark（Catalyst + 迭代）、Flink（流批）、MR（已废弃）。每个引擎各自向 YARN/K8s 申请资源。'],
+      ]
+      const ar = el.querySelector('#archRoles'), ad = el.querySelector('#archD')
+      roles.forEach(([n, d]) => {
+        const div = document.createElement('div')
+        div.className = 'arch-item'
+        div.innerHTML = `<strong>${n}</strong><span>${d.slice(0, 25)}…</span>`
+        div.onclick = () => {
+          ar.querySelectorAll('.arch-item').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); ad.innerHTML = `<b>${n}</b>：${d}`
+        }
+        ar.appendChild(div)
+      })
+
+      const steps = [
+        ['[1] Client → HS2', 'Beeline 通过 JDBC (端口 10000) 建立会话 → 鉴权 → 提交 SQL 字符串'],
+        ['[2] HS2 → Compiler', 'Antlr 解析 SQL → 生成 AST → 语义分析（查 Metastore 拿 orders 表结构和分区列表）'],
+        ['[3] Compiler → 优化器', 'Calcite 优化：分区裁剪只保留 dt=2026-11-01 → 谓词下推 WHERE 条件到 ORC Reader → 生成物理计划'],
+        ['[4] 提交到引擎', '生成 Tez DAG：Source → Filter → Map 端聚合 → Shuffle → Reduce 端汇总 → Sink → 提交到 YARN'],
+        ['[5] Tez DAGAppMaster', 'YARN 起 DAGAppMaster（AM）→ AM 起 Tez Container 任务 → ORC Reader 读 HDFS 对应分区目录'],
+        ['[6] 任务执行', 'ORC 列式读取 + Bloom Filter 跳过不匹配的 Stripe → Map 端做 COUNT 预聚合 → Shuffle 汇总 → Reduce 端最终 COUNT'],
+        ['[7] 返回结果', '结果集通过 JDBC 返回 Beeline → 终端显示最终行数'],
+      ]
+      const qLog = el.querySelector('#qLog'), qPhase = el.querySelector('#qPhase')
+      let qi = -1
+      el.querySelector('#qNext').onclick = () => {
+        qi = Math.min(qi + 1, steps.length - 1)
+        qPhase.textContent = steps[qi][0]
+        qLog.innerHTML += '\n<span class="hot">' + steps[qi][0] + '</span>\n' + steps[qi][1]
+      }
+      el.querySelector('#qReset').onclick = () => {
+        qi = -1; qPhase.textContent = '未开始'
+        qLog.textContent = '点击「下一步」开始模拟。查询：SELECT COUNT(*) FROM orders WHERE dt=2026-11-01'
+      }
+
+      const modes = [
+        ['Embedded（内嵌 Derby）', '单机开发测试用。随 HS2 启动，元数据存在 Hive 目录下的 Derby 文件。只能单连，重启可能坏。', 'warn'],
+        ['Local（本地 MySQL）', 'Metastore 和 HS2 同进程，但元数据库用 MySQL/PostgreSQL。小团队用。HS2 挂了元数据也不可用。', 'warn'],
+        ['Remote（独立 HMS 进程）', '✅ <b>生产推荐</b>。Metastore 独立进程，端口 9083。Spark/Flink/Trino 可以通过 Thrift 协议直连，不需要经过 HS2。', 'ok'],
+      ]
+      const mm = el.querySelector('#msModes'), mmd = el.querySelector('#msModeD')
+      modes.forEach(([n, d, cls]) => {
+        const b = document.createElement('button')
+        b.className = 'chip ghost'; b.type = 'button'; b.textContent = n
+        b.onclick = () => {
+          mm.querySelectorAll('.chip').forEach(x => x.classList.add('ghost'))
+          b.classList.remove('ghost')
+          mmd.className = 'detail'; mmd.innerHTML = `<b>${n}</b> <span class="pill pill.${cls}">${cls === 'ok' ? '推荐' : cls === 'warn' ? '谨慎' : '不推荐'}</span><br>${d}`
+        }
+        mm.appendChild(b)
+      })
+    }
+
+    /* ============ 03 数据模型与存储格式 ============ */
+    function render03(el) {
+      el.innerHTML = `
+        <h2>存储格式：选 ORC 还是 Parquet？</h2>
+        <p class="lead">点卡片切换存储格式，看压缩率、ACID 支持、适用场景；再调压缩算法滑块。</p>
+
+        <h4>四大存储格式对比</h4>
+        <div class="format-compare" id="fmtCards"></div>
+        <div class="detail" id="fmtD">点击上方格式。</div>
+
+        <h4>压缩算法选择</h4>
+        <div class="toolbar">
+          <button class="chip ghost" id="cmpSnappy">SNAPPY</button>
+          <button class="chip ghost" id="cmpZstd">ZSTD</button>
+          <button class="chip ghost" id="cmpGzip">GZIP</button>
+          <button class="chip ghost" id="cmpNone">不压缩</button>
+        </div>
+        <div class="kv" id="cmpOut"></div>
+
+        <h4>内部表 vs 外部表 DROP 模拟</h4>
+        <div class="toolbar">
+          <button class="primary" id="dropInternal">DROP 内部表</button>
+          <button class="primary" id="dropExternal" style="background:var(--warn);border-color:var(--warn)">DROP 外部表</button>
+          <button id="dropReset">重置</button>
+        </div>
+        <div class="code" id="dropLog">模拟：<code>CREATE TABLE t (...) STORED AS ORC;</code> → <code>/user/hive/warehouse/t/</code> 目录有 5 个文件
+模拟：<code>CREATE EXTERNAL TABLE t (...) LOCATION '/data/t';</code> → <code>/data/t/</code> 目录有 5 个文件</div>
+      `
+      const fmts = [
+        ['TextFile', '行存', '❌', '最简单、调试方便、小数据量。没有列裁剪，没有谓词下推。', {ratio: 1, speed: 1, acid: false}],
+        ['ORC', '列存 + Stripe + Bloom Filter', '✅ (Hive ACID 唯一支持)', '<b>Hive 首选</b>。Stripe 级跳过 + Bloom Filter + 列级统计。Hive ACID 表必须 ORC。', {ratio: 5, speed: 4, acid: true}],
+        ['Parquet', '列存 + Row Group + 统计', '❌', 'Spark 默认，通用列式。多引擎（Iceberg/Hudi/Delta 默认物理格式）。谓词下推好，但没有 ORC 的 Bloom Filter。', {ratio: 5, speed: 4, acid: false}],
+        ['Avro', '行存 + Schema 定义', '❌', 'Schema 演进友好，跨语言数据交换。压缩可选。列式能力弱。', {ratio: 2.5, speed: 2, acid: false}],
+      ]
+      const fc = el.querySelector('#fmtCards'), fd = el.querySelector('#fmtD')
+      fmts.forEach(([n, d1, d2, d3, st]) => {
+        const div = document.createElement('div')
+        div.className = 'fmt-card'
+        div.innerHTML = `<h5>${n}</h5>
+          <span class="tag" style="background:#eef2f8;color:${st.ratio>2?'var(--ok)':'var(--muted)'}">压缩比 ${st.ratio}x</span>
+          <span class="tag" style="background:${st.acid?'#dcfce7':'#fee2e2'};color:${st.acid?'var(--ok)':'var(--fail)'}">${st.acid?'ACID ✅':'ACID ❌'}</span>
+          <span class="tag" style="background:#fef3c7;color:var(--warn)">速度 ${st.speed}/5</span>`
+        div.onclick = () => {
+          fc.querySelectorAll('.fmt-card').forEach(x => x.classList.remove('on'))
+          div.classList.add('on')
+          fd.innerHTML = `<b>${n}</b><br>${d1}<br>${d2}<br><br>${d3}`
+        }
+        fc.appendChild(div)
+      })
+
+      const compInfos = {
+        Snappy: { ratio: '中（2–3x）', speed: '快', split: '✅ 可切分', note: '默认推荐，读多写多场景' },
+        Zstd:   { ratio: '高（3–5x）', speed: '中', split: '✅ 可切分', note: '冷数据/存储紧张时首选' },
+        Gzip:   { ratio: '很高（5–7x）', speed: '慢', split: '❌ 不可切分', note: '历史归档、几乎不再读' },
+        None:   { ratio: '1x（无压缩）', speed: '最快', split: '—', note: '原始调试、测试环境' },
+      }
+      function showCmp(name) {
+        Object.keys(compInfos).forEach(k => el.querySelector('#cmp' + k)?.classList.add('ghost'))
+        el.querySelector('#cmp' + name)?.classList.remove('ghost')
+        const info = compInfos[name]
+        el.querySelector('#cmpOut').innerHTML =
+          `压缩比：<b>${info.ratio}</b><br>` +
+          `解压速度：<b>${info.speed}</b><br>` +
+          `是否可切分：<b>${info.split}</b><br>` +
+          `推荐场景：<b>${info.note}</b>`
+      }
+      Object.keys(compInfos).forEach(name => {
+        el.querySelector('#cmp' + name).onclick = () => showCmp(name)
+      })
+      showCmp('Snappy')
+
+      const dropLog = el.querySelector('#dropLog')
+      const orig = dropLog.textContent
+      let dropped = { int: false, ext: false }
+      el.querySelector('#dropInternal').onclick = () => {
+        dropped.int = true
+        dropLog.innerHTML = orig + `\n\n<span class="hot">执行 DROP TABLE t_managed;</span>\n✅ Metastore：表 t_managed 已删除\n✅ HDFS：<code>/user/hive/warehouse/default.db/t_managed/</code> 目录 <b>整个被删掉</b>（包括全部 5 个文件）\n<b>内部表 DROP 会删数据！</b>`
+      }
+      el.querySelector('#dropExternal').onclick = () => {
+        dropped.ext = true
+        dropLog.innerHTML = orig + `\n\n<span class="hot">执行 DROP TABLE t_external;</span>\n✅ Metastore：表 t_external 已删除\n❌ HDFS：<code>/data/t/</code> 目录 <b>还在！</b>5 个文件原封不动\n<b>外部表 DROP 只删元数据，数据目录不动。</b>`
+      }
+      el.querySelector('#dropReset').onclick = () => {
+        dropped = { int: false, ext: false }
+        dropLog.textContent = orig
+      }
+    }
+
+    /* ============ 04 SQL 与分区管理 ============ */
+    function render04(el) {
+      el.innerHTML = `
+        <h2>分区裁剪：WHERE 写法决定扫描量</h2>
+        <p class="lead">点下方不同的 WHERE 写法，看哪些分区被扫描（红色）、哪些被跳过（绿色）。数据分布：2026-10-01 ~ 2026-11-07 共 38 个分区。</p>
+
+        <h4>WHERE 条件选择器</h4>
+        <div class="flow" id="whereChoices"></div>
+        <div class="part-viz" id="partViz"></div>
+        <div class="verdict ok" id="partVerdict"></div>
+
+        <h4>静态 vs 动态分区切换</h4>
+        <div class="toolbar">
+          <button class="chip ghost" id="pmStatic">静态分区</button>
+          <button class="chip ghost" id="pmDynamic">动态分区</button>
+          <button class="chip ghost" id="pmBoth">混合（最常见）</button>
+        </div>
+        <div class="code" id="pmCode">点上方按钮看对应 SQL</div>
+
+        <h4>EXPLAIN 验证分区裁剪</h4>
+        <div class="toolbar">
+          <button class="primary" id="expRun">运行 EXPLAIN</button>
+        </div>
+        <div class="code" id="expOut">点上方按钮。</div>
+      `
+      const partitions = []
+      for (let m = 10; m <= 11; m++) {
+        const days = m === 10 ? 31 : 7
+        for (let d = 1; d <= days; d++) {
+          partitions.push(`2026-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`)
+        }
+      }
+
+      function drawPartitions(shouldScan, label) {
+        const viz = el.querySelector('#partViz')
+        viz.innerHTML = ''
+        let scanned = 0
+        partitions.forEach(dt => {
+          const isScanned = shouldScan(dt)
+          if (isScanned) scanned++
+          const cell = document.createElement('div')
+          cell.className = 'part-cell ' + (isScanned ? 'scanned' : 'skipped')
+          cell.textContent = dt
+          cell.title = isScanned ? '被扫描' : '被跳过'
+          viz.appendChild(cell)
+        })
+        const pct = Math.round(scanned / partitions.length * 100)
+        const verdict = el.querySelector('#partVerdict')
+        verdict.innerHTML = `SQL：<code>${label}</code> → 扫描 <b>${scanned}/${partitions.length}</b> 分区（<b>${pct}%</b>）`
+        verdict.className = 'verdict ' + (pct < 20 ? 'ok' : pct < 80 ? 'warn' : 'bad')
+      }
+
+      const whereCases = [
+        ["dt = '2026-11-03'", dt => dt === '2026-11-03', '✅ 完美裁剪：只扫 1 天'],
+        ["dt IN ('2026-11-01','2026-11-02','2026-11-03')", dt => ['2026-11-01','2026-11-02','2026-11-03'].includes(dt), '✅ 好：只扫指定 3 天'],
+        ["dt BETWEEN '2026-11-01' AND '2026-11-07'", dt => dt >= '2026-11-01' && dt <= '2026-11-07', '✅ 好：扫 11 月全部 7 天'],
+        ["substr(dt,1,7) = '2026-11'", () => true, '❌ 函数包裹分区键 → 全分区扫描！'],
+        ["dt LIKE '2026-11-%'", dt => dt.startsWith('2026-11'), '⚠️ 4.x 能识别 LIKE pattern 前缀，但老版本不行'],
+        ["WHERE 里没有 dt", () => true, '❌ 没有分区键 → 全表扫描（38 个分区）'],
+      ]
+      const wc = el.querySelector('#whereChoices')
+      whereCases.forEach(([sql, fn, note]) => {
+        const b = document.createElement('button')
+        b.className = 'chip ghost'; b.type = 'button'
+        b.innerHTML = `<code>${sql}</code>`
+        b.title = note
+        b.onclick = () => {
+          wc.querySelectorAll('.chip').forEach(x => x.classList.add('ghost'))
+          b.classList.remove('ghost')
+          drawPartitions(fn, sql)
+        }
+        wc.appendChild(b)
+      })
+
+      // 默认选第一个
+      setTimeout(() => wc.querySelector('button').click(), 30)
+
+      const pmCodes = {
+        Static: `-- 静态分区：分区值在 PARTITION() 里写死
+INSERT OVERWRITE TABLE dwd_order PARTITION (dt='2026-11-03')
+SELECT order_id, user_id, amount, pay_status
+FROM ods_order WHERE dt='2026-11-03';
+
+-- 特点：一次写一个分区，SQL 里 PARTITION 值硬编码`,
+        Dynamic: `-- 动态分区：SELECT 最后一列自动作为分区值
+SET hive.exec.dynamic.partition=true;
+SET hive.exec.dynamic.partition.mode=nonstrict;
+
+INSERT OVERWRITE TABLE dwd_order PARTITION (dt)
+SELECT order_id, user_id, amount, pay_status, dt
+FROM ods_order WHERE dt BETWEEN '2026-11-01' AND '2026-11-07';
+
+-- 特点：一次写多个分区，自动按最后一列分区`,
+        Both: `-- 混合（最常见）：静态分区固定一部分，动态填另一部分
+INSERT OVERWRITE TABLE dwd_order PARTITION (year='2026', month='11', day)
+SELECT order_id, user_id, amount, dt
+FROM ods_order WHERE dt LIKE '2026-11-%';
+
+-- 特点：year/month 静态写死，day 动态生成`,
+      }
+      function showPM(key) {
+        Object.keys(pmCodes).forEach(k => el.querySelector('#pm' + k)?.classList.add('ghost'))
+        el.querySelector('#pm' + key)?.classList.remove('ghost')
+        el.querySelector('#pmCode').textContent = pmCodes[key]
+      }
+      Object.keys(pmCodes).forEach(k => {
+        el.querySelector('#pm' + k).onclick = () => showPM(k)
+      })
+      showPM('Static')
+
+      el.querySelector('#expRun').onclick = () => {
+        const out = el.querySelector('#expOut')
+        out.innerHTML = `<span class="blue">-- ✅ 分区裁剪生效（dt = '2026-11-03'）--</span>
+EXPLAIN SELECT COUNT(*) FROM dwd_order WHERE dt='2026-11-03';
+...
+Partition Specs: [(dt='2026-11-03')]     <span class="ok">← 只扫这一个分区</span>
+Stage-0: Map → Reduce
+  Map Operator Tree: ... FileScan ORC ... Partition Pruning Done
+  Reduce Operator Tree: ... HashAggregate ...
+
+<span class="blue">-- ❌ 分区裁剪失效（substr(dt,1,7)）--</span>
+EXPLAIN SELECT COUNT(*) FROM dwd_order WHERE substr(dt,1,7)='2026-11';
+...
+Partition Specs: [(dt='*')]              <span class="hot">← 全分区扫描！</span>
+Stage-0: Map → Reduce
+  Map Operator Tree: ... FileScan ORC ... 38 Partitions Scanned`
+      }
+    }
+
+    /* ============ 05 数仓分层设计 ============ */
+    function render05(el) {
+      el.innerHTML = `
+        <h2>ODS → DWD → DWS → ADS：四层流转</h2>
+        <p class="lead">点每层看职责、典型任务和表类型选择；再看一遍完整数据从 MySQL 到 ADS 报表的流转。</p>
+
+        <h4>四层分层（点击看详情）</h4>
+        <div class="dw-layer" id="dwLayers"></div>
+        <div class="detail" id="dwD" style="min-height:3em">点击上方任意分层。</div>
+
+        <h4>完整数据流转图</h4>
+        <div class="arch-flow" style="justify-content:center;flex-wrap:wrap;padding:16px">
+          <div style="text-align:center">
+            <span class="arch-node muted">MySQL</span><br>
+            <span class="pill">Debezium CDC</span>
+          </div>
+          <span class="pill" style="background:#eef2f8;color:#5f6b7a">↓</span>
+          <div style="text-align:center">
+            <span class="arch-node">ODS 贴源层</span><br>
+            <span class="pill">外部表 EXTERNAL</span>
+          </div>
+          <span class="pill" style="background:#eef2f8;color:#5f6b7a">↓ Hive ETL</span>
+          <div style="text-align:center">
+            <span class="arch-node">DWD 明细层</span><br>
+            <span class="pill">内部表 MANAGED</span>
+          </div>
+          <span class="pill" style="background:#eef2f8;color:#5f6b7a">↓ INSERT OVERWRITE</span>
+          <div style="text-align:center">
+            <span class="arch-node">DWS 汇总层</span><br>
+            <span class="pill">日度聚合</span>
+          </div>
+          <span class="pill" style="background:#eef2f8;color:#5f6b7a">↓ BI 报表</span>
+          <div style="text-align:center">
+            <span class="arch-node on">ADS 应用层</span><br>
+            <span class="pill">大盘报表</span>
+          </div>
+        </div>
+
+        <h4>维度建模：星形模型</h4>
+        <div class="grid2">
+          <div class="card">
+            <h3>事实表（中间大表）</h3>
+            <div class="code" style="font-size:0.7rem">fact_order_detail
+├── order_id (PK)
+├── user_id  (FK)
+├── product_id (FK)
+├── city_code (FK)
+├── amount
+└── dt</div>
+            <span class="pill ok">度量：amount</span>
+          </div>
+          <div class="card">
+            <h3>维度表（周围小表）</h3>
+            <div class="code" style="font-size:0.7rem">dim_user      dim_product   dim_city   dim_date
+├── user_id    ├── product_id ├── city_code ├── date_key
+├── nickname   ├── product_name├── city_name ├── is_weekend
+└── level      └── category   └── province  └── holiday</div>
+            <span class="pill">描述性数据</span>
+          </div>
+        </div>
+        <p class="hint">星形模型 = 一个大事实表 + 周围维度表，JOIN 简单、性能好。雪花模型是维度表再拆子维度，规范化高但 JOIN 多，数仓优先星形。</p>
+
+        <h4>拉链表（SCD Type 2）核心逻辑</h4>
+        <div class="code">-- 拉链表字段：start_date / end_date / version
+dwd_product_zipper:
+  product_id | price | start_date | end_date   | version
+  501        | 99    | 2026-01-01 | 2026-05-01 | 1   ← 旧版本关闭
+  501        | 129   | 2026-05-02 | 9999-12-31 | 2   ← 新版本生效
+
+-- 查询 2026-04-01 当天订单对应的历史价格：
+-- WHERE dt >= start_date AND dt <= end_date  → 命中 version 1（99 元）</div>
+      `
+      const layers = [
+        ['ODS 贴源层', '外部表 EXTERNAL', 'MySQL/CDC → 几乎原样落 HDFS。不做业务清洗，只做格式统一。dt 分区。', 'dt=2026-11-01/\n  part-00000.orc', '#fee2e2'],
+        ['DWD 明细层', '内部表 MANAGED', '清洗脏数据 + 维度退化（关联后宽化）+ 事实明细表。带分桶（CLUSTERED BY user_id INTO 16 BUCKETS）。', 'dt=2026-11-01/\n  bucket_00000.orc\n  bucket_00001.orc', '#dbeafe'],
+        ['DWS 汇总层', '内部表 MANAGED', '按日 × 渠道 × 城市 聚合 GMV/UV/订单数。INSERT OVERWRITE 每天重算。', 'dt=2026-11-01/\n  gmv_summary.orc', '#dcfce7'],
+        ['ADS 应用层', '内部表 / 外部表', '面向 BI 大盘/接口，字段名贴近业务语言。也可以是外部表指向 ClickHouse。', 'ads_trade_dashboard.orc', '#fef3c7'],
+      ]
+      const ld = el.querySelector('#dwLayers'), ldd = el.querySelector('#dwD')
+      layers.forEach(([name, type, duty, dir, color]) => {
+        const div = document.createElement('div')
+        div.className = 'dw-box'
+        div.innerHTML = `<h5>${name}</h5><p>${duty.split('。')[0]}。</p><div class="dir">${dir}</div>`
+        div.onclick = () => {
+          ld.querySelectorAll('.dw-box').forEach(x => x.classList.remove('on'))
+          div.classList.add('on')
+          ldd.innerHTML = `<b>${name}</b> <span class="pill" style="background:${color};color:inherit">${type}</span><br><br>${duty}`
+        }
+        ld.appendChild(div)
+      })
+    }
+
+    /* ============ 06 执行引擎切换 ============ */
+    function render06(el) {
+      el.innerHTML = `
+        <h2>引擎切换：MR vs Tez vs Spark</h2>
+        <p class="lead">点引擎卡片切换，看 DAG 对比和性能差异。切换只需一条 <code>SET hive.execution.engine=xxx</code>。</p>
+
+        <h4>引擎选择器（点击切换）</h4>
+        <div class="engine-compare" id="engines"></div>
+
+        <h4>同一个 JOIN 查询生成的 DAG 差异</h4>
+        <div class="dag-box" id="dagBox">选择上方引擎查看 DAG</div>
+
+        <h4>引擎性能对比（同一查询，相对耗时）</h4>
+        <div class="bar-row"><span class="lbl">MapReduce</span><div class="bar-track"><div class="bar-fill hot" style="width:100%"></div></div><span class="bar-val">100%（基准）</span></div>
+        <div class="bar-row"><span class="lbl">Tez</span><div class="bar-track"><div class="bar-fill" style="width:15%"></div></div><span class="bar-val">15%（约 7x 快）</span></div>
+        <div class="bar-row"><span class="lbl">Spark</span><div class="bar-track"><div class="bar-fill good" style="width:6%"></div></div><span class="bar-val">6%（约 16x 快）</span></div>
+
+        <h4>切换方式</h4>
+        <div class="code">-- 会话级别（不用重启 HS2）
+SET hive.execution.engine=tez;      -- 4.x 默认 tez
+SET hive.execution.engine=spark;
+SET hive.execution.engine=mr;        -- 已废弃，4.x 警告
+
+-- hive-site.xml（永久默认）
+<property>
+  <name>hive.execution.engine</name>
+  <value>tez</value>
+</property></div>
+
+        <h4>EXPLAIN 看引擎差异</h4>
+        <div class="toolbar">
+          <button class="primary" id="engExpRun">运行 EXPLAIN</button>
+        </div>
+        <div class="code" id="engExpOut">点上方按钮。</div>
+      `
+      const engs = [
+        ['MapReduce', '已废弃 4.x', '1x（基准）', '固定两阶段，强制落盘', `[Map orders] → [Shuffle 落盘] → [Reduce SortMerge]
+[Map users]  → [Shuffle 落盘] → [Reduce SortMerge] → [Output]
+
+两次 Shuffle，每次都要网络传输 + 磁盘 IO。
+一个复杂查询拆成 5-10 个 MR 作业，每个都有 JVM 启动开销。`],
+        ['Tez', '4.x 默认', '7x 快', 'DAG，减少 Shuffle', `[Source orders] → [Filter] ─┐
+                               ├→ [Map预聚合] → [Shuffle（仅1次）] → [Reduce JOIN + 聚合] → [Sink]
+[Source users]  → [Filter] ─┘
+
+一次 Shuffle（Tez 通用 DAG），中间不落盘（管道式传输）。
+DAGAppMaster 常驻，多个 Task 在同一 JVM 跑。`],
+        ['Spark', '可选，Catalyst 优化', '16x 快', 'RDD + Catalyst', `[orders Partition(dt)] → [Filter] → [Exchange] → [SortMergeJoin]
+[users]  → [Exchange] → [BroadcastHashJoin（<10MB）]
+[product]→ [Broadcast（< autoBroadcastThreshold）] → [HashAggregate]
+
+Catalyst 自动做谓词下推 + 列裁剪 + Broadcast。
+中间结果在 Executor 内存，有 lineage 容错。
+支持迭代（MR/Tez 都不支持）。`],
+        ['Flink', '4.x 新增', '批≈Spark，流最强', '流批一体', `[Source orders] → [Filter] → [KeyBy] → [Join] → [Aggregate] → [Sink]
+
+Flink Table API 把 HiveQL 翻译成 Flink JobGraph。
+流批同一套执行引擎：流用 Checkpoint，批用 Batch Mode。
+生态还在完善中，生产主流还是 Tez/Spark。`],
+      ]
+      const ec = el.querySelector('#engines'), db = el.querySelector('#dagBox')
+      engs.forEach(([name, tag, speed, feature, dag]) => {
+        const div = document.createElement('div')
+        div.className = 'engine-card'
+        div.innerHTML = `<h5>${name}</h5><div class="speed">${tag}</div>
+          <div class="pill" style="margin-top:6px;background:#eef2f8">${speed}</div>
+          <p style="margin:4px 0 0;font-size:0.78rem;color:var(--muted)">${feature}</p>`
+        div.onclick = () => {
+          ec.querySelectorAll('.engine-card').forEach(x => x.classList.remove('on'))
+          div.classList.add('on')
+          db.textContent = dag
+        }
+        ec.appendChild(div)
+      })
+
+      el.querySelector('#engExpRun').onclick = () => {
+        const out = el.querySelector('#engExpOut')
+        out.innerHTML = `<span class="blue">-- Tez 模式 EXPLAIN --</span>
+EXPLAIN SELECT COUNT(*) FROM orders WHERE dt='2026-11-01';
+Stage-0: Map → Reduce
+  Map Operator Tree:
+    TableScan
+      alias: orders
+      Statistics: Num rows: 15000000 Data size: 3750000000
+      Partition Specs: [(dt='2026-11-01')]  <span class="ok">分区裁剪生效</span>
+  Reduce Operator Tree:
+    HashAggregate
+      HashKeys: [null]
+      File Output Operator
+
+<span class="blue">-- Spark 模式 EXPLAIN（Catalyst 输出更丰富）--</span>
+EXPLAIN FORMATTED SELECT COUNT(*) FROM orders WHERE dt='2026-11-01';
+== Physical Plan ==
+*(2) HashAggregate(keys=[], functions=[count(1)])
++- Exchange hashpartitioning(), 200)
+   +- *(1) HashAggregate(keys=[], functions=[partial_count(1)])
+      +- *(1) Project
+         +- *(1) Filter (isnotnull(dt#xx) && (dt#xx = 2026-11-01))
+            +- *(1) FileScan orc default.orders[order_id,dt] Batched: true`
+      }
+    }
+
+    /* ============ 07 性能调优 ============ */
+    function render07(el) {
+      el.innerHTML = `
+        <h2>调优优先级：分区裁剪 → MapJoin → CBO</h2>
+        <p class="lead">先开分区裁剪（零成本高收益），再处理 Join 策略和数据倾斜，最后开 CBO。下方 MapJoin 场景选择器让你判断什么时候会广播。</p>
+
+        <h4>MapJoin 场景选择器</h4>
+        <div class="slider-row"><span class="name">小表大小</span><input type="range" id="mjSmall" min="1" max="200" value="25" step="5"><span class="val" id="mjSmallV">25 MB</span></div>
+        <div class="slider-row"><span class="name">自动广播阈值</span><input type="range" id="mjThresh" min="1" max="100" value="25" step="5"><span class="val" id="mjThreshV">25 MB</span></div>
+        <div class="slider-row"><span class="name">大表大小（仅参考）</span><input type="range" id="mjBig" min="100" max="50000" value="5000" step="100"><span class="val" id="mjBigV">5000 MB</span></div>
+        <div class="verdict ok" id="mjVerdict"></div>
+
+        <h4>CBO（基于代价优化）开关</h4>
+        <div class="toolbar">
+          <label><input type="checkbox" id="cboOn" checked> CBO 开启（hive.cbo.enable=true）</label>
+          <label><input type="checkbox" id="statsOn" checked> 统计信息可用</label>
+          <button class="primary" id="cboRun">生成优化计划</button>
+        </div>
+        <div class="code" id="cboOut">勾选上面的条件后点「生成优化计划」。</div>
+
+        <h4>数据倾斜：识别信号</h4>
+        <div class="code">Reduce Task 进度分布（正常 vs 倾斜）：
+
+正常情况：     倾斜情况（user_id=123 有 100 万条）：
+Reduce-0  ████████  100%       Reduce-0  ████████  100%
+Reduce-1  ████████  100%       Reduce-1  ████████  100%
+Reduce-2  ████████  100%       Reduce-2  ████████  100%
+Reduce-3  ████████  100%       Reduce-3  ██        30%  ← 这一个卡着
+Reduce-4  ████████  100%       Reduce-4  ████████  100%
+                              Reduce 总耗时 = Reduce-3 耗时（99% 的等待）
+
+解法：hive.groupby.skewindata=true 自动两阶段聚合
+      或手动分桶 / 加盐随机 key / MapJoin 绕过</div>
+
+        <h4>调优 Checklist</h4>
+        <table class="tbl">
+          <tr><th>优先级</th><th>手段</th><th>检查方式</th></tr>
+          <tr><td>⭐⭐⭐</td><td>分区裁剪（WHERE 等值分区键）</td><td>EXPLAIN Partition Specs</td></tr>
+          <tr><td>⭐⭐⭐</td><td>谓词下推 + ORC 列裁剪</td><td>EXPLAIN 看 Filter 在 FileScan 之前</td></tr>
+          <tr><td>⭐⭐⭐</td><td>MapJoin 小表广播</td><td>SET hive.auto.convert.join=true</td></tr>
+          <tr><td>⭐⭐</td><td>数据倾斜处理</td><td>Reduce 进度分布</td></tr>
+          <tr><td>⭐⭐</td><td>CBO + 统计信息</td><td>ANALYZE TABLE ... COMPUTE STATISTICS</td></tr>
+          <tr><td>⭐</td><td>矢量化执行</td><td>hive.vectorized.execution.enabled=true</td></tr>
+          <tr><td>⭐</td><td>小文件合并</td><td>hive.merge.mapredfiles=true</td></tr>
+        </table>
+      `
+      const mjSmall = el.querySelector('#mjSmall'), mjThresh = el.querySelector('#mjThresh'), mjBig = el.querySelector('#mjBig')
+      const mjSmallV = el.querySelector('#mjSmallV'), mjThreshV = el.querySelector('#mjThreshV'), mjBigV = el.querySelector('#mjBigV')
+      function recalcMJ() {
+        const s = +mjSmall.value, t = +mjThresh.value, b = +mjBig.value
+        mjSmallV.textContent = s + ' MB'
+        mjThreshV.textContent = t + ' MB'
+        mjBigV.textContent = (b >= 1000 ? (b/1000).toFixed(1) + ' GB' : b + ' MB')
+        const verdict = el.querySelector('#mjVerdict')
+        if (s <= t) {
+          verdict.className = 'verdict ok'
+          verdict.innerHTML = `✅ <b>MapJoin 自动触发</b>：小表 ${s}MB ≤ 阈值 ${t}MB<br>
+          优化：<code>BROADCAST(small_table)</code> → 无 Shuffle，性能提升约 <b>${Math.round(b / s)}</b>x<br>
+          SQL：<code>SET hive.auto.convert.join=true</code> 默认开启`
+        } else {
+          verdict.className = 'verdict warn'
+          verdict.innerHTML = `⚠️ <b>MapJoin 不会自动触发</b>：小表 ${s}MB > 阈值 ${t}MB<br>
+          选项：① 调大阈值 <code>SET hive.auto.convert.join.noconditionaltask.size=${s * 1000000}</code><br>
+          ② 手动指定 <code>SELECT /*+ MAPJOIN(small_table) */ ...</code><br>
+          ③ 不指定 → 走 ReduceJoin（有 Shuffle，慢很多）`
+        }
+      }
+      mjSmall.oninput = recalcMJ; mjThresh.oninput = recalcMJ; mjBig.oninput = recalcMJ
+      recalcMJ()
+
+      el.querySelector('#cboRun').onclick = () => {
+        const cbo = el.querySelector('#cboOn').checked
+        const stats = el.querySelector('#statsOn').checked
+        const out = el.querySelector('#cboOut')
+        if (!stats) {
+          out.innerHTML = `<span class="hot">⚠️ 统计信息不可用</span><br>
+          CBO 没有统计信息 = 瞎猜。<br>
+          <code>ANALYZE TABLE dwd_order COMPUTE STATISTICS FOR COLUMNS;</code><br>
+          不收集统计直接开 CBO 可能<strong>比不开还慢</strong>。`
+        } else if (cbo) {
+          out.innerHTML = `<span class="ok">✅ CBO + 统计 = 最优计划</span><br>
+          CBO 根据统计选择 JOIN 顺序 + JOIN 策略：<br>
+          → dwd_user（2MB）自动转 BROADCAST 到 Map 端<br>
+          → dwd_order（5GB）× product_id 分桶，命中 BucketMapJoin<br>
+          → GROUP BY 选择 HashAggregate（行数 > 10k 时选择 SortAggregate）<br><br>
+          优化器：Calcite Rule Engine + 代价模型<br>
+          性能：比手工指定 MAPJOIN 略好（因为优化器考虑更多因素）`
+        } else {
+          out.innerHTML = `<span class="warn">⚠️ 不开 CBO = 用规则优化</span><br>
+          不考虑表大小，只按语法规则生成计划：<br>
+          → JOIN 按 SQL 书写顺序<br>
+          → 不自动广播小表<br>
+          → 全走 ReduceJoin（有 Shuffle）<br><br>
+          生产建议：<code>hive.cbo.enable=true</code> + <code>ANALYZE</code> 定期刷新统计`
+        }
+      }
+    }
+
+    /* ============ 08 ACID 与事务 ============ */
+    function render08(el) {
+      el.innerHTML = `
+        <h2>Hive ACID：Compaction 文件合并</h2>
+        <p class="lead">ACID = ORC × Bucket × Compaction。下方模拟：做了多次 UPDATE/DELETE 后会产生多个 delta 目录，Compaction 把它们合并。点「执行 Compaction」看效果。</p>
+
+        <h4>文件结构模拟</h4>
+        <div class="toolbar">
+          <button class="primary" id="acidDoUpdate">执行 UPDATE</button>
+          <button id="acidDoDelete">执行 DELETE</button>
+          <button class="primary" id="acidCompact" style="background:var(--ok);border-color:var(--ok)">执行 Compaction</button>
+          <button id="acidReset">重置</button>
+        </div>
+        <div class="code" id="acidLog">开始状态：
+base_0000001/        ← 初始 Insert Overwrite 的数据（5 个 ORC 文件）
+  bucket_00000.orc
+  bucket_00001.orc
+  ...
+  bucket_00015.orc
+无 delta 文件，查询只读 base_0000001/</div>
+
+        <h4>目录文件可视化</h4>
+        <div class="acid-files" id="acidFiles"></div>
+        <p class="hint">绿色 = base，黄色 = delta，蓝色边框 = 事务表。delta 太多会让查询变慢（每次要 merge N 个 delta）。Compaction 把 base + 所有 delta 合并成新 base。</p>
+
+        <h4>MERGE 示例</h4>
+        <div class="code">-- CDC 增量合并（最强大的事务操作）
+MERGE INTO dwd_order_txn t
+USING ods_order_inc s
+ON t.order_id = s.order_id AND t.dt = s.dt
+WHEN MATCHED AND s.pay_status = 2 THEN DELETE          -- 退款 → 删除
+WHEN MATCHED THEN UPDATE SET t.amount = s.amount, t.pay_status = s.pay_status
+WHEN NOT MATCHED THEN INSERT (order_id, user_id, amount, pay_status)
+       VALUES (s.order_id, s.user_id, s.amount, s.pay_status);</div>
+
+        <h4>Hive ACID vs Iceberg</h4>
+        <table class="tbl">
+          <tr><th>维度</th><th>Hive ACID</th><th>Iceberg</th></tr>
+          <tr><td>存储格式</td><td><b>只能 ORC</b></td><td><b>ORC / Parquet / Avro 都支持</b></td></tr>
+          <tr><td>分桶要求</td><td><b>必须 Bucket 分桶</b></td><td>可选</td></tr>
+          <tr><td>Schema 演进</td><td>有限（加列容易，删列难）</td><td>完整支持（加/删/改/重命名）</td></tr>
+          <tr><td>Time Travel</td><td>❌</td><td>✅ Snapshot 级</td></tr>
+          <tr><td>Compaction</td><td>Minor + Major，后台</td><td>OPTIMIZE / SORT / ZORDER</td></tr>
+          <tr><td>生态</td><td>只 Hive</td><td>Spark / Flink / Trino / Hive 全支持</td></tr>
+        </table>
+      `
+      let deltas = 0
+      const filesBox = el.querySelector('#acidFiles')
+      const logBox = el.querySelector('#acidLog')
+      function drawFiles() {
+        filesBox.innerHTML = ''
+        const base = document.createElement('div')
+        base.className = 'acid-file base'; base.textContent = 'base_' + String(deltas + 1).padStart(6,'0')
+        filesBox.appendChild(base)
+        for (let i = 1; i <= deltas; i++) {
+          const d = document.createElement('div')
+          d.className = 'acid-file delta'
+          d.textContent = 'delta_' + String(i).padStart(6,'0') + '_' + String(i).padStart(6,'0')
+          filesBox.appendChild(d)
+        }
+      }
+      function appendLog(msg) { logBox.textContent += '\n' + msg }
+
+      el.querySelector('#acidDoUpdate').onclick = () => {
+        deltas++
+        drawFiles()
+        appendLog(`执行 UPDATE: UPDATE dwd_order_txn SET pay_status=1 WHERE order_id IN (...) AND dt='2026-11-03';
+→ 生成 delta_${String(deltas).padStart(6,'0')}_${String(deltas).padStart(6,'0')}/（只存变化行）
+→ 现在有 ${deltas} 个 delta，查询时要 merge base + ${deltas} 个 delta`)
+      }
+      el.querySelector('#acidDoDelete').onclick = () => {
+        deltas++
+        drawFiles()
+        appendLog(`执行 DELETE: DELETE FROM dwd_order_txn WHERE pay_status=2 AND dt='2026-11-03';
+→ 生成 delta_${String(deltas).padStart(6,'0')}_${String(deltas).padStart(6,'0')}/（带 OPERATION_TYPE=DELETE 标记）
+→ 现在有 ${deltas} 个 delta`)
+      }
+      el.querySelector('#acidCompact').onclick = () => {
+        if (deltas === 0) {
+          appendLog('没有 delta 文件，Compaction 无事可做。')
+          return
+        }
+        drawFiles()
+        appendLog(`<span class="ok">执行 Major Compaction：</span>
+读取 base_0000001/ + 全部 ${deltas} 个 delta
+→ 合并所有文件 → 去重 + 应用 DELETE 标记 → 生成新 base
+→ 旧 base + 旧 delta 全部删除（下一批 GC）
+完成！现在又只有一个 base_${String(deltas + 1).padStart(6,'0')}/`)
+        deltas = 0
+        drawFiles()
+      }
+      el.querySelector('#acidReset').onclick = () => {
+        deltas = 0; logBox.textContent = '重置完成。'
+        drawFiles()
+      }
+      drawFiles()
+    }
+
+    /* ============ 09 Hive 与周边组件 ============ */
+    function render09(el) {
+      el.innerHTML = `
+        <h2>Hive Metastore：通用元数据中心</h2>
+        <p class="lead">点下方任意引擎/组件，看它如何连接 Metastore。Spark SQL/Flink/Trino 都可以<b>不经过 HiveServer2</b>，直接通过 Thrift 协议连 Metastore（端口 9083）。</p>
+
+        <div class="ms-hub">
+          <strong>Hive Metastore</strong><br>
+          <span class="pill">端口 9083（Thrift）</span>
+          <p>存储：MySQL / PostgreSQL（Remote 模式）<br>表、列、分区、Bucket、Location 的唯一真相</p>
+        </div>
+
+        <h4>直连 Metastore 的引擎（点击看连接方式）</h4>
+        <div class="ms-clients" id="msClients"></div>
+        <div class="detail" id="msD" style="min-height:3em">点击上方引擎。</div>
+
+        <h4>湖仓表格式：Iceberg / Hudi / Delta</h4>
+        <p class="hint">都支持把 Hive Metastore 当 Catalog 后端，注册后 Spark/Flink/Trino/Hive 都能查。</p>
+        <div class="flow" id="lakeFormats"></div>
+        <div class="detail" id="lakeD" style="min-height:2.8em">点击上方格式。</div>
+      `
+      const clients = [
+        ['Spark SQL', '直连 Metastore（spark.sql.catalogImplementation=hive），用 Hive FileSystem Client 读 HDFS。不需要经过 HiveServer2。Beeline 提交的 SQL 经过 HS2 → Compiler → Spark 执行器。', '/etc/spark/conf/spark-defaults.conf:\nspark.sql.catalogImplementation=hive\nspark.sql.warehouse.dir=/user/hive/warehouse\n\n// PySpark\nspark = SparkSession.builder.enableHiveSupport().getOrCreate()\ndf = spark.table("dwd_order")'],
+        ['Flink', '通过 Flink Hive Catalog 连接。CREATE CATALOG 时指定 hive-conf-dir 即可。Flink 可以做流批一体写入 Hive 表（包括 Iceberg/Hudi）。', `-- Flink SQL
+CREATE CATALOG hive_catalog WITH (
+  'type' = 'hive',
+  'hive-conf-dir' = '/etc/hive/conf'
+);
+USE CATALOG hive_catalog;
+SELECT * FROM dwd_order WHERE dt='2026-11-03';`],
+        ['Trino', '通过 Hive Connector 连接 Metastore。Trino 用纯内存列式 Pipeline 执行，不经过 Hive 的任何执行引擎。查询速度比 Hive on Tez 快 5–20x。', `# etc/catalog/hive.properties
+connector.name=hive
+hive.metastore.uri=thrift://hms1:9083,hms2:9083
+hive.config.resources=/etc/hive/conf/hive-site.xml`],
+        ['Presto (Meta)', 'Trino 的前身，连接方式类似。Meta 内部的 Presto 实例直接连 Hive Metastore。'],
+        ['Hive (via HS2)', '唯一需要经过 HiveServer2 的入口。HS2 → Compiler → 执行引擎（Tez/Spark/Flink）→ HDFS。Beeline/JDBC 都走这条路。'],
+      ]
+      const mc = el.querySelector('#msClients'), md = el.querySelector('#msD')
+      clients.forEach(([name, desc, code]) => {
+        const div = document.createElement('div')
+        div.className = 'ms-client'
+        div.innerHTML = name
+        div.onclick = () => {
+          mc.querySelectorAll('.ms-client').forEach(x => x.classList.remove('on'))
+          div.classList.add('on')
+          md.innerHTML = `<b>${name}</b>：${desc}<br><br><div class="code" style="font-size:0.75rem;margin-top:8px">${code || ''}</div>`
+        }
+        mc.appendChild(div)
+      })
+
+      const lf = el.querySelector('#lakeFormats'), ld = el.querySelector('#lakeD')
+      const lfData = [
+        ['Apache Iceberg', '湖仓表格式（不是引擎）。ORC/Parquet/Avro 都支持。完整 Schema 演进、时间旅行 Snapshot、隐藏分区。最成熟，Spark/Flink/Trino/Hive 全支持。Catalog 后端可以选 Hive Metastore。'],
+        ['Apache Hudi', 'Uber 开源。MOR（Merge-On-Read）写入模式支持高效 Upsert/CDC。增量拉取强。Catalog 支持 Hive Metastore。'],
+        ['Delta Lake', 'Databricks 开源。Spark 原生最完善（Catalyst 深度集成）。时间旅行、ZORDER OPTIMIZE。Hive Metastore 支持。'],
+      ]
+      lfData.forEach(([n, d]) => {
+        const b = document.createElement('button')
+        b.className = 'chip ghost'; b.type = 'button'; b.textContent = n
+        b.onclick = () => {
+          lf.querySelectorAll('.chip').forEach(x => x.classList.add('ghost'))
+          b.classList.remove('ghost')
+          ld.innerHTML = `<b>${n}</b>：${d}`
+        }
+        lf.appendChild(b)
+      })
+    }
+
+    /* ============ 10 生态对比与 FAQ ============ */
+    function render10(el) {
+      el.innerHTML = `
+        <h2>2026 生态全景与面试 FAQ</h2>
+        <p class="lead">Hive 不是"过时了"，而是**角色变了**——从执行引擎变成了 Metastore 基础设施。下方先看组件定位对比，再看十大高频面试题。</p>
+
+        <h4>组件定位矩阵</h4>
+        <div class="env-eco" id="ecoPos"></div>
+        <div class="detail" id="ecoPosD" style="min-height:3em">点击上方组件。</div>
+
+        <h4>2026 主流架构组合</h4>
+        <div class="code">实时链路：  Kafka → Flink → Iceberg/Hudi（CDC Upsert）→ Trino/ClickHouse 查询
+批量链路：  Hive on Tez / Spark ETL → Iceberg 格式 → Trino 查询 / ClickHouse ADS
+BI 报表：   ClickHouse（ADS 层）→ Grafana / 内部 BI 工具
+
+全部共享：Hive Metastore（元数据中心） + HDFS / 对象存储（开放存储）</div>
+
+        <h4>十大面试 FAQ（点击展开）</h4>
+        <div id="faqBox"></div>
+      `
+      const ecos = [
+        ['Hive', '数仓 SQL 层 + <b>Metastore</b>。ETL 主力，成熟稳定。自身不存数据也不跑计算。'],
+        ['Spark SQL', '多模态计算引擎（批/流/ML/图）。Catalyst 优化快，迭代支持好。可连 Hive Metastore。'],
+        ['Trino', '亚秒级交互式查询引擎。纯内存列式 Pipeline，多数据源联邦。不做长 ETL。'],
+        ['ClickHouse', 'OLAP 数据库（MergeTree 存储）。单表聚合极快，适合 ADS 报表层。'],
+        ['Flink', '流处理引擎。Flink CDC + Iceberg/Hudi 是实时湖仓一体的核心。'],
+        ['Iceberg', '湖仓<b>表格式</b>（不是引擎）。ORC/Parquet/Avro 都支持。时间旅行、Schema 演进。'],
+        ['Hudi', 'Uber 开源湖仓表格式。MOR Upsert 强。增量拉取强。'],
+        ['Delta', 'Databricks 湖仓表格式。Spark 原生最完善。ZORDER OPTIMIZE。'],
+      ]
+      const ep = el.querySelector('#ecoPos'), epd = el.querySelector('#ecoPosD')
+      ecos.forEach(([n, d]) => {
+        const div = document.createElement('div')
+        div.className = 'eco-node'
+        div.innerHTML = n
+        div.onclick = () => {
+          ep.querySelectorAll('.eco-node').forEach(x => x.classList.remove('on'))
+          div.classList.add('on')
+          epd.innerHTML = `<b>${n}</b>：${d}`
+        }
+        ep.appendChild(div)
+      })
+
+      const faqs = [
+        ['Hive 和 HDFS 是什么关系？', 'HDFS 是分布式文件系统（存文件），Hive 是 SQL 层（把文件映射成表）。Hive 的数据全在 HDFS 上，Hive 本身只存元数据（Metastore 数据库里）。'],
+        ['Hive 和 Spark 是什么关系？', 'Spark 是多模态计算引擎，可以直接连 Hive Metastore 读 Hive 表。Spark SQL 兼容 HiveQL 语法，两者共享元数据。Hive on Spark 让 HiveQL 翻译成 Spark 物理计划执行。'],
+        ['分区裁剪原理？什么时候不会触发？', 'WHERE 条件里的分区键必须能用等值/IN/BETWEEN 等静态判断。substr(dt,1,7)、函数包裹、LIKE 旧版本、子查询等值等会让裁剪失效。用 EXPLAIN 看 Partition Specs 确认。'],
+        ['MapJoin 和 ReduceJoin 区别？', 'MapJoin 把小表（≤25–50MB）广播到所有 Map 端本地 JOIN，**无 Shuffle**，只支持等值 JOIN。ReduceJoin 两边按 key Shuffle，Reduce 端合并，适合大表×大表。自动 MapJoin 默认开启。'],
+        ['Hive ACID 怎么实现？', '三个必要条件：ORC 文件格式（有 Delta 目录 + Footer 元数据）× Bucket 分桶表（物理集中）× Compaction（Base + Delta 后台合并）。通过 Delta 目录记录变更，查询时自动 merge。'],
+        ['Metastore 远程 vs 本地模式？', '本地模式 Metastore 和 HS2 同进程，HS2 挂了元数据也不可用。远程模式 Metastore 独立进程（端口 9083），Spark/Flink/Trino 可直连，生产推荐。'],
+        ['Hive on Tez 和 Hive on Spark 哪个快？', '简单聚合 Tez 快（AM 常驻 + DAG 紧凑）；多次 JOIN / 大表 Shuffle 且有小表广播时 Spark Catalyst 可能更快。实测为准。'],
+        ['湖仓一体对 Hive 的影响？', '湖仓表格式（Iceberg/Hudi/Delta）取代 Hive 原生 ORC 表的文件层，Hive Metastore 成为共享的 Catalog 后端。Hive 回归「Metastore + SQL 兼容层」定位。'],
+        ['拉链表是什么？SCD Type 2？', '拉链表记录维度的历史状态变迁。SCD Type 2 核心是 start_date / end_date 两个字段标记版本区间（当前版本 end_date=9999-12-31）。查历史用 dt >= start_date AND dt <= end_date。'],
+        ['怎么选 Hive vs Spark vs Trino vs ClickHouse？', 'Hive on Tez/Spark 做 ETL、Spark SQL 做 ML、Trino 做交互式查询、ClickHouse 做 ADS 报表。混合架构是主流：Hive Metastore 当中心 + Iceberg 当表格式 + 多引擎共享。'],
+      ]
+      const fBox = el.querySelector('#faqBox')
+      faqs.forEach(([q, a], i) => {
+        const b = document.createElement('button')
+        b.className = 'faq-q'
+        b.innerHTML = `Q${i + 1}. ${q}`
+        const ans = document.createElement('div')
+        ans.className = 'faq-a hidden'
+        ans.textContent = a
+        b.onclick = () => { ans.classList.toggle('hidden') }
+        fBox.appendChild(b)
+        fBox.appendChild(ans)
+      })
+    }
+
+    const renders = {
+      '01': render01, '02': render02, '03': render03, '04': render04,
+      '05': render05, '06': render06, '07': render07, '08': render08,
+      '09': render09, '10': render10,
+    }
+
+    // init
+    show(current)
+  </script>
+</body>
+</html>

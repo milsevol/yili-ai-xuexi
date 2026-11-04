@@ -10,14 +10,13 @@
       --panel: #fff;
       --ink: #1c1917;
       --muted: #6b645d;
-      --line: rgba(28, 25, 23, 0.1);
+      --line: rgba(28, 25, 23, 0.12);
       --brand: #c2410c;
       --brand-soft: rgba(226, 90, 28, 0.12);
       --ok: #15803d;
       --fail: #b91c1c;
       --run: #0369a1;
       --warn: #a16207;
-      --c0: #e25a1c; --c1: #0369a1; --c2: #15803d; --c3: #7c3aed; --c4: #a16207;
     }
     * { box-sizing: border-box; }
     body {
@@ -76,48 +75,9 @@
       min-height: 420px;
     }
     .panel h2 { margin: 0 0 6px; font-size: 1.2rem; }
-    .panel h4 { margin: 18px 0 8px; font-size: 0.95rem; }
-    .lead { margin: 0 0 16px; color: var(--muted); font-size: 0.9rem; line-height: 1.6; }
-    .grid2 { display: grid; gap: 12px; }
-    @media (min-width: 700px) { .grid2 { grid-template-columns: 1fr 1fr; } }
-    .grid3 { display: grid; gap: 10px; }
-    @media (min-width: 700px) { .grid3 { grid-template-columns: repeat(3, 1fr); } }
-    .card {
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 12px 14px;
-      background: #fafbfc;
-    }
-    .card h3 { margin: 0 0 8px; font-size: 0.95rem; }
-    .card ul { margin: 0; padding-left: 1.1rem; color: var(--muted); font-size: 0.86rem; line-height: 1.55; }
-    .card.click { cursor: pointer; transition: border-color .2s, transform .2s; }
-    .card.click:hover { border-color: var(--brand); transform: translateY(-1px); }
-    .bad { border-color: rgba(185, 28, 28, 0.25); background: #fff7f7; }
-    .good { border-color: rgba(21, 128, 61, 0.25); background: #f3fbf6; }
-    .flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0; }
-    .chip {
-      border: none;
-      border-radius: 999px;
-      padding: 0.35rem 0.75rem;
-      background: var(--brand-soft);
-      color: var(--brand);
-      font-size: 0.82rem;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .chip.ghost { background: #f0ede9; color: var(--muted); font-weight: 500; }
-    .chip:hover { filter: brightness(0.97); }
-    .arrow { color: var(--muted); }
-    .detail {
-      margin-top: 12px;
-      padding: 12px 14px;
-      border-radius: 10px;
-      background: var(--brand-soft);
-      color: var(--ink);
-      font-size: 0.9rem;
-      line-height: 1.6;
-      min-height: 3.2em;
-    }
+    .panel h4 { margin: 22px 0 8px; font-size: 0.95rem; }
+    .lead { margin: 0 0 14px; color: var(--muted); font-size: 0.9rem; line-height: 1.6; }
+    .lead b, .concl b { color: var(--brand); }
     .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0 14px; }
     .toolbar button, .toolbar label {
       border: 1px solid var(--line);
@@ -129,7 +89,6 @@
     }
     .toolbar button.primary { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600; }
     .toolbar input[type=range] { accent-color: var(--brand); }
-    .toolbar .val { font-family: ui-monospace, Menlo, monospace; font-size: 0.85rem; color: var(--brand); font-weight: 700; min-width: 3.5em; }
     .log {
       margin-top: 12px;
       font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -139,14 +98,13 @@
       color: #e7e5e4;
       border-radius: 10px;
       padding: 10px 12px;
-      max-height: 200px;
+      max-height: 180px;
       overflow: auto;
       white-space: pre-wrap;
     }
-    .log .t { color: #a8a29e; }
     .log .hot { color: #fb923c; }
+    .log .dim { color: #a8a29e; }
     .hint { font-size: 0.8rem; color: var(--muted); margin-top: 8px; }
-    .hidden { display: none !important; }
     table.tbl { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 8px; }
     table.tbl th, table.tbl td { border-bottom: 1px solid var(--line); padding: 0.4rem 0.5rem; text-align: left; }
     table.tbl th { color: var(--muted); font-weight: 600; }
@@ -161,118 +119,101 @@
       overflow-x: auto;
       white-space: pre;
     }
-    .bar-row { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; font-family: ui-monospace, Menlo, monospace; margin-top: 4px; }
-    .bar-row .lbl { width: 110px; color: var(--muted); flex: none; }
-    .bar-track { flex: 1; background: #f0ede9; border-radius: 6px; height: 16px; overflow: hidden; }
-    .bar-fill { height: 100%; background: var(--run); border-radius: 6px; transition: width .5s ease; }
+    .slider-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; font-size: 0.85rem; }
+    .slider-row .name { width: 170px; color: var(--muted); flex: none; }
+    .slider-row input { flex: 1; accent-color: var(--brand); }
+    .slider-row .val { width: 90px; font-family: ui-monospace, Menlo, monospace; color: var(--brand); font-weight: 700; }
+    .verdict { margin-top: 10px; padding: 10px 14px; border-radius: 10px; font-size: 0.88rem; line-height: 1.6; }
+    .verdict.ok { background: #f0fdf4; border: 1px solid rgba(21,128,61,.3); }
+    .verdict.warn { background: #fffbeb; border: 1px solid rgba(161,98,7,.35); }
+    .verdict.bad { background: #fef2f2; border: 1px solid rgba(185,28,28,.3); }
+    .verdict.info { background: var(--brand-soft); border: 1px solid rgba(194,65,12,.3); }
+    .bar-row { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; font-family: ui-monospace, Menlo, monospace; margin-top: 5px; }
+    .bar-row .lbl { width: 130px; color: var(--muted); flex: none; text-align: right; }
+    .bar-track { flex: 1; background: #f0ede9; border-radius: 6px; height: 18px; overflow: hidden; position: relative; }
+    .bar-fill { height: 100%; background: var(--run); border-radius: 6px; transition: width .8s ease; }
     .bar-fill.hot { background: var(--fail); }
     .bar-fill.good { background: var(--ok); }
-    .bar-val { width: 90px; flex: none; color: var(--muted); }
-    .arch { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); margin-top: 8px; }
-    .arch-item {
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 12px;
-      cursor: pointer;
-      transition: border-color .2s, transform .2s;
-      background: #fff;
-    }
-    .arch-item:hover, .arch-item.on { border-color: var(--brand); transform: translateY(-1px); }
-    .arch-item strong { display: block; margin-bottom: 4px; }
-    .arch-item span { font-size: 0.8rem; color: var(--muted); line-height: 1.4; }
-    .faq-q {
-      width: 100%;
-      text-align: left;
-      border: 1px solid var(--line);
-      background: #fff;
-      border-radius: 10px;
-      padding: 10px 12px;
-      font-size: 0.88rem;
-      cursor: pointer;
-      margin-top: 8px;
-    }
-    .faq-q:hover { border-color: var(--brand); }
-    .faq-a {
-      margin: 4px 0 4px;
-      padding: 8px 12px;
-      border-left: 3px solid var(--brand);
-      background: var(--brand-soft);
-      border-radius: 0 8px 8px 0;
-      font-size: 0.85rem;
-      line-height: 1.6;
-    }
-    .stagebox { position: relative; height: 300px; background: #fafbfc; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin-top: 10px; }
-    .part-box {
-      position: absolute;
-      border: 1.5px solid var(--line);
-      border-radius: 10px;
-      background: #fff;
-      padding: 4px;
-      width: 130px;
-    }
-    .part-box .cap { font-size: 0.72rem; color: var(--muted); text-align: center; display: block; margin-bottom: 2px; }
-    .keychip {
-      position: absolute;
-      width: 26px; height: 26px;
-      border-radius: 7px;
-      color: #fff;
-      font-size: 0.7rem;
-      font-weight: 700;
-      display: flex; align-items: center; justify-content: center;
-      transition: left .8s ease, top .8s ease;
-      z-index: 5;
-    }
+    .bar-fill.warn { background: var(--warn); }
+    .bar-val { width: 130px; flex: none; color: var(--muted); }
+    .bar-val b { color: var(--ink); }
+    /* 赛道（赛跑对比） */
+    .race-lane { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: #fff; margin-top: 10px; }
+    .race-head { display: flex; justify-content: space-between; font-size: 0.88rem; font-weight: 600; }
+    .race-status { font-size: 0.78rem; color: var(--muted); font-family: ui-monospace, Menlo, monospace; margin: 6px 0; min-height: 1.6em; }
+    .race-track { background: #f0ede9; border-radius: 6px; height: 20px; overflow: hidden; }
+    /* 舞台（动画画布） */
+    .stagebox { position: relative; height: 340px; background: #fafbfc; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin-top: 10px; }
+    .actor { position: absolute; border: 1.5px solid var(--line); border-radius: 10px; background: #fff; padding: 6px 8px; font-size: 0.78rem; }
+    .actor .cap { display: block; font-size: 0.7rem; color: var(--muted); font-weight: 600; margin-bottom: 2px; }
+    .actor.hl { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+    .taskblock { position: absolute; width: 22px; height: 22px; border-radius: 6px; z-index: 6; transition: left .7s ease, top .7s ease, opacity .3s; }
     .phase { font-size: 0.82rem; font-weight: 600; color: var(--brand); }
-    .timeline { position: relative; height: 120px; background: #fafbfc; border: 1px solid var(--line); border-radius: 12px; margin-top: 10px; }
+    .core-slot { display: inline-block; width: 24px; height: 24px; border: 1px dashed var(--line); border-radius: 6px; margin: 2px; vertical-align: top; }
+    /* 流水线 */
+    .pipe-row { display: flex; align-items: center; gap: 4px; margin-top: 10px; position: relative; padding: 6px 8px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+    .pipe-row .pname { width: 62px; flex: none; font-size: 0.75rem; color: var(--muted); font-family: ui-monospace, Menlo, monospace; }
+    .op-box { border: 1.5px solid var(--line); border-radius: 8px; padding: 5px 9px; font-size: 0.75rem; background: #fafbfc; font-family: ui-monospace, Menlo, monospace; white-space: nowrap; }
+    .op-box.armed { border-style: dashed; border-color: var(--run); color: var(--run); }
+    .op-box.fired { border-color: var(--ok); background: #f0fdf4; }
+    .pipe-arrow { color: var(--muted); flex: none; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--brand); position: absolute; transition: left 1s linear; z-index: 5; }
+    /* 甘特图 */
+    .gantt { border: 1px solid var(--line); border-radius: 12px; background: #fff; padding: 10px 12px; margin-top: 10px; position: relative; }
+    .gantt-row { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; font-family: ui-monospace, Menlo, monospace; margin-top: 4px; }
+    .gantt-lbl { width: 78px; flex: none; color: var(--muted); text-align: right; }
+    .gantt-track { flex: 1; background: #f0ede9; border-radius: 6px; height: 18px; position: relative; overflow: hidden; }
+    .gantt-fill { position: absolute; top: 0; bottom: 0; border-radius: 6px; transition: left .8s ease, width .8s ease; }
+    /* 装箱 */
+    .workers { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-top: 10px; }
+    .worker { border: 1.5px solid var(--line); border-radius: 12px; background: #fff; padding: 8px; min-height: 120px; }
+    .worker .cap { font-size: 0.75rem; color: var(--muted); font-weight: 600; display: block; margin-bottom: 4px; }
+    .worker .free { font-size: 0.7rem; color: var(--muted); font-family: ui-monospace, Menlo, monospace; }
+    .exec-tile { display: inline-block; margin: 3px 3px 0 0; padding: 4px 7px; border-radius: 6px; background: var(--run); color: #fff; font-size: 0.68rem; font-family: ui-monospace, Menlo, monospace; }
+    .exec-tile.wait { background: #d6d3d1; color: var(--fail); text-decoration: line-through; }
+    /* JVM ↔ Python 传输 */
+    .sysgrid { display: grid; grid-template-columns: 1fr 90px 1fr; gap: 0; margin-top: 10px; align-items: stretch; }
+    .sysbox { border: 1.5px solid var(--line); border-radius: 12px; background: #fff; min-height: 130px; padding: 8px; position: relative; overflow: hidden; }
+    .sysbox .cap { font-size: 0.75rem; color: var(--muted); font-weight: 600; }
+    .channel { position: relative; }
+    .channel::before { content: ""; position: absolute; left: 50%; top: 8px; bottom: 8px; border-left: 2px dashed var(--line); }
+    .pkt { position: absolute; width: 12px; height: 12px; border-radius: 50%; background: var(--warn); z-index: 5; transition: left .45s ease, opacity .3s; }
+    .pkt.arrow-batch { width: 34px; height: 18px; border-radius: 5px; background: var(--ok); }
+    .xfer-count { position: absolute; top: 4px; left: 50%; transform: translateX(-50%); font-size: 0.68rem; color: var(--warn); font-weight: 700; white-space: nowrap; }
+    /* Shuffle 舞台 */
+    .part-box { position: absolute; border: 1.5px solid var(--line); border-radius: 10px; background: #fff; padding: 4px; width: 132px; }
+    .part-box .cap { font-size: 0.72rem; color: var(--muted); text-align: center; display: block; margin-bottom: 2px; }
+    .keychip { position: absolute; width: 26px; height: 26px; border-radius: 7px; color: #fff; font-size: 0.7rem; font-weight: 700; display: flex; align-items: center; justify-content: center; transition: left .8s ease, top .8s ease; z-index: 5; }
+    .spill { position: absolute; font-size: 0.66rem; color: var(--muted); font-family: ui-monospace, Menlo, monospace; }
+    /* Watermark 时间轴 */
+    .timeline { position: relative; height: 130px; background: #fafbfc; border: 1px solid var(--line); border-radius: 12px; margin-top: 10px; }
     .tl-axis { position: absolute; left: 20px; right: 20px; bottom: 24px; height: 2px; background: var(--line); }
     .tl-tick { position: absolute; bottom: 18px; font-size: 0.68rem; color: var(--muted); transform: translateX(-50%); }
-    .ev {
-      position: absolute;
-      width: 14px; height: 14px;
-      border-radius: 50%;
-      transform: translateX(-50%);
-      bottom: 40px;
-      background: var(--run);
-      border: 2px solid #fff;
-      box-shadow: 0 0 0 1px var(--line);
-      transition: bottom .4s, background .4s;
-    }
+    .ev { position: absolute; width: 14px; height: 14px; border-radius: 50%; transform: translateX(-50%); bottom: 44px; background: var(--run); border: 2px solid #fff; box-shadow: 0 0 0 1px var(--line); transition: bottom .4s, background .4s, top .3s; }
     .ev.late { background: var(--fail); }
     .ev.done { background: var(--ok); }
     .wm-line { position: absolute; top: 8px; bottom: 16px; width: 0; border-left: 2px dashed var(--brand); transition: left .4s; }
     .wm-tag { position: absolute; top: 2px; transform: translateX(-50%); font-size: 0.68rem; color: var(--brand); font-weight: 700; white-space: nowrap; }
     .win-grid { display: flex; gap: 6px; margin-top: 10px; }
-    .win-cell {
-      flex: 1;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 6px 4px;
-      text-align: center;
-      font-size: 0.72rem;
-      color: var(--muted);
-      background: #fff;
-      min-height: 44px;
-    }
+    .win-cell { flex: 1; border: 1px solid var(--line); border-radius: 8px; padding: 6px 4px; text-align: center; font-size: 0.72rem; color: var(--muted); background: #fff; min-height: 46px; }
     .win-cell.open { border-color: var(--run); color: var(--run); }
     .win-cell.closed { border-color: var(--ok); background: #f0fdf4; color: var(--ok); }
-    .slider-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; font-size: 0.85rem; }
-    .slider-row .name { width: 150px; color: var(--muted); flex: none; }
-    .slider-row input { flex: 1; accent-color: var(--brand); }
-    .slider-row .val { width: 90px; font-family: ui-monospace, Menlo, monospace; color: var(--brand); font-weight: 700; }
-    .verdict { margin-top: 10px; padding: 10px 14px; border-radius: 10px; font-size: 0.88rem; line-height: 1.5; }
-    .verdict.ok { background: #f0fdf4; border: 1px solid rgba(21,128,61,.3); }
-    .verdict.warn { background: #fffbeb; border: 1px solid rgba(161,98,7,.35); }
-    .verdict.bad { background: #fef2f2; border: 1px solid rgba(185,28,28,.3); }
+    /* 内存条 / 计划树 / 矩阵 */
     .membar { display: flex; height: 34px; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); margin-top: 8px; }
     .memseg { display: flex; align-items: center; justify-content: center; font-size: 0.68rem; color: #fff; overflow: hidden; white-space: nowrap; transition: width .3s; }
-    .kv { font-size: 0.85rem; line-height: 1.8; }
-    .kv b { color: var(--brand); font-family: ui-monospace, Menlo, monospace; }
-    .node rect { stroke-width: 2; }
-    .node text { font-size: 12px; font-weight: 600; fill: var(--ink); }
-    svg.wide-narrow { width: 100%; height: auto; display: block; background: #fafbfc; border-radius: 12px; border: 1px solid var(--line); margin-top: 10px; }
-    .matrix td, .matrix th { border: 1px solid var(--line); padding: 8px; text-align: center; font-size: 0.82rem; }
+    svg.canvas { width: 100%; height: auto; display: block; background: #fafbfc; border-radius: 12px; border: 1px solid var(--line); margin-top: 10px; }
+    .matrix { border-collapse: collapse; margin-top: 8px; }
+    .matrix td, .matrix th { border: 1px solid var(--line); padding: 8px 10px; text-align: center; font-size: 0.82rem; }
     .matrix td.cell { cursor: pointer; background: #fff; }
     .matrix td.cell:hover { background: var(--brand-soft); }
+    .flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0; }
+    .chip { border: none; border-radius: 999px; padding: 0.35rem 0.75rem; background: var(--brand-soft); color: var(--brand); font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+    .chip.ghost { background: #f0ede9; color: var(--muted); font-weight: 500; }
+    .stack { display: grid; gap: 6px; margin-top: 10px; }
+    .stack .layer { border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-size: 0.82rem; background: #fff; }
+    .stack .layer b { margin-right: 8px; }
+    .stack .core { border-color: var(--brand); background: var(--brand-soft); }
+    .concl { margin-top: 12px; padding: 10px 14px; border-radius: 10px; background: var(--brand-soft); font-size: 0.88rem; line-height: 1.6; }
   </style>
 </head>
 <body>
@@ -280,7 +221,7 @@
     <aside>
       <div class="brand" style="margin-bottom:12px">
         <h1>Spark 交互演示</h1>
-        <p>PySpark · 可视化学习。点左侧章节，动手玩概念。</p>
+        <p>只演示难懂的概念：动画 + 模拟器。点左侧章节开玩。</p>
       </div>
       <nav class="nav" id="nav"></nav>
     </aside>
@@ -314,7 +255,14 @@
       nav.appendChild(b)
     })
 
+    // 切章时清理上一章的定时器
+    let timers = []
+    function later(fn, ms) { const t = setTimeout(fn, ms); timers.push(t); return t }
+    function every(fn, ms) { const t = setInterval(fn, ms); timers.push(t); return t }
+    function clearTimers() { timers.forEach(t => { clearTimeout(t); clearInterval(t) }); timers = [] }
+
     function show(id) {
+      clearTimers()
       current = id
       nav.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.id === id))
       history.replaceState(null, '', `?c=${id}`)
@@ -322,244 +270,369 @@
       renders[id](panel)
     }
 
-    /* ============ 01 概述与定位 ============ */
+    /* ============ 01 概述：MR vs Spark 迭代赛跑 ============ */
     function render01(el) {
       el.innerHTML = `
-        <h2>Spark 为什么比 MapReduce 快？</h2>
-        <p class="lead">同一条「清洗 → 聚合 → 再聚合」链路，两种引擎的落地方式。点卡片看差异根源。</p>
-        <div class="grid2">
-          <div class="card bad click" id="mrCard"><h3>MapReduce：每阶段落盘</h3>
-            <ul><li>HDFS → Map → <b>写盘</b></li><li>Reduce 拉取 → 聚合 → <b>写盘</b></li><li>下个 Job 再读盘……</li></ul>
-          </div>
-          <div class="card good click" id="spCard"><h3>Spark：内存 DAG 流水线</h3>
-            <ul><li>读一次进内存</li><li>map → filter → reduceByKey 流水线传递</li><li>仅必要处 Shuffle</li></ul>
-          </div>
+        <h2>为什么迭代计算上 Spark 快 10~100 倍？</h2>
+        <p class="lead">同一份数据反复迭代（机器学习训练的典型模式）：MapReduce <b>每轮都读写磁盘</b>，Spark <b>只读一次、之后全在内存</b>。选择迭代轮数，点开始赛跑——两边按真实耗时比例推进。</p>
+        <div class="toolbar">
+          <label>迭代轮次 <input type="range" id="iters" min="1" max="50" value="10" style="width:140px;vertical-align:middle"> <span class="phase" id="vIters">10</span> 轮</label>
+          <button class="primary" id="race">开始赛跑</button>
+          <button id="ff">快进 ⏩</button>
+          <button id="raceReset">重置</button>
         </div>
-        <div class="detail" id="cmp">点击左侧或右侧卡片。</div>
-        <h4>Spark 生态组件（点击了解）</h4>
-        <div class="flow" id="eco"></div>
-        <div class="detail" id="ecoDetail" style="min-height:2.8em">点击上方组件 chip。</div>
-        <h4>学习主线（逐个点亮）</h4>
-        <div class="flow" id="pipe"></div>
+        <div class="race-lane">
+          <div class="race-head"><span style="color:var(--fail)">MapReduce</span><span id="mrIo" style="font-family:ui-monospace,Menlo,monospace;font-weight:400;color:var(--muted)">磁盘读写 0 次</span></div>
+          <div class="race-status" id="mrStatus">等待开始</div>
+          <div class="race-track"><div class="bar-fill hot" id="mrBar" style="width:0%"></div></div>
+        </div>
+        <div class="race-lane">
+          <div class="race-head"><span style="color:var(--ok)">Spark</span><span id="spIo" style="font-family:ui-monospace,Menlo,monospace;font-weight:400;color:var(--muted)">磁盘读写 0 次</span></div>
+          <div class="race-status" id="spStatus">等待开始</div>
+          <div class="race-track"><div class="bar-fill good" id="spBar" style="width:0%"></div></div>
+        </div>
+        <div id="raceResult"></div>
+        <div class="concl" id="raceConcl" style="visibility:hidden">结论</div>
+        <h4>Spark 生态一张图（了解即可，无需演示）</h4>
+        <div class="stack">
+          <div class="layer"><b>MLlib · GraphX</b>分布式机器学习 / 图计算</div>
+          <div class="layer"><b>Spark SQL · Structured Streaming</b>DataFrame、SQL、流批一体——日常开发 90% 在这里</div>
+          <div class="layer core"><b>Spark Core</b>RDD 抽象、DAG 调度、内存管理、容错——所有组件的地基</div>
+          <div class="layer"><b>资源调度</b>YARN · Kubernetes · Standalone</div>
+        </div>
       `
-      const cmp = el.querySelector('#cmp')
-      el.querySelector('#mrCard').onclick = () => cmp.textContent = 'MR 的瓶颈：每个阶段都读写 HDFS，迭代算法（如机器学习要扫 100 遍数据）= 100 遍磁盘 IO。慢在磁盘。'
-      el.querySelector('#spCard').onclick = () => cmp.textContent = 'Spark 两大武器：① 内存计算——中间结果尽量内存传递；② DAG 调度——先看到全图再优化（流水线、谓词下推）。迭代场景快 10~100 倍。注意：Spark ≠ 全内存，放不下照样走磁盘。'
-
-      const eco = [
-        ['Spark Core', '地基：RDD 抽象、DAG 调度、内存管理、容错。其他组件都建立在它之上。'],
-        ['Spark SQL', 'DataFrame + SQL，离线数仓/报表主力。Catalyst 优化器自动加速。'],
-        ['Structured Streaming', '流批一体：把流当成无限增长的表，同一套 API。微批（秒级）处理。'],
-        ['MLlib', '分布式机器学习：特征工程、LR/RF/GBT、ALS 推荐、Pipeline。'],
-        ['GraphX', '图计算（Scala 为主）：PageRank、关系网络。'],
-        ['湖仓格式', 'Delta Lake / Iceberg / Hudi：在对象存储上提供 ACID、时间旅行、Schema 演进。'],
-      ]
-      const ecoBox = el.querySelector('#eco'), ecoD = el.querySelector('#ecoDetail')
-      eco.forEach(([n, d], i) => {
-        const c = document.createElement('button')
-        c.className = 'chip ghost'; c.type = 'button'; c.textContent = n
-        c.onclick = () => {
-          ecoBox.querySelectorAll('.chip').forEach(x => x.classList.add('ghost'))
-          c.classList.remove('ghost'); ecoD.textContent = `${n}：${d}`
-        }
-        ecoBox.appendChild(c)
-      })
-
-      const steps = [
-        ['写代码', 'DataFrame/SQL（惰性，只记录）'],
-        ['提交', 'spark-submit → Driver 启动'],
-        ['优化', 'Catalyst 优化逻辑计划'],
-        ['切分', '按 Shuffle 切 Stage'],
-        ['执行', 'Executor 并行跑 Task'],
-        ['观测', 'Spark UI 找瓶颈'],
-        ['调优', '倾斜/分区/缓存/广播'],
-      ]
-      const pipe = el.querySelector('#pipe')
-      steps.forEach(([t, d], i) => {
-        if (i) { const a = document.createElement('span'); a.className = 'arrow'; a.textContent = '→'; pipe.appendChild(a) }
-        const chip = document.createElement('button')
-        chip.className = 'chip ghost'; chip.type = 'button'; chip.textContent = `${i + 1}.${t}`
-        chip.onclick = () => {
-          pipe.querySelectorAll('.chip').forEach(x => x.classList.add('ghost'))
-          chip.classList.remove('ghost')
-          ecoD.textContent = `${t}：${d}`
-        }
-        pipe.appendChild(chip)
-      })
+      // 虚拟耗时单位：磁盘操作=10，磁盘外计算=2，内存迭代=0.2
+      const D = 10, C = 2, MEM = 0.2
+      const $ = s => el.querySelector(s)
+      let racing = false
+      function totals(N) {
+        return { mr: N * (2 * D + C), sp: D + C + (N - 1) * MEM }
+      }
+      function paint(N, t, done) {
+        const T = totals(N)
+        const mrT = Math.min(t, T.mr), spT = Math.min(t, T.sp)
+        // MR 状态：每轮 读盘→计算→写盘
+        const perRound = 2 * D + C
+        const round = Math.min(N, Math.floor(mrT / perRound) + (mrT >= T.mr ? 0 : 1))
+        const inRound = mrT % perRound
+        const mrPhase = mrT >= T.mr ? '✔ 完成' : (inRound < D ? '📥 读盘（HDFS → 内存）' : (inRound < D + C ? '⚙️ 计算' : '📤 写盘（结果 → HDFS）'))
+        const mrIo = Math.min(2 * N, 2 * Math.floor(mrT / perRound) + (inRound >= D + C ? 1 : 0) + (mrT >= T.mr ? 0 : (inRound < D ? 1 : 0)))
+        $('#mrIo').textContent = `磁盘读写 ${mrIo} 次`
+        $('#mrStatus').textContent = mrT >= T.mr ? `完成：${N} 轮迭代` : `第 ${round}/${N} 轮 · ${mrPhase}`
+        $('#mrBar').style.width = (mrT / T.mr * 100) + '%'
+        // Spark 状态
+        const spDone = spT >= T.sp
+        let spRound
+        if (spT < D + C) spRound = 1
+        else spRound = Math.min(N, 1 + Math.floor((spT - D - C) / MEM) + 1)
+        $('#spIo').textContent = '磁盘读写 ' + (spT > 0 ? 1 : 0) + ' 次'
+        $('#spStatus').textContent = spDone ? `完成：${N} 轮迭代` : (spT < D ? '第 1 轮 · 📥 读盘（仅此一次）' : `第 ${spRound}/${N} 轮 · ⚡ 内存中迭代`)
+        $('#spBar').style.width = (spT / T.sp * 100) + '%'
+        return { spDone, mrDone: mrT >= T.mr }
+      }
+      function verdict(N, ff) {
+        const T = totals(N)
+        const ratio = T.mr / T.sp
+        $('#raceResult').innerHTML = `
+          <div class="bar-row"><span class="lbl">MapReduce</span><div class="bar-track"><div class="bar-fill hot" style="width:100%"></div></div><span class="bar-val"><b>${T.mr.toFixed(0)}</b> 时间单位</span></div>
+          <div class="bar-row"><span class="lbl">Spark</span><div class="bar-track"><div class="bar-fill good" style="width:${Math.max(1.5, 100 / ratio)}%"></div></div><span class="bar-val"><b>${T.sp.toFixed(0)}</b> 时间单位</span></div>`
+        const c = $('#raceConcl')
+        c.style.visibility = 'visible'
+        c.innerHTML = `迭代 <b>${N}</b> 轮：Spark 快 <b>${ratio.toFixed(1)}×</b>；磁盘读写 <b>${2 * N} 次 vs 1 次</b>。轮数越多差距越夸张——这就是 ML 训练必须用 Spark 类引擎的原因。<br><span class="hint" style="margin:0">注意：Spark ≠ 全内存宗教——内存放不下照样溢写磁盘，快在「能不落盘就不落盘 + DAG 全图优化」。</span>`
+      }
+      $('#iters').oninput = () => $('#vIters').textContent = $('#iters').value
+      $('#race').onclick = () => {
+        if (racing) return
+        racing = true
+        const N = +$('#iters').value
+        const T = totals(N)
+        const budget = 3500 // Spark 3.5s 跑完
+        const scale = budget / T.sp
+        let t = 0
+        $('#raceResult').innerHTML = ''; $('#raceConcl').style.visibility = 'hidden'
+        every(() => {
+          t += T.sp * 30 / budget * 1.6 // 每 30ms 前进
+          const st = paint(N, t)
+          if (st.mrDone && st.spDone) { clearTimers(); racing = false; verdict(N) }
+          else if (st.spDone && t > T.sp * 2.2) {
+            // Spark 已完成且 MR 明显落后：定格，提示快进
+            clearTimers(); racing = false
+            paint(N, t)
+            $('#raceConcl').style.visibility = 'visible'
+            $('#raceConcl').innerHTML = `Spark 已完赛 🏁，MapReduce 还在第 ${Math.floor(Math.min(t, T.mr) / (2 * D + C)) + 1} 轮慢慢读写磁盘…… 点 <b>快进 ⏩</b> 看最终差距。`
+          }
+        }, 30)
+      }
+      $('#ff').onclick = () => {
+        clearTimers(); racing = false
+        const N = +$('#iters').value
+        paint(N, Infinity, true)
+        verdict(N, true)
+      }
+      $('#raceReset').onclick = () => {
+        clearTimers(); racing = false
+        paint(+$('#iters').value, 0)
+        $('#mrStatus').textContent = '等待开始'; $('#spStatus').textContent = '等待开始'
+        $('#mrIo').textContent = '磁盘读写 0 次'; $('#spIo').textContent = '磁盘读写 0 次'
+        $('#raceResult').innerHTML = ''; $('#raceConcl').style.visibility = 'hidden'
+      }
     }
 
-    /* ============ 02 架构与运行原理 ============ */
+    /* ============ 02 架构：一次提交的全链路动画 ============ */
     function render02(el) {
       el.innerHTML = `
-        <h2>Driver / Cluster Manager / Executor</h2>
-        <p class="lead">点选任意角色看职责；再看「一次提交」的完整生命周期。</p>
-        <div class="arch" id="arch"></div>
-        <div class="detail" id="archDetail">点击上方角色。</div>
-        <h4>一次提交的生命周期（逐步推进）</h4>
-        <div class="toolbar"><button class="primary" id="nextStep">下一步</button><button id="resetStep">重置</button><span class="phase" id="stepName"></span></div>
-        <div class="code" id="stepView">点击「下一步」开始。</div>
+        <h2>一行 count() 提交后，集群里发生了什么？</h2>
+        <p class="lead">点「运行」，看 Driver 把代码变成 DAG、在 Shuffle 处切成 Stage、再把 Task 分发到 Executor 的 CPU 核上并行执行。注意 <b>Stage 之间的屏障</b>：Stage 1 必须等 Stage 0 全部完成。</p>
+        <div class="toolbar"><button class="primary" id="runJob">▶ 运行</button><button id="resetJob">重置</button><span class="phase" id="jobPhase"></span></div>
+        <div class="stagebox" id="jobStage" style="height:360px"></div>
+        <div class="concl">口诀：<b>Action 生 Job，Shuffle 切 Stage，Partition 定 Task</b>。Driver 是指挥部（挂则全挂），Executor 是干活的 JVM 进程，Task 跑在 Executor 的线程上。排障第一入口：Spark UI <b>:4040</b>。</div>
         <h4>Job / Stage / Task 计算器</h4>
         <div class="slider-row"><span class="name">Action 个数</span><input type="range" id="nAct" min="1" max="6" value="2"><span class="val" id="vAct">2</span></div>
         <div class="slider-row"><span class="name">每个 Job 的 Shuffle 次数</span><input type="range" id="nShf" min="0" max="4" value="1"><span class="val" id="vShf">1</span></div>
         <div class="slider-row"><span class="name">Shuffle 后分区数</span><input type="range" id="nPart" min="10" max="500" value="200" step="10"><span class="val" id="vPart">200</span></div>
-        <div class="kv" id="calcOut"></div>
-        <p class="hint">口诀：Action 生 Job，Shuffle 切 Stage，Partition 定 Task。</p>
+        <div class="verdict info" id="calcOut"></div>
       `
-      const roles = [
-        ['Driver', '运行 main()、创建 SparkSession、构建 DAG、切 Stage、调度 Task。每个应用一个，挂则全挂。'],
-        ['Cluster Manager', 'YARN / K8s / Standalone。只负责分资源（容器），不懂业务。'],
-        ['Executor ×N', 'Worker 节点常驻 JVM：真正跑 Task、存 cache、多线程并发。'],
-        ['Task', '最小执行单元：一个分区一个 Task，跑在 Executor 线程池里。'],
-        ['Spark UI (4040)', '排障第一入口：Jobs/Stages/Tasks/SQL/Executors 五个 Tab。'],
-      ]
-      const arch = el.querySelector('#arch'), ad = el.querySelector('#archDetail')
-      roles.forEach(([n, d]) => {
-        const div = document.createElement('div')
-        div.className = 'arch-item'
-        div.innerHTML = `<strong>${n}</strong><span>${d.slice(0, 22)}…</span>`
-        div.onclick = () => {
-          arch.querySelectorAll('.arch-item').forEach(x => x.classList.remove('on'))
-          div.classList.add('on'); ad.textContent = `${n}：${d}`
-        }
-        arch.appendChild(div)
-      })
-
-      const steps = [
-        ['① 提交', 'spark-submit 启动 Driver，创建 SparkSession。'],
-        ['② 惰性构建', '遇到 Action 前，所有转换（filter/map/join）只是被记录，没有真正执行。'],
-        ['③ Catalyst 优化', '逻辑计划 → 谓词下推、列裁剪、常量折叠 → 选物理计划（如 Join 策略）。'],
-        ['④ 切分 Stage', 'DAGScheduler 在「宽依赖（Shuffle）」处切刀：1 个 Action = 1 个 Job，N 次 Shuffle ≈ N+1 个 Stage。'],
-        ['⑤ Task 分发', 'TaskScheduler 把每个 Stage 按分区数拆成 K 个 Task，发到各 Executor。'],
-        ['⑥ 并行执行', 'Executor 多线程跑 Task；Shuffle 数据在 Stage 间传递。'],
-        ['⑦ 结果与观测', '结果写存储或回 Driver；打开 :4040 看耗时/Shuffle 量/倾斜。'],
-      ]
-      let si = -1
-      const sv = el.querySelector('#stepView'), sn = el.querySelector('#stepName')
-      el.querySelector('#nextStep').onclick = () => {
-        si = Math.min(si + 1, steps.length - 1)
-        sn.textContent = steps[si][0]; sv.textContent = steps[si][1]
+      const stage = el.querySelector('#jobStage')
+      const phase = el.querySelector('#jobPhase')
+      const BLUE = '#0369a1', ORANGE = '#e25a1c'
+      function layout() {
+        stage.innerHTML = `
+          <div class="actor" id="driver" style="left:16px;top:90px;width:170px">
+            <span class="cap">Driver（指挥部）</span>
+            <div id="dag" style="font-family:ui-monospace,Menlo,monospace;font-size:.72rem;line-height:1.9">
+              <div class="dagn" data-s="0">textFile(logs/)</div>
+              <div class="dagn" data-s="0">filter(ERROR)</div>
+              <div class="dagn" data-s="1" style="border-top:2px dashed var(--fail);padding-top:2px">reduceByKey</div>
+              <div class="dagn" data-s="1">count() ← Action</div>
+            </div>
+          </div>
+          <div class="actor" id="cm" style="left:16px;top:8px;width:170px;font-size:.72rem">
+            <span class="cap">Cluster Manager</span>只分资源，不懂业务
+          </div>
+          ${[0, 1, 2].map(i => `
+            <div class="actor exec" id="exec${i}" style="left:${320 + i * 180}px;top:70px;width:150px">
+              <span class="cap">Executor ${i + 1}（4 核）</span>
+              <div class="slots">${'<span class="core-slot"></span>'.repeat(4)}</div>
+              <div class="cap" style="margin-top:4px">cache / Shuffle 数据</div>
+            </div>`).join('')}
+          <div id="barrier" style="position:absolute;left:300px;right:16px;top:250px;border-top:2px dashed var(--warn);display:none">
+            <span style="font-size:.7rem;color:var(--warn);font-weight:700">Stage 屏障：Stage 1 等 Stage 0 全部完成</span>
+          </div>
+        `
+        stage.querySelectorAll('.dagn').forEach(n => {
+          n.style.cssText += ';border:1px solid var(--line);border-radius:6px;padding:1px 6px;margin:2px 0;opacity:.35;transition:all .3s'
+        })
       }
-      el.querySelector('#resetStep').onclick = () => { si = -1; sn.textContent = ''; sv.textContent = '点击「下一步」开始。' }
+      function slotPos(execIdx, slotIdx) {
+        const exec = stage.querySelector('#exec' + execIdx)
+        const slot = exec.querySelectorAll('.core-slot')[slotIdx]
+        const er = stage.getBoundingClientRect(), sr = slot.getBoundingClientRect()
+        return { x: sr.left - er.left + 1, y: sr.top - er.top + 1 }
+      }
+      function runTasks(tasks, color, dur, onAllDone) {
+        // tasks: [{exec, slot}]
+        let done = 0
+        tasks.forEach((tk, i) => {
+          const b = document.createElement('div')
+          b.className = 'taskblock'
+          b.style.cssText = `background:${color};left:60px;top:150px;opacity:0`
+          stage.appendChild(b)
+          later(() => {
+            const p = slotPos(tk.exec, tk.slot)
+            b.style.opacity = '1'
+            b.style.left = p.x + 'px'; b.style.top = p.y + 'px'
+          }, i * 90)
+          later(() => { b.style.boxShadow = 'inset 0 0 0 2px rgba(255,255,255,.7)' }, i * 90 + dur)
+          later(() => {
+            b.style.opacity = '0'
+            if (++done === tasks.length) onAllDone()
+          }, i * 90 + dur + 500)
+        })
+      }
+      function dagLight(stageNo) {
+        stage.querySelectorAll('.dagn').forEach(n => {
+          if (stageNo === -1 || +n.dataset.s === stageNo) {
+            n.style.opacity = '1'
+            n.style.borderColor = +n.dataset.s === 1 ? ORANGE : BLUE
+          }
+        })
+      }
+      let running = false
+      el.querySelector('#runJob').onclick = () => {
+        if (running) return
+        running = true
+        layout()
+        const P = (s) => phase.textContent = s
+        later(() => { P('① Driver 构建 DAG（惰性：只记录，未执行）'); dagLight(-1); stage.querySelector('#driver').classList.add('hl') }, 100)
+        later(() => { P('② Catalyst 优化 + 在宽依赖处切分：Stage 0（蓝）/ Stage 1（橙）') }, 1400)
+        later(() => {
+          P('③ Stage 0：6 个 Task（= 6 个输入分区）分发到 Executor 并行执行')
+          stage.querySelector('#barrier').style.display = 'block'
+          const tasks = [{ exec: 0, slot: 0 }, { exec: 0, slot: 1 }, { exec: 1, slot: 0 }, { exec: 1, slot: 1 }, { exec: 2, slot: 0 }, { exec: 2, slot: 1 }]
+          runTasks(tasks, BLUE, 1500, () => {
+            P('④ Shuffle：Stage 0 输出按 key 重分区，Stage 1 启动（2 个 Task）')
+            stage.querySelectorAll('.dagn[data-s="1"]').forEach(n => n.style.background = 'rgba(226,90,28,.12)')
+            runTasks([{ exec: 0, slot: 2 }, { exec: 1, slot: 2 }], ORANGE, 1300, () => {
+              P('⑤ 完成：结果 42 回传 Driver。去 :4040 复盘每个 Task 的耗时与 Shuffle 量')
+              stage.querySelector('#driver').classList.remove('hl')
+              running = false
+            })
+          })
+        }, 2600)
+      }
+      el.querySelector('#resetJob').onclick = () => { clearTimers(); running = false; layout(); phase.textContent = '' }
+      layout()
 
-      const ids = ['nAct', 'nShf', 'nPart']
       const calc = () => {
         const a = +el.querySelector('#nAct').value, s = +el.querySelector('#nShf').value, p = +el.querySelector('#nPart').value
         el.querySelector('#vAct').textContent = a
         el.querySelector('#vShf').textContent = s
         el.querySelector('#vPart').textContent = p
-        const stages = a * (s + 1)
         el.querySelector('#calcOut').innerHTML =
-          `Job 数 = Action 数 = <b>${a}</b><br>` +
-          `Stage 数 = ${a} × (${s} 次 Shuffle + 1) = <b>${stages}</b><br>` +
-          `每个 Shuffle 后 Stage 的 Task 数 = 分区数 = <b>${p}</b>（由 spark.sql.shuffle.partitions 决定）`
+          `Job 数 = Action 数 = <b>${a}</b> ｜ Stage 数 = ${a} × (${s} + 1) = <b>${a * (s + 1)}</b> ｜ Shuffle 后每个 Stage 的 Task 数 = 分区数 = <b>${p}</b>（spark.sql.shuffle.partitions）`
       }
-      ids.forEach(i => el.querySelector('#' + i).oninput = calc)
+      ;['nAct', 'nShf', 'nPart'].forEach(i => el.querySelector('#' + i).oninput = calc)
       calc()
     }
 
-    /* ============ 03 RDD ============ */
+    /* ============ 03 RDD：惰性/依赖/cache ============ */
     function render03(el) {
       el.innerHTML = `
-        <h2>惰性求值：Transformation 只是「记账」</h2>
-        <p class="lead">先点「执行 Transformation」，再点 Action，观察日志——<b>什么时候才真正干活</b>。</p>
+        <h2>惰性求值：Transformation 只是「记账」，Action 才「结账」</h2>
+        <p class="lead">先点「执行 Transformation」，再点 Action。观察：Transformation 时 <b>0 次 IO</b>；Action 时三个分区以<b>流水线</b>方式一次性融合执行整条链。</p>
         <div class="toolbar">
-          <button id="doT">执行 Transformation（textFile → filter → map）</button>
-          <button class="primary" id="doA">执行 Action（count）</button>
+          <button id="doT">① 执行 Transformation（textFile → filter → map）</button>
+          <button class="primary" id="doA">② 执行 Action（count）</button>
           <button id="resetLazy">重置</button>
         </div>
+        <div id="pipes"></div>
         <div class="log" id="lazyLog">等待操作……</div>
 
-        <h4>窄依赖 vs 宽依赖（点击切换）</h4>
+        <h4>窄依赖 vs 宽依赖：为什么宽依赖要切 Stage？</h4>
         <div class="toolbar">
           <button class="primary" id="btnNarrow">窄依赖（map/filter）</button>
-          <button id="btnWide">宽依赖（groupByKey）</button>
-          <span class="phase" id="depVerdict"></span>
+          <button id="btnWide">宽依赖（groupByKey/Join）</button>
         </div>
-        <svg class="wide-narrow" id="depSvg" viewBox="0 0 640 220"></svg>
+        <svg class="canvas" id="depSvg" viewBox="0 0 680 230"></svg>
+        <div class="verdict" id="depVerdict"></div>
 
-        <h4>cache 的作用：分支复用</h4>
-        <p class="lead">同一份「过滤后的日志」被两个 Action 使用。切换 cache 开关，看重算次数。</p>
+        <h4>cache：同一结果用两次，值不值得缓存？</h4>
+        <p class="lead">同一份「过滤后的错误日志」被 count() 和 first() 两个 Action 使用。切换 cache 开关，重放两次 Action 的耗时。</p>
         <div class="toolbar">
-          <label><input type="checkbox" id="useCache"> 对 errors 调用 cache()</label>
-          <button class="primary" id="runCache">依次执行 count() 和 first()</button>
+          <label><input type="checkbox" id="useCache"> errors.cache()</label>
+          <button class="primary" id="runCache">依次执行 count() → first()</button>
         </div>
-        <div class="log" id="cacheLog">等待操作……</div>
+        <div class="gantt">
+          <div class="gantt-row"><span class="gantt-lbl">count()</span><div class="gantt-track"><div class="gantt-fill" id="cacheBar1" style="width:0;background:var(--run)"></div></div><span class="bar-val" id="cacheT1"></span></div>
+          <div class="gantt-row"><span class="gantt-lbl">first()</span><div class="gantt-track"><div class="gantt-fill" id="cacheBar2" style="width:0;background:var(--warn)"></div></div><span class="bar-val" id="cacheT2"></span></div>
+        </div>
+        <div class="verdict" id="cacheVerdict"></div>
       `
-      // 惰性演示
+      // --- 惰性 + 流水线 ---
+      const pipes = el.querySelector('#pipes')
       const log = el.querySelector('#lazyLog')
+      function drawPipes() {
+        pipes.innerHTML = [1, 2, 3].map(i => `
+          <div class="pipe-row" data-p="${i}">
+            <span class="pname">分区 ${i}</span>
+            <span class="op-box" data-op="t">textFile</span><span class="pipe-arrow">→</span>
+            <span class="op-box" data-op="f">filter</span><span class="pipe-arrow">→</span>
+            <span class="op-box" data-op="m">map</span>
+          </div>`).join('')
+      }
+      drawPipes()
       let tDone = false
-      const put = (s, cls = '') => { log.innerHTML += (log.textContent === '等待操作……' ? '' : '\n') + `<span class="${cls}">${s}</span>` }
+      const put = (s, cls = '') => { log.innerHTML += (log.textContent === '等待操作……' ? '' : '\n') + `<span class="${cls}">${s}</span>`; log.scrollTop = 1e9 }
       el.querySelector('#doT').onclick = () => {
-        put('$ rdd = sc.textFile("logs/")        ← 只记录元数据，0 次 IO')
-        put('$ e = rdd.filter("ERROR" in l)     ← 只记录，0 次 IO')
-        put('$ m = e.map(extract_code)          ← 只记录，0 次 IO', 'hot')
+        el.querySelectorAll('.op-box').forEach(b => b.classList.add('armed'))
+        put('$ rdd = sc.textFile("logs/")    ← 只记录元数据（从哪读）', 'dim')
+        put('$ e = rdd.filter("ERROR" in l)  ← 只记录血统（怎么变）', 'dim')
+        put('$ m = e.map(extract_code)       ← 还是只记录。此刻 0 次 IO、0 行数据被处理', 'hot')
         tDone = true
       }
       el.querySelector('#doA').onclick = () => {
-        if (!tDone) { put('（也可以直接 Action——Spark 会把整条链一起执行）') }
-        put('$ m.count()                        ← Action！现在才真正开始：', 'hot')
-        put('  [IO] 扫描 logs/ 全部文件 ...')
-        put('  [CPU] filter + map 以流水线方式逐分区执行 ...')
-        put('  => 42')
+        if (!tDone) put('（直接 Action 也可以——Spark 会把整条链一起执行）', 'dim')
+        put('$ m.count()  ← Action！开始真正执行：', 'hot')
+        el.querySelectorAll('.pipe-row').forEach((row, i) => {
+          const dot = document.createElement('div')
+          dot.className = 'dot'
+          dot.style.left = '70px'
+          dot.style.top = (row.offsetTop + 14) + 'px'
+          pipes.appendChild(dot)
+          later(() => { dot.style.left = (row.offsetWidth - 30) + 'px' }, 100 + i * 150)
+          later(() => {
+            row.querySelectorAll('.op-box').forEach(b => b.classList.add('fired'))
+            put(`  [分区${i + 1}] 读盘 → filter × map 融合成一条流水线，一趟跑完（无中间落盘）`)
+            dot.remove()
+          }, 1250 + i * 150)
+        })
+        later(() => put('  => 42。注意：全程只有 1 次磁盘扫描，filter/map 是「路过顺手」算掉的', 'hot'), 2100)
       }
-      el.querySelector('#resetLazy').onclick = () => { log.textContent = '等待操作……'; tDone = false }
+      el.querySelector('#resetLazy').onclick = () => { clearTimers(); drawPipes(); log.textContent = '等待操作……'; tDone = false }
 
-      // 宽窄依赖 SVG
-      const svg = el.querySelector('#depSvg'), verdict = el.querySelector('#depVerdict')
+      // --- 宽窄依赖 ---
+      const svg = el.querySelector('#depSvg'), dv = el.querySelector('#depVerdict')
       function drawDep(wide) {
-        const parts = (x, side) => [0, 1, 2].map(i => {
-          const y = 20 + i * 65
-          return `<g class="node"><rect x="${x}" y="${y}" rx="10" width="120" height="48" fill="#fff" stroke="${wide ? '#b91c1c' : '#15803d'}"/><text x="${x + 60}" y="${y + 28}" text-anchor="middle">${side} 分区 ${i + 1}</text></g>`
+        const parts = (x, side, color) => [0, 1, 2].map(i => {
+          const y = 24 + i * 68
+          return `<g><rect x="${x}" y="${y}" rx="10" width="120" height="48" fill="#fff" stroke="${color}" stroke-width="2"/><text x="${x + 60}" y="${y + 28}" text-anchor="middle" font-size="12" font-weight="600" fill="#1c1917">${side}分区 ${i + 1}</text></g>`
         }).join('')
-        let edges = ''
+        let edges = '', boundary = ''
         if (!wide) {
-          for (let i = 0; i < 3; i++) edges += `<line x1="140" y1="${44 + i * 65}" x2="500" y2="${44 + i * 65}" stroke="#15803d" stroke-width="2.5" marker-end="url(#arr)"/>`
+          for (let i = 0; i < 3; i++) edges += `<line x1="150" y1="${48 + i * 68}" x2="530" y2="${48 + i * 68}" stroke="#15803d" stroke-width="2.5" marker-end="url(#arrG)"/>`
         } else {
           for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++)
-            edges += `<line x1="140" y1="${44 + i * 65}" x2="500" y2="${44 + j * 65}" stroke="rgba(185,28,28,.55)" stroke-width="1.8" marker-end="url(#arrR)"/>`
+            edges += `<line x1="150" y1="${48 + i * 68}" x2="530" y2="${48 + j * 68}" stroke="rgba(185,28,28,.45)" stroke-width="1.6" marker-end="url(#arrR)"/>`
+          boundary = `<line x1="340" y1="8" x2="340" y2="222" stroke="#b91c1c" stroke-width="2" stroke-dasharray="6 5"/>
+            <text x="340" y="18" text-anchor="middle" font-size="12" font-weight="700" fill="#b91c1c">✂ Stage 边界（Shuffle）</text>`
         }
         svg.innerHTML = `
           <defs>
-            <marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#15803d"/></marker>
+            <marker id="arrG" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#15803d"/></marker>
             <marker id="arrR" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#b91c1c"/></marker>
           </defs>
-          ${parts(20, '父')}${parts(500, '子')}${edges}
+          ${parts(30, '父', wide ? '#b91c1c' : '#15803d')}${parts(530, '子', wide ? '#b91c1c' : '#15803d')}${edges}${boundary}
         `
-        verdict.textContent = wide
-          ? '宽依赖：每个子分区依赖全部父分区 → 必须 Shuffle → 切 Stage'
-          : '窄依赖：父子分区一一对应 → 同机流水线，不切 Stage'
-        verdict.style.color = wide ? 'var(--fail)' : 'var(--ok)'
+        dv.className = 'verdict ' + (wide ? 'bad' : 'ok')
+        dv.innerHTML = wide
+          ? '<b>宽依赖</b>：每个子分区要「拼齐」所有父分区的数据 → 必须跨机器搬数据（Shuffle）→ 在此切 Stage、设屏障。容错时可能重算多个父分区。'
+          : '<b>窄依赖</b>：父子分区一一对应 → 同一台机器上流水线传递，不切 Stage、无屏障。容错时只需重算那一个分区。'
       }
       el.querySelector('#btnNarrow').onclick = () => drawDep(false)
       el.querySelector('#btnWide').onclick = () => drawDep(true)
       drawDep(false)
 
-      // cache 演示
+      // --- cache 计时 ---
       el.querySelector('#runCache').onclick = () => {
         const cached = el.querySelector('#useCache').checked
-        const cl = el.querySelector('#cacheLog')
-        cl.textContent = ''
-        const seq = cached ? [
-          'errors = logs.filter(...).cache()   ← 仅标记',
-          'errors.count()  → [扫描 logs 全量] + [物化到内存]  => 10000',
-          'errors.first()  → 直接读内存缓存，0 次重扫 ✔',
-          '结论：第 2 个 Action 起，省掉「重新扫描+过滤」。',
-        ] : [
-          'errors = logs.filter(...)            ← 无 cache',
-          'errors.count()  → [扫描 logs 全量] => 10000',
-          'errors.first()  → 【再次扫描 logs 全量】！懒惰的 Spark 不会替你记结果',
-          '结论：同一 DF 被 ≥2 个 Action 使用且计算不便宜 → 值得 cache。',
-        ]
-        let i = 0
-        const timer = setInterval(() => {
-          if (i >= seq.length) { clearInterval(timer); return }
-          cl.innerHTML += (i ? '\n' : '') + (i === seq.length - 1 ? `<span class="hot">${seq[i]}</span>` : seq[i])
-          i++
-        }, 450)
+        const b1 = el.querySelector('#cacheBar1'), b2 = el.querySelector('#cacheBar2')
+        const t1 = el.querySelector('#cacheT1'), t2 = el.querySelector('#cacheT2')
+        b1.style.transition = 'none'; b2.style.transition = 'none'
+        b1.style.width = '0'; b2.style.width = '0'
+        t1.textContent = ''; t2.textContent = ''
+        const v = el.querySelector('#cacheVerdict')
+        v.className = 'verdict info'; v.textContent = '执行中……'
+        void b1.offsetWidth
+        b1.style.transition = ''; b2.style.transition = ''
+        if (cached) {
+          later(() => { b1.style.width = '92%'; t1.innerHTML = '<b>46s</b> 扫描+过滤+物化进内存' }, 50)
+          later(() => {
+            b2.style.width = '4%'; t2.innerHTML = '<b>0.1s</b> 直接读内存 ✔'
+            v.className = 'verdict ok'
+            v.innerHTML = '有 cache：第 2 个 Action 省掉「重新扫描 + 过滤」，<b>46s → 0.1s</b>。口诀：<b>同一 DF 被 ≥2 个 Action 复用、且计算不便宜 → cache</b>；用完记得 unpersist。'
+          }, 1300)
+        } else {
+          later(() => { b1.style.width = '90%'; t1.innerHTML = '<b>45s</b> 扫描+过滤' }, 50)
+          later(() => {
+            b2.style.width = '88%'; t2.innerHTML = '<b>44s</b> 重新扫描+过滤！'
+            v.className = 'verdict bad'
+            v.innerHTML = '无 cache：Spark 不会替你记住中间结果，第 2 个 Action <b>从头重算整条链</b>——白花了 44s。'
+          }, 1300)
+        }
       }
     }
 
-    /* ============ 04 DataFrame ============ */
+    /* ============ 04 DataFrame：操作链 + UDF 传输动画 ============ */
     function render04(el) {
       const data = [
         { name: '张三', dept: '数据', age: 30, salary: 32000 },
@@ -573,19 +646,35 @@
       ]
       el.innerHTML = `
         <h2>DataFrame 操作链搭建器</h2>
-        <p class="lead">勾选操作，实时生成 PySpark 代码并对内置小数据集求值。</p>
+        <p class="lead">勾选操作，实时生成 PySpark 代码并对内置小数据集求值——DataFrame 的本质就是「声明式地搭一条链」。</p>
         <div class="toolbar" id="ops">
-          <label><input type="checkbox" data-op="filter" checked> filter(age &gt;= 18)</label>
-          <label><input type="checkbox" data-op="group"> groupBy(dept).agg(avg(salary), count)</label>
-          <label><input type="checkbox" data-op="order" checked> orderBy(avg_salary desc)</label>
-          <label><input type="checkbox" data-op="select"> select(只留 name, dept)</label>
+          <label><input type="checkbox" data-op="filter" checked> filter(age ≥ 18)</label>
+          <label><input type="checkbox" data-op="group"> groupBy(dept).agg(avg, count)</label>
+          <label><input type="checkbox" data-op="order" checked> orderBy(desc)</label>
+          <label><input type="checkbox" data-op="select"> select(name, dept)</label>
         </div>
         <div class="code" id="genCode"></div>
         <div id="genTbl"></div>
-        <h4>UDF 性能对比（相对耗时，越小越好）</h4>
-        <div id="udfBars"></div>
-        <p class="hint">经验：能用内置函数就不用 UDF；必须自定义时用 pandas_udf（Arrow 批量化）。</p>
+
+        <h2 style="margin-top:26px">UDF 为什么慢？看数据怎么「过境」</h2>
+        <p class="lead">PySpark 的计算在 JVM 里，你的 Python 函数在 Python 进程里。选一种实现，播放，数一下<b>数据跨进程的次数</b>。</p>
+        <div class="toolbar">
+          <button class="primary" data-mode="builtin">内置函数 F.upper()</button>
+          <button data-mode="pandas">pandas_udf（Arrow 批量）</button>
+          <button data-mode="row">普通 Python UDF</button>
+          <button id="xferReset">重置</button>
+        </div>
+        <div class="sysgrid">
+          <div class="sysbox" id="jvm"><span class="cap">JVM（Spark 执行引擎）</span></div>
+          <div class="channel" id="chan"><span class="xfer-count" id="xferCount"></span></div>
+          <div class="sysbox" id="py"><span class="cap">Python worker 进程</span></div>
+        </div>
+        <div class="gantt">
+          <div class="gantt-row"><span class="gantt-lbl">相对耗时</span><div class="gantt-track"><div class="gantt-fill" id="udfBar" style="width:0;background:var(--ok)"></div></div><span class="bar-val" id="udfT"></span></div>
+        </div>
+        <div class="verdict" id="udfVerdict"></div>
       `
+      // 操作链
       const opsBox = el.querySelector('#ops')
       const render_ = () => {
         const on = {}
@@ -614,58 +703,137 @@
       opsBox.querySelectorAll('input').forEach(i => i.onchange = render_)
       render_()
 
-      const bars = [
-        ['内置函数 F.upper()', 1, 'good', '1×（Catalyst 原生执行）'],
-        ['pandas_udf（Arrow 批量）', 4, '', '≈4×（按批传输，向量计算）'],
-        ['普通 Python UDF', 30, 'hot', '≈30×（每行 JVM↔Python 序列化）'],
-      ]
-      el.querySelector('#udfBars').innerHTML = bars.map(([n, v, cls, d]) =>
-        `<div class="bar-row"><span class="lbl">${n}</span><div class="bar-track"><div class="bar-fill ${cls}" style="width:${v / 30 * 100}%"></div></div><span class="bar-val">${d}</span></div>`).join('')
+      // UDF 传输动画
+      const jvm = el.querySelector('#jvm'), py = el.querySelector('#py'), chan = el.querySelector('#chan')
+      const xferCount = el.querySelector('#xferCount')
+      const udfBar = el.querySelector('#udfBar'), udfT = el.querySelector('#udfT'), udfV = el.querySelector('#udfVerdict')
+      function resetXfer() {
+        chan.querySelectorAll('.pkt').forEach(p => p.remove())
+        jvm.querySelectorAll('.pkt').forEach(p => p.remove())
+        py.querySelectorAll('.pkt').forEach(p => p.remove())
+        xferCount.textContent = ''
+        udfBar.style.transition = 'none'; udfBar.style.width = '0'
+        void udfBar.offsetWidth; udfBar.style.transition = ''
+        udfT.textContent = ''
+      }
+      function fly(fromBox, toBox, cls, delay, onArrive) {
+        const from = fromBox.getBoundingClientRect(), to = toBox.getBoundingClientRect(), base = chan.getBoundingClientRect()
+        const p = document.createElement('div')
+        p.className = 'pkt ' + (cls || '')
+        const y = 60
+        p.style.top = (y - base.top) + 'px'
+        p.style.left = (from.right - base.left - 14) + 'px'
+        chan.appendChild(p)
+        later(() => { p.style.left = (to.left - base.left + 2) + 'px' }, delay)
+        later(() => { p.style.left = (from.right - base.left - 14) + 'px' }, delay + 520)
+        later(() => { p.remove(); onArrive && onArrive() }, delay + 1100)
+      }
+      let playing = false
+      el.querySelectorAll('[data-mode]').forEach(btn => btn.onclick = () => {
+        if (playing) return
+        playing = true
+        resetXfer()
+        const mode = btn.dataset.mode
+        const finish = (mult, color, html) => {
+          udfBar.style.background = color
+          udfBar.style.width = Math.min(100, mult / 30 * 100) + '%'
+          udfT.innerHTML = `<b>${mult}×</b>`
+          udfV.className = 'verdict ' + (mult === 1 ? 'ok' : mult <= 4 ? 'warn' : 'bad')
+          udfV.innerHTML = html
+          playing = false
+        }
+        if (mode === 'builtin') {
+          const p = document.createElement('div')
+          p.className = 'pkt'; p.style.background = 'var(--ok)'
+          p.style.cssText += ';left:30px;top:60px'
+          jvm.appendChild(p)
+          later(() => { p.style.left = (jvm.clientWidth - 60) + 'px' }, 100)
+          xferCount.textContent = '0 次'
+          later(() => finish(1, 'var(--ok)', '<b>内置函数</b>：计算发生在 JVM 内部，数据不出进程。Catalyst 还能为它做向量化优化——永远的首选。'), 1200)
+        } else if (mode === 'row') {
+          xferCount.textContent = '跨进程 …'
+          let n = 0
+          for (let i = 0; i < 6; i++) {
+            fly(jvm, py, '', i * 620, () => {
+              n++
+              xferCount.textContent = `往返 ${n} 次`
+              if (n === 6) finish(30, 'var(--fail)', '<b>普通 Python UDF</b>：100 万行 = 100 万次序列化往返，比内置函数慢 <b>~30×</b>，还阻断 Catalyst 优化。能不写就不写。')
+            })
+          }
+        } else {
+          fly(jvm, py, 'arrow-batch', 100, () => {
+            xferCount.textContent = '1 次批量'
+            finish(4, 'var(--warn)', '<b>pandas_udf</b>：用 Arrow 按「列批」传输 + pandas/numpy 向量化计算，只慢 <b>~4×</b>。必须自定义逻辑时用它。')
+          })
+        }
+      })
+      el.querySelector('#xferReset').onclick = () => { clearTimers(); playing = false; resetXfer() }
     }
 
-    /* ============ 05 SQL 与 Catalyst ============ */
+    /* ============ 05 Catalyst：计划树演变 ============ */
     function render05(el) {
       el.innerHTML = `
-        <h2>Catalyst 优化器四阶段</h2>
-        <p class="lead">同一条 SQL，看它在引擎里「进化」的全过程。逐步点击。</p>
-        <div class="toolbar"><button class="primary" id="next">下一阶段</button><button id="reset">重置</button><span class="phase" id="ph"></span></div>
-        <div class="code" id="plan">SQL: SELECT channel, SUM(amt) FROM orders WHERE dt='2026-10-31' GROUP BY channel</div>
-        <h4>谓词下推：过滤条件推到哪一层？</h4>
-        <div class="toolbar">
-          <label><input type="checkbox" id="push" checked> 开启谓词下推（Parquet 默认开）</label>
-        </div>
+        <h2>Catalyst：一条 SQL 在引擎里的「进化」</h2>
+        <p class="lead">你写的 SQL 只是草稿。逐步点击，看 Catalyst 如何把它改造成高效物理计划——重点看 <b>Filter 下移（谓词下推）</b> 和 <b>列被裁掉</b> 这两步。</p>
+        <div class="code">SELECT channel, SUM(amt) FROM orders WHERE dt = '2026-10-31' GROUP BY channel</div>
+        <div class="toolbar"><button class="primary" id="next">下一阶段 →</button><button id="reset">重置</button><span class="phase" id="ph"></span></div>
+        <svg class="canvas" id="planSvg" viewBox="0 0 680 260"></svg>
+        <div class="verdict info" id="planNote">点「下一阶段」开始。</div>
+        <h4>谓词下推省多少 IO？</h4>
+        <div class="toolbar"><label><input type="checkbox" id="push" checked> 开启谓词下推（Parquet 默认开）</label></div>
         <div id="pushBars"></div>
-        <p class="hint">数据从哪一层开始被过滤，决定了 IO 量。下推到文件层 = 只读需要的数据块。</p>
+        <div class="concl">你几乎不用手写优化：谓词下推、列裁剪、常量折叠、Join 策略选择都由 Catalyst 自动完成。<b>写对 Schema、用 Parquet、给出过滤条件</b>，就是最大的优化。</div>
       `
+      const svg = el.querySelector('#planSvg')
+      const node = (x, y, w, text, color, dash) =>
+        `<g><rect x="${x}" y="${y}" rx="8" width="${w}" height="40" fill="#fff" stroke="${color}" stroke-width="2" ${dash ? 'stroke-dasharray="5 4"' : ''}/><text x="${x + w / 2}" y="${y + 24}" text-anchor="middle" font-size="12" font-weight="600" fill="#1c1917">${text}</text></g>`
+      const edge = (x1, y1, x2, y2, color) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color || 'var(--line)'}" stroke-width="2"/>`
+      const tag = (x, y, text, color) => `<text x="${x}" y="${y}" font-size="11" font-weight="700" fill="${color}">${text}</text>`
       const stages = [
-        ['① 未解析逻辑计划', `UnresolvedLogicalPlan
-'Project ['channel, 'SUM('amt)]
- 'Filter 'dt = 2026-10-31
-  'UnresolvedRelation [orders]      ← 表/列还只是「符号」`],
-        ['② 解析后（Analyzer）', `Project [channel#12, sum(amt#23) AS sum(amt)#34]
- Filter dt#10 = 20261031
-  SubqueryAlias orders
-   HiveTableRelation ods.orders     ← 符号已绑定到真实表和列类型`],
-        ['③ 优化后（Optimizer）', `Aggregate [channel#12], [channel#12, sum(amt#23)]
- Project [channel#12, amt#23]      ← 列裁剪：只留 2 列
-  Filter isnotnull(dt#10) AND (dt#10 = 20261031)
-   Relation[...parquet]             ← 谓词被标记为可下推`],
-        ['④ 物理计划（Physical）', `*(2) HashAggregate(keys=[channel#12], functions=[sum(amt#23)])
- +- Exchange hashpartitioning(channel#12, 200)      ← Shuffle
-    +- *(1) HashAggregate(functions=[partial_sum])  ← map 端预聚合
-       +- *(1) FileScan parquet [channel#12,amt#23]
-            PushedFilters: [EqualTo(dt,20261031)]   ← 已推到文件层`],
+        ['① 未解析：还只是「符号」', () => `
+          ${node(240, 20, 200, "Project ['channel, SUM('amt)]", '#b91c1c', 1)}
+          ${edge(340, 60, 340, 92)}${node(240, 92, 200, "Filter 'dt = 2026-10-31", '#b91c1c', 1)}
+          ${edge(340, 132, 340, 164)}${node(220, 164, 240, "UnresolvedRelation [orders]", '#b91c1c', 1)}
+          ${tag(480, 114, '？表和列还没绑定，引擎不认识', '#b91c1c')}`,
+          'SQL 被解析成语法树，但 orders 是哪张表、amt 是什么类型，引擎还不知道。'],
+        ['② Analyzer：绑定 Catalog', () => `
+          ${node(230, 20, 220, 'Project [channel#12, sum(amt#23)]', '#0369a1')}
+          ${edge(340, 60, 340, 92)}${node(250, 92, 180, 'Filter dt#10 = 20261031', '#0369a1')}
+          ${edge(340, 132, 340, 164)}${node(210, 164, 260, 'HiveTableRelation ods.orders', '#0369a1')}
+          ${tag(480, 114, '符号已绑定真实表 / 列 / 类型', '#0369a1')}`,
+          '查元数据把符号绑定到真实表和列。表不存在、列名拼错，在这一步报错。'],
+        ['③ Optimizer：下推 + 裁剪', () => `
+          ${node(230, 16, 220, 'Aggregate [channel#12, sum(amt#23)]', '#15803d')}
+          ${edge(340, 56, 340, 84)}${node(190, 84, 300, 'Scan parquet 只读 [channel, amt, dt]', '#15803d')}
+          ${tag(500, 78, '▲ Filter 被推进 Scan', '#15803d')}
+          ${tag(500, 104, 'PushedFilters: dt=20261031', '#15803d')}
+          ${tag(500, 130, '列裁剪：其余 47 列不读', '#15803d')}
+          ${tag(60, 210, '被裁掉的列：user_id / addr / remark / …（不需要，直接不读）', '#a8a29e')}`,
+          '两条关键规则：① 谓词下推——Filter 推到扫描层，读文件时就过滤；② 列裁剪——50 列的表只读需要的 3 列。IO 大幅下降。'],
+        ['④ 物理计划：真正干活的版本', () => `
+          ${node(240, 16, 200, 'HashAggregate（最终聚合）', '#e25a1c')}
+          ${edge(340, 56, 340, 84)}${node(220, 84, 240, 'Exchange hashpartition(channel)', '#b91c1c')}
+          ${tag(480, 108, '⚠ 唯一一次 Shuffle', '#b91c1c')}
+          ${edge(340, 124, 340, 152)}${node(220, 152, 240, 'HashAggregate（map 端预聚合）', '#e25a1c')}
+          ${edge(340, 192, 340, 216)}${node(230, 216, 220, 'FileScan parquet [3 列]', '#0369a1')}`,
+          '选定执行策略：先在每个分区内预聚合（数据量大减），再 Shuffle 汇总。代价最高的 Exchange（Shuffle）被压到最小。'],
       ]
       let i = -1
-      const plan = el.querySelector('#plan'), ph = el.querySelector('#ph')
-      el.querySelector('#next').onclick = () => { i = Math.min(i + 1, 3); ph.textContent = stages[i][0]; plan.textContent = stages[i][1] }
-      el.querySelector('#reset').onclick = () => { i = -1; ph.textContent = ''; plan.textContent = `SQL: SELECT channel, SUM(amt) FROM orders WHERE dt='2026-10-31' GROUP BY channel` }
+      const paint = () => {
+        if (i < 0) { svg.innerHTML = tag(340, 130, '← 点「下一阶段」看计划演变', '#a8a29e'); return }
+        svg.innerHTML = stages[i][1]()
+        el.querySelector('#ph').textContent = stages[i][0]
+        el.querySelector('#planNote').textContent = stages[i][2]
+      }
+      el.querySelector('#next').onclick = () => { i = Math.min(i + 1, 3); paint() }
+      el.querySelector('#reset').onclick = () => { i = -1; paint() }
+      paint()
 
       const renderPush = () => {
         const on = el.querySelector('#push').checked
         const rows = on
-          ? [['存储层扫描', 12, 'good', '120MB（只读命中分区/数据块）'], ['网络传输', 12, 'good', '120MB'], ['引擎过滤后', 12, 'good', '120MB']]
-          : [['存储层扫描', 100, 'hot', '1GB（全表）'], ['网络传输', 100, 'hot', '1GB'], ['引擎过滤后', 12, '', '120MB（白搬了 880MB）']]
+          ? [['存储层读取', 12, 'good', '<b>120MB</b>（只读命中分区）'], ['网络传输', 12, 'good', '<b>120MB</b>'], ['引擎过滤', 12, 'good', '无需再过滤']]
+          : [['存储层读取', 100, 'hot', '<b>1GB</b>（全表扫描）'], ['网络传输', 100, 'hot', '<b>1GB</b> 搬上网'], ['引擎过滤', 12, 'warn', '过滤掉 88%——白搬了']]
         el.querySelector('#pushBars').innerHTML = rows.map(([n, v, cls, d]) =>
           `<div class="bar-row"><span class="lbl">${n}</span><div class="bar-track"><div class="bar-fill ${cls}" style="width:${v}%"></div></div><span class="bar-val">${d}</span></div>`).join('')
       }
@@ -673,121 +841,195 @@
       renderPush()
     }
 
-    /* ============ 06 Shuffle 与 Join ============ */
+    /* ============ 06 Shuffle 动画 + Join 策略动画 ============ */
     function render06(el) {
       el.innerHTML = `
-        <h2>Shuffle 可视化：数据怎么「搬家」</h2>
-        <p class="lead">3 个 Map 分区 × 6 个 key（颜色区分），点「开始 Shuffle」看 key 按哈希流向 2 个 Reduce 分区。</p>
+        <h2>Shuffle：Spark 最贵的操作，数据怎么「搬家」</h2>
+        <p class="lead">3 个 Map 分区 × 6 种 key（颜色区分），点「开始 Shuffle」：key 先按哈希<b>落进本地磁盘桶</b>，再跨网络飞向目标 Reduce 分区——同色必相聚。</p>
         <div class="toolbar"><button class="primary" id="go">开始 Shuffle</button><button id="reset">重置</button><span class="phase" id="phase"></span></div>
-        <div class="stagebox" id="stage"></div>
+        <div class="stagebox" id="stage" style="height:330px"></div>
 
-        <h4>Join 策略选择器</h4>
-        <div class="slider-row"><span class="name">左表大小 (GB)</span><input type="range" id="lt" min="1" max="500" value="100"><span class="val" id="vlt">100 GB</span></div>
-        <div class="slider-row"><span class="name">右表大小 (MB)</span><input type="range" id="rt" min="1" max="2048" value="8" step="1"><span class="val" id="vrt">8 MB</span></div>
+        <h2 style="margin-top:26px">Join 策略：广播 vs Sort-Merge，差的不是一点</h2>
+        <p class="lead">调右侧表大小，看 Catalyst 会选哪种 Join；点「播放」看两种策略的数据流动差异——数一数各发生几次 Shuffle。</p>
+        <div class="slider-row"><span class="name">左表（事实表）</span><input type="range" id="lt" min="10" max="500" value="100" step="10"><span class="val" id="vlt">100 GB</span></div>
+        <div class="slider-row"><span class="name">右表（维表）</span><input type="range" id="rt" min="1" max="2048" value="8"><span class="val" id="vrt">8 MB</span></div>
+        <div class="toolbar"><button class="primary" id="playJoin">▶ 播放数据流动</button><button id="resetJoin">重置</button></div>
+        <div class="stagebox" id="joinStage" style="height:300px"></div>
         <div class="verdict" id="joinVerdict"></div>
 
         <h4>shuffle.partitions 健康检查</h4>
-        <div class="slider-row"><span class="name">Shuffle 数据量 (GB)</span><input type="range" id="sgb" min="1" max="500" value="50"><span class="val" id="vsgb">50 GB</span></div>
+        <div class="slider-row"><span class="name">Shuffle 数据量</span><input type="range" id="sgb" min="1" max="500" value="50"><span class="val" id="vsgb">50 GB</span></div>
         <div class="slider-row"><span class="name">shuffle.partitions</span><input type="range" id="sp" min="10" max="2000" value="200" step="10"><span class="val" id="vsp">200</span></div>
         <div class="verdict" id="spVerdict"></div>
       `
-      // Shuffle 动画
+      // ---- Shuffle 搬家动画 ----
       const stage = el.querySelector('#stage'), phase = el.querySelector('#phase')
       const colors = ['#e25a1c', '#0369a1', '#15803d', '#7c3aed', '#a16207', '#be185d']
       const chips = []
       function layout() {
         stage.innerHTML = ''
         chips.length = 0
-        // map 分区框
         for (let i = 0; i < 3; i++) {
           const box = document.createElement('div')
-          box.className = 'part-box'; box.style.left = '20px'; box.style.top = `${30 + i * 88}px`; box.style.height = '78px'
+          box.className = 'part-box'
+          box.style.cssText = `left:16px;top:${24 + i * 100}px;height:88px`
           box.innerHTML = `<span class="cap">Map 分区 ${i + 1}</span>`
           stage.appendChild(box)
+          const spill = document.createElement('div')
+          spill.className = 'spill'
+          spill.id = 'spill' + i
+          spill.style.cssText = `left:160px;top:${50 + i * 100}px;opacity:0;transition:opacity .3s`
+          spill.textContent = '💾 本地桶'
+          stage.appendChild(spill)
         }
-        // reduce 分区框
         for (let j = 0; j < 2; j++) {
           const box = document.createElement('div')
-          box.className = 'part-box'; box.style.left = '480px'; box.style.top = `${60 + j * 120}px`; box.style.height = '100px'
-          box.innerHTML = `<span class="cap">Reduce 分区 ${j + 1}</span>`
+          box.className = 'part-box'
+          box.style.cssText = `left:${stage.clientWidth - 170 || 520}px;top:${70 + j * 120}px;height:104px`
+          box.innerHTML = `<span class="cap">Reduce 分区 ${j + 1}<br>（不同机器）</span>`
           stage.appendChild(box)
         }
-        // key chips：每 map 分区 6 个
         for (let i = 0; i < 3; i++) for (let k = 0; k < 6; k++) {
           const c = document.createElement('div')
           c.className = 'keychip'
           c.textContent = 'k' + k
           c.style.background = colors[k]
-          c.style.left = `${30 + (k % 3) * 34}px`
-          c.style.top = `${30 + i * 88 + 22 + Math.floor(k / 3) * 30}px`
+          c.style.left = `${26 + (k % 3) * 34}px`
+          c.style.top = `${24 + i * 100 + 26 + Math.floor(k / 3) * 30}px`
           c.dataset.key = k; c.dataset.map = i
           stage.appendChild(c); chips.push(c)
         }
         phase.textContent = ''
       }
-      el.querySelector('#reset').onclick = layout
+      el.querySelector('#reset').onclick = () => { clearTimers(); layout() }
       el.querySelector('#go').onclick = () => {
-        phase.textContent = '阶段1/3 Shuffle Write：Map 侧按 key 哈希分桶、写本地磁盘…'
-        setTimeout(() => { phase.textContent = '阶段2/3 网络传输：Reduce 拉取属于自己的分片…' }, 800)
-        setTimeout(() => {
+        const rw = stage.clientWidth
+        phase.textContent = '阶段1/3 Shuffle Write：Map 侧按 hash(key)%2 分桶，排序后写本地磁盘（可能 spill）…'
+        chips.forEach(c => { c.style.left = '166px'; c.style.opacity = '.55' })
+        ;[0, 1, 2].forEach(i => later(() => el.querySelector('#spill' + i).style.opacity = '1', 300 + i * 120))
+        later(() => {
+          phase.textContent = '阶段2/3 网络传输：Reduce 端跨机器拉取属于自己的桶……（这就是贵的根源）'
           chips.forEach(c => {
             const k = +c.dataset.key, m = +c.dataset.map
-            const target = k % 2  // hash(key) % 2
-            c.style.left = `${490 + (m % 3) * 34}px`
-            c.style.top = `${60 + target * 120 + 24 + Math.floor(m / 3) * 30 + Math.floor(k / 3) * 0}px`
+            const target = k % 2
+            c.style.opacity = '1'
+            c.style.left = `${rw - 158 + m * 36}px`
+            c.style.top = `${70 + target * 120 + 26 + Math.floor(k / 2) * 28}px`
           })
-        }, 900)
-        setTimeout(() => { phase.textContent = '阶段3/3 Shuffle Read：同 color 的 key 已汇聚到同一 Reduce 分区 ✔' }, 1900)
+        }, 1100)
+        later(() => { phase.textContent = '阶段3/3 Shuffle Read：同色的 key 已汇聚到同一 Reduce 分区 ✔ 代价 = 磁盘 ×2 + 网络 ×1 + 序列化' }, 2300)
       }
       layout()
 
-      // Join 策略
-      const joinCalc = () => {
-        const l = +el.querySelector('#lt').value, r = +el.querySelector('#rt').value
-        el.querySelector('#vlt').textContent = l + ' GB'
+      // ---- Join 策略动画 ----
+      const jStage = el.querySelector('#joinStage')
+      const jv = el.querySelector('#joinVerdict')
+      function joinLayout() {
+        jStage.innerHTML = `
+          ${[0, 1, 2].map(i => `
+            <div class="actor" id="jexec${i}" style="left:${30 + i * 220}px;top:150px;width:170px">
+              <span class="cap">Executor ${i + 1}</span>
+              <div style="font-family:ui-monospace,Menlo,monospace;font-size:.72rem;background:rgba(3,105,161,.12);border-radius:6px;padding:4px 6px">左表分区 L${i + 1}（33GB）</div>
+              <div class="rslot" style="margin-top:4px"></div>
+            </div>`).join('')}
+          <div class="actor" id="rtab" style="left:330px;top:16px;width:150px;text-align:center">
+            <span class="cap">右表（维表）</span><b id="rtSize" style="color:var(--brand)"></b>
+          </div>
+          <div id="shuffleZone" style="position:absolute;left:30px;top:70px;right:30px;height:56px;border:2px dashed var(--fail);border-radius:10px;display:none;text-align:center;font-size:.75rem;color:var(--fail);font-weight:700;padding-top:18px">Shuffle 区：两表按 key 重新分发（全量 ×2）</div>
+        `
+      }
+      function joinInfo() {
+        const r = +el.querySelector('#rt').value
         el.querySelector('#vrt').textContent = r + ' MB'
-        const v = el.querySelector('#joinVerdict')
-        const threshold = 10  // 默认 autoBroadcastJoinThreshold=10MB
-        if (r <= threshold) {
-          v.className = 'verdict ok'
-          v.innerHTML = `<b>Broadcast Hash Join</b> ✔ 右表 ${r}MB ≤ 阈值 10MB，自动广播到每个 Executor，与大表本地 Join——<b>零 Shuffle</b>，最优解。`
-        } else if (r <= 200) {
-          v.className = 'verdict warn'
-          v.innerHTML = `<b>建议手动广播</b>：右表 ${r}MB 超过默认阈值 10MB，但仍远小于左表。可 <code>df.join(F.broadcast(small), "k")</code> 或调大 <code>spark.sql.autoBroadcastJoinThreshold</code>，消灭 Shuffle。`
+        el.querySelector('#vlt').textContent = el.querySelector('#lt').value + ' GB'
+        const bc = r <= 10
+        jv.className = 'verdict ' + (bc ? 'ok' : r <= 200 ? 'warn' : 'bad')
+        jv.innerHTML = bc
+          ? `<b>Broadcast Hash Join</b>：右表 ${r}MB ≤ 阈值 10MB，复制到每个 Executor 本地 Join——<b>Shuffle 0 次</b>。点播放看。`
+          : r <= 200
+            ? `<b>仍可手动广播</b>：${r}MB 超默认阈值但远小于左表。<code>df.join(F.broadcast(small), "k")</code> 可强制广播，消灭 Shuffle。下面按 Sort-Merge 演示兜底路径。`
+            : `<b>Sort Merge Join</b>：右表 ${r}MB 太大，广播有 OOM 风险——两表都要按 key 全量 Shuffle 再排序归并，<b>Shuffle 2 次</b>。`
+        return bc
+      }
+      function joinReset() { clearTimers(); joinLayout(); const bc = joinInfo(); el.querySelector('#rtSize').textContent = el.querySelector('#rt').value + ' MB' }
+      el.querySelector('#playJoin').onclick = () => {
+        joinReset()
+        const r = +el.querySelector('#rt').value
+        const bc = r <= 10 || r <= 200 && true // ≤200MB 演示广播（提示手动）
+        const rt = jStage.querySelector('#rtab')
+        const rr = rt.getBoundingClientRect(), sr = jStage.getBoundingClientRect()
+        if (bc) {
+          later(() => el.querySelector('#shuffleZone').style.display = 'none', 0)
+          for (let i = 0; i < 3; i++) {
+            const exec = jStage.querySelector('#jexec' + i)
+            const er = exec.getBoundingClientRect()
+            const copy = document.createElement('div')
+            copy.className = 'taskblock'
+            copy.style.cssText = `background:var(--brand);width:20px;height:20px;left:${rr.left - sr.left + 60}px;top:${rr.top - sr.top + 10}px;border-radius:5px`
+            jStage.appendChild(copy)
+            later(() => {
+              copy.style.left = (er.left - sr.left + 70) + 'px'
+              copy.style.top = (er.top - sr.top + 46) + 'px'
+            }, 150 + i * 150)
+            later(() => {
+              copy.remove()
+              exec.querySelector('.rslot').innerHTML = `<div style="font-size:.72rem;border-radius:6px;padding:3px 6px;background:rgba(226,90,28,.15)">+ 右表副本 → 本地 Join ✔</div>`
+            }, 1050 + i * 150)
+          }
+          later(() => { jv.className = 'verdict ok'; jv.innerHTML = '<b>Broadcast：Shuffle 0 次。</b>右表复制 3 份（各 8MB），左表原地不动，每个分区独立 Join——网络传输只有 24MB。' }, 2400)
         } else {
-          v.className = 'verdict bad'
-          v.innerHTML = `<b>Sort Merge Join</b>：右表 ${r}MB 太大，广播有 OOM 风险。双侧各 Shuffle 一次再排序归并——注意检查倾斜（见第 08 章）。`
+          later(() => {
+            el.querySelector('#shuffleZone').style.display = 'block'
+            // 左表块 + 右表块都飞向 Shuffle 区
+            const mkFly = (fromEl, delay, color) => {
+              const fr = fromEl.getBoundingClientRect(), sr2 = jStage.getBoundingClientRect()
+              const p = document.createElement('div')
+              p.className = 'taskblock'
+              p.style.cssText = `background:${color};width:18px;height:18px;left:${fr.left - sr2.left + 70}px;top:${fr.top - sr2.top}px;border-radius:5px`
+              jStage.appendChild(p)
+              later(() => { p.style.top = '86px'; p.style.left = (fr.left - sr2.left + 40 + Math.random() * 60) + 'px' }, delay)
+              later(() => p.remove(), delay + 1500)
+            }
+            ;[0, 1, 2].forEach(i => mkFly(jStage.querySelector('#jexec' + i), i * 200, '#0369a1'))
+            mkFly(rt, 700, '#e25a1c')
+            later(() => {
+              jv.className = 'verdict bad'
+              jv.innerHTML = `<b>Sort-Merge：Shuffle 2 次。</b>左表 100GB 全量上网重分区 + 右表也重分区，再排序归并。网络传输 ≈ 100GB+，还有磁盘 spill。大表 Join 大表前，先确认能不能过滤/预聚合把一边变小。`
+            }, 2600)
+          }, 100)
         }
       }
-      el.querySelector('#lt').oninput = joinCalc
-      el.querySelector('#rt').oninput = joinCalc
-      joinCalc()
+      el.querySelector('#resetJoin').onclick = joinReset
+      el.querySelector('#lt').oninput = joinReset
+      el.querySelector('#rt').oninput = joinReset
+      joinReset()
 
-      // shuffle.partitions 检查
+      // ---- 分区健康检查 ----
       const spCalc = () => {
         const gb = +el.querySelector('#sgb').value, p = +el.querySelector('#sp').value
         el.querySelector('#vsgb').textContent = gb + ' GB'
         el.querySelector('#vsp').textContent = p
         const per = gb * 1024 / p
         const v = el.querySelector('#spVerdict')
-        if (per < 30) { v.className = 'verdict warn'; v.innerHTML = `单 Task ≈ <b>${per.toFixed(0)}MB</b>：分区过多 → Task 调度开销大 + 大量小文件。可减小分区数或开 AQE 自动合并。` }
+        if (per < 30) { v.className = 'verdict warn'; v.innerHTML = `单 Task ≈ <b>${per.toFixed(0)}MB</b>：分区过多 → 调度开销大、小文件多。减分区或开 AQE 自动合并。` }
         else if (per <= 300) { v.className = 'verdict ok'; v.innerHTML = `单 Task ≈ <b>${per.toFixed(0)}MB</b>：健康区间（经验 100~200MB 最佳）。` }
-        else { v.className = 'verdict bad'; v.innerHTML = `单 Task ≈ <b>${per.toFixed(0)}MB</b>：分区过少 → 单 Task 压力太大，慢且易 OOM/spill。调大 shuffle.partitions。` }
+        else { v.className = 'verdict bad'; v.innerHTML = `单 Task ≈ <b>${per.toFixed(0)}MB</b>：分区过少 → 单 Task 太重，慢且易 OOM/spill。调大 spark.sql.shuffle.partitions。` }
       }
       el.querySelector('#sgb').oninput = spCalc
       el.querySelector('#sp').oninput = spCalc
       spCalc()
     }
 
-    /* ============ 07 部署与资源 ============ */
+    /* ============ 07 资源装箱可视化 ============ */
     function render07(el) {
+      const NODE_CORES = 16, NODE_MEM = 64
       el.innerHTML = `
-        <h2>资源计算器：Executor 怎么配</h2>
-        <p class="lead">拖动滑块，实时计算总并发、总内存与 YARN 实际申请量，并给出配置体检。</p>
-        <div class="slider-row"><span class="name">num-executors</span><input type="range" id="ne" min="1" max="100" value="20"><span class="val" id="vne">20</span></div>
+        <h2>资源装箱：你的 Executor 配置真的能用起来吗？</h2>
+        <p class="lead">集群有 3 个 Worker 节点（各 <b>16 核 / 64GB</b>）。拖动滑块配置 Executor，看它们如何被「装进」节点——装不下的排队等待，缝隙就是浪费。</p>
+        <div class="slider-row"><span class="name">num-executors</span><input type="range" id="ne" min="1" max="24" value="9"><span class="val" id="vne">9</span></div>
         <div class="slider-row"><span class="name">executor-cores</span><input type="range" id="ec" min="1" max="16" value="4"><span class="val" id="vec">4</span></div>
-        <div class="slider-row"><span class="name">executor-memory (GB)</span><input type="range" id="em" min="1" max="48" value="8"><span class="val" id="vem">8 GB</span></div>
-        <div class="kv" id="resOut"></div>
+        <div class="slider-row"><span class="name">executor-memory (GB)</span><input type="range" id="em" min="1" max="64" value="16"><span class="val" id="vem">16 GB</span></div>
+        <div class="workers" id="workers"></div>
         <div class="verdict" id="resVerdict"></div>
         <h4>单个 Executor 的内存结构</h4>
         <div class="slider-row"><span class="name">spark.memory.fraction</span><input type="range" id="mf" min="30" max="80" value="60"><span class="val" id="vmf">0.60</span></div>
@@ -796,27 +1038,40 @@
         <h4>spark-submit 模板（随滑块联动）</h4>
         <div class="code" id="submitTpl"></div>
       `
-      const calc = () => {
-        const ne = +el.querySelector('#ne').value, ec = +el.querySelector('#ec').value, em = +el.querySelector('#em').value
-        el.querySelector('#vne').textContent = ne
-        el.querySelector('#vec').textContent = ec
-        el.querySelector('#vem').textContent = em + ' GB'
-        const overhead = Math.max(0.384, em * 0.1).toFixed(1)
-        const ask = (em + +overhead).toFixed(1)
-        el.querySelector('#resOut').innerHTML =
-          `总并发 Task 线程 = ${ne} × ${ec} = <b>${ne * ec}</b><br>` +
-          `总堆内存 = ${ne} × ${em}G = <b>${ne * em} GB</b><br>` +
-          `YARN 单容器申请 = ${em}G 堆 + ${overhead}G overhead = <b>${ask} GB</b>`
+      const $ = s => el.querySelector(s)
+      function pack() {
+        const ne = +$('#ne').value, ec = +$('#ec').value, em = +$('#em').value
+        $('#vne').textContent = ne; $('#vec').textContent = ec; $('#vem').textContent = em + ' GB'
+        const overhead = Math.max(0.384, em * 0.1)
+        const askMem = em + overhead // YARN 实际申请
+        // 装箱：顺序填充
+        const nodes = Array.from({ length: 3 }, () => ({ cores: NODE_CORES, mem: NODE_MEM, list: [] }))
+        let waiting = 0
+        for (let i = 0; i < ne; i++) {
+          const node = nodes.find(n => n.cores >= ec && n.mem >= askMem)
+          if (node) { node.cores -= ec; node.mem -= askMem; node.list.push(i) }
+          else waiting++
+        }
+        $('#workers').innerHTML = nodes.map((n, i) => `
+          <div class="worker">
+            <span class="cap">Worker ${i + 1}（16 核 / 64G）</span>
+            <div>${n.list.map(() => `<span class="exec-tile">${ec}c · ${em}G</span>`).join('')}
+            ${Array.from({ length: waiting }).filter((_, k) => i === 0).map(() => '').join('')}</div>
+            <span class="free">剩余 ${n.cores} 核 / ${n.mem.toFixed(1)}G${n.cores > 0 && (n.cores < ec || n.mem < askMem) ? ' ⚠ 碎片' : ''}</span>
+          </div>`).join('') + (waiting ? `<div class="worker" style="border-style:dashed"><span class="cap" style="color:var(--fail)">等待队列</span>${Array.from({ length: waiting }).map(() => `<span class="exec-tile wait">${ec}c · ${em}G</span>`).join('')}<span class="free" style="color:var(--fail)">集群放不下，排队中</span></div>` : '')
 
         const probs = []
-        if (ec > 6) probs.push(`executor-cores=${ec} 偏大：同节点 HDFS/网络吞吐争抢，建议 4~6`)
-        if (em > 32) probs.push(`executor-memory=${em}G 超过 32G：JVM 大堆 GC 收益递减，建议拆多 Executor`)
-        if (ne * ec < 40) probs.push(`总并发 ${ne * ec} 偏低：大作业可能吃不饱集群`)
-        const v = el.querySelector('#resVerdict')
+        if (ec > 6) probs.push(`executor-cores=${ec} 偏大：单 Executor 内线程争抢 HDFS/网络吞吐，建议 4~6`)
+        if (em > 32) probs.push(`executor-memory=${em}G 超 32G：大堆 GC 收益递减，建议拆成多个小 Executor`)
+        if (waiting) probs.push(`${waiting} 个 Executor 装不进集群：单个要 ${ec}c/${askMem.toFixed(1)}G（含 overhead），要么调小要么扩容`)
+        const frag = nodes.filter(n => n.cores > 0 && (n.cores < ec || n.mem < askMem)).length
+        if (frag && !waiting) probs.push(`${frag} 个节点有装不下的碎片资源被闲置`)
+        if (ne * ec < 12 && !probs.length) probs.push(`总并发 ${ne * ec} 核偏低：大作业可能吃不饱集群`)
+        const v = $('#resVerdict')
         if (probs.length) { v.className = 'verdict warn'; v.innerHTML = '体检建议：<br>· ' + probs.join('<br>· ') }
-        else { v.className = 'verdict ok'; v.innerHTML = '配置健康 ✔（经验：4~6 核、8~16G、Executor 数量随数据量伸缩）' }
+        else { v.className = 'verdict ok'; v.innerHTML = `配置健康 ✔ 总并发 <b>${ne * ec}</b> 核，总堆内存 <b>${ne * em} GB</b>（经验甜点：4~6 核、8~16G，数量随数据量伸缩）` }
 
-        el.querySelector('#submitTpl').textContent =
+        $('#submitTpl').textContent =
 `spark-submit \\
   --master yarn --deploy-mode cluster \\
   --num-executors ${ne} \\
@@ -827,201 +1082,201 @@
   --conf spark.serializer=org.apache.spark.serializer.KryoSerializer \\
   main.py --dt \${bizdate}`
 
-        // 内存结构条
-        const mf = +el.querySelector('#mf').value
-        el.querySelector('#vmf').textContent = (mf / 100).toFixed(2)
-        const unified = mf, user = 100 - mf
-        const exec = unified / 2, storage = unified / 2
-        el.querySelector('#membar').innerHTML =
-          `<div class="memseg" style="width:${exec}%;background:#0369a1">Execution ${exec}%</div>` +
-          `<div class="memseg" style="width:${storage}%;background:#15803d">Storage ${storage}%</div>` +
+        const mf = +$('#mf').value
+        $('#vmf').textContent = (mf / 100).toFixed(2)
+        const unified = mf, user = 100 - mf, half = unified / 2
+        $('#membar').innerHTML =
+          `<div class="memseg" style="width:${half}%;background:#0369a1">Execution ${half}%</div>` +
+          `<div class="memseg" style="width:${half}%;background:#15803d">Storage ${half}%</div>` +
           `<div class="memseg" style="width:${user}%;background:#6b645d">User ${user}%</div>`
       }
-      ;['ne', 'ec', 'em', 'mf'].forEach(i => el.querySelector('#' + i).oninput = calc)
-      calc()
+      ;['ne', 'ec', 'em', 'mf'].forEach(i => $('#' + i).oninput = pack)
+      pack()
     }
 
-    /* ============ 08 性能调优 ============ */
+    /* ============ 08 倾斜甘特图 + 小文件 ============ */
     function render08(el) {
       el.innerHTML = `
-        <h2>数据倾斜模拟器</h2>
-        <p class="lead">拖动「倾斜因子」制造热点 key，观察 Task 耗时分布；再点「加盐」看两阶段聚合如何把负载打散。</p>
+        <h2>数据倾斜：为什么 99% 的 Task 在等 1 个 Task？</h2>
+        <p class="lead">拖「倾斜因子」制造热点 key，看 10 个 Task 的耗时分布；再点「加盐」重放——两阶段聚合如何把热点打散。<b>Job 的总耗时由最慢的那个 Task 决定。</b></p>
         <div class="slider-row"><span class="name">倾斜因子（热点 key 占比）</span><input type="range" id="skew" min="0" max="90" value="70"><span class="val" id="vskew">70%</span></div>
-        <div class="toolbar"><button class="primary" id="salt">应用「加盐」两阶段聚合</button><button id="resetSkew">重置</button></div>
-        <div id="skewBars"></div>
+        <div class="toolbar"><button class="primary" id="salt">▶ 重放：加盐两阶段聚合</button><button id="resetSkew">重置</button></div>
+        <div class="gantt" id="skewGantt"></div>
         <div class="verdict" id="skewVerdict"></div>
 
         <h4>小文件生成器</h4>
-        <div class="slider-row"><span class="name">写出数据量 (GB)</span><input type="range" id="ogb" min="1" max="100" value="10"><span class="val" id="vogb">10 GB</span></div>
+        <div class="slider-row"><span class="name">写出数据量</span><input type="range" id="ogb" min="1" max="100" value="10"><span class="val" id="vogb">10 GB</span></div>
         <div class="slider-row"><span class="name">写出分区数（Task 数）</span><input type="range" id="op" min="1" max="2000" value="200"><span class="val" id="vop">200</span></div>
         <div class="verdict" id="fileVerdict"></div>
-
-        <h4>反模式速查（点击翻面）</h4>
-        <div class="grid3" id="anti"></div>
       `
-      // 倾斜
-      const nTasks = 10
-      const drawSkew = (salted) => {
+      const N = 10
+      const gantt = el.querySelector('#gantt') || el.querySelector('#skewGantt')
+      const SCALE = 120 // 满负载 = 120 min
+      function rows(shares, labelFn) {
+        return shares.map((s, i) => {
+          const t = Math.round(s * SCALE)
+          const hot = s * N > 2.5
+          return `<div class="gantt-row"><span class="gantt-lbl">${labelFn(i)}</span><div class="gantt-track"><div class="gantt-fill" style="width:0;left:0;background:${hot ? 'var(--fail)' : 'var(--ok)'}" data-w="${s}"></div></div><span class="bar-val">${t} min</span></div>`
+        }).join('')
+      }
+      function animateIn() {
+        const max = +([...gantt.querySelectorAll('.gantt-fill')].map(f => f.dataset.w).sort((a, b) => b - a)[0] || 1)
+        gantt.querySelectorAll('.gantt-fill').forEach((f, i) => {
+          later(() => { f.style.width = (f.dataset.w / max * 100) + '%' }, 80 + i * 40)
+        })
+        return max
+      }
+      function drawSkew(salted) {
         const skew = +el.querySelector('#skew').value
         el.querySelector('#vskew').textContent = skew + '%'
-        let shares
-        if (!salted) {
-          const hot = skew / 100, rest = (1 - hot) / (nTasks - 1)
-          shares = [hot, ...Array(nTasks - 1).fill(rest)]
-        } else {
-          // 加盐后热点被拆到全部 Task，整体略增（多一次 Shuffle 的代价）
-          const hot = skew / 100 / nTasks, rest = (1 - skew / 100) / (nTasks - 1) * 0.95
-          shares = Array(nTasks).fill(0).map((_, i) => i < nTasks - 1 ? rest + hot : hot + rest * 0.5)
-        }
-        const max = Math.max(...shares)
-        el.querySelector('#skewBars').innerHTML = shares.map((s, i) => {
-          const t = Math.round(s * 120)  // 模拟分钟数
-          const cls = (!salted && i === 0 && s > 2 * (1 - shares[0]) / (nTasks - 1)) ? 'hot' : 'good'
-          return `<div class="bar-row"><span class="lbl">Task ${i}</span><div class="bar-track"><div class="bar-fill ${cls}" style="width:${s / max * 100}%"></div></div><span class="bar-val">${t} min</span></div>`
-        }).join('')
         const v = el.querySelector('#skewVerdict')
         if (!salted) {
-          const hotT = Math.round(shares[0] * 120), otherT = Math.round(shares[1] * 120)
-          if (skew >= 30) { v.className = 'verdict bad'; v.innerHTML = `倾斜中：Task 0 需 <b>${hotT} min</b>，其余仅 ${otherT} min——99% Task 在等 1 个热点。总耗时被最长的 Task 决定。` }
-          else { v.className = 'verdict ok'; v.innerHTML = '分布基本均匀，无需处理。' }
+          const hot = skew / 100, rest = (1 - hot) / (N - 1)
+          const shares = [hot, ...Array(N - 1).fill(rest)]
+          gantt.innerHTML = `<div style="font-size:.72rem;color:var(--muted);font-weight:700;margin-bottom:4px">单阶段聚合（groupBy 直接 Shuffle）</div>` + rows(shares, i => 'Task ' + i)
+          const max = animateIn()
+          const total = Math.round(max * SCALE), other = Math.round(rest * SCALE)
+          if (skew >= 30) { v.className = 'verdict bad'; v.innerHTML = `倾斜中：Task 0 扛走 ${skew}% 数据，需 <b>${total} min</b>；其余 Task 仅 ${other} min——它们早早跑完，集群空转等你。<b>Job 总耗时 = ${total} min</b>。` }
+          else { v.className = 'verdict ok'; v.innerHTML = `分布基本均匀，Job 总耗时 ≈ ${total} min，无需处理。` }
         } else {
+          const hot = skew / 100 / N
+          const rest = (1 - skew / 100) / N
+          const phA = Array(N).fill(0).map(() => rest + hot)
+          const phB = Array(N).fill(0).map((_, i) => 0.06 + (i === 0 ? 0.02 : 0))
+          const maxA = Math.max(...phA), maxB = Math.max(...phB)
+          gantt.innerHTML =
+            `<div style="font-size:.72rem;color:var(--run);font-weight:700;margin-bottom:4px">阶段 A：热点 key 加随机前缀（拆成 10 份）→ 预聚合</div>` +
+            rows(phA, i => 'Task A' + i) +
+            `<div style="border-top:2px dashed var(--fail);margin:8px 0 2px;font-size:.72rem;color:var(--fail);font-weight:700">Shuffle（代价：多这一次）</div>` +
+            `<div style="font-size:.72rem;color:var(--run);font-weight:700;margin:4px 0">阶段 B：去掉前缀，二次聚合</div>` +
+            rows(phB, i => 'Task B' + i)
+          const maxWall = Math.max(maxA, maxB)
+          // 宽度统一按墙钟归一
+          gantt.querySelectorAll('.gantt-fill').forEach((f, i) => {
+            later(() => { f.style.width = (f.dataset.w / maxWall * 100) + '%' }, 80 + i * 30)
+          })
+          const oldTotal = Math.round(skew / 100 * SCALE)
+          const newTotal = Math.round((maxA + maxB) * SCALE)
           v.className = 'verdict ok'
-          v.innerHTML = `加盐后：热点 key 被拆成 10 份并行处理，负载均衡 ✔。代价：多一次 Shuffle + 需二次聚合去盐。AQE 的 skewJoin 可自动完成类似拆分。`
+          v.innerHTML = `加盐后：热点被拆到 ${N} 个 Task 并行，<b>Job 总耗时 ${oldTotal} → ${newTotal} min</b>。代价：多一次 Shuffle + 代码多一步去盐。Spark 3.x 可开 <code>spark.sql.adaptive.skewJoin.enabled</code> 让 AQE 自动做类似拆分。`
         }
       }
-      el.querySelector('#skew').oninput = () => drawSkew(false)
-      el.querySelector('#salt').onclick = () => drawSkew(true)
-      el.querySelector('#resetSkew').onclick = () => drawSkew(false)
+      el.querySelector('#skew').oninput = () => { clearTimers(); drawSkew(false) }
+      el.querySelector('#salt').onclick = () => { clearTimers(); drawSkew(true) }
+      el.querySelector('#resetSkew').onclick = () => { clearTimers(); drawSkew(false) }
       drawSkew(false)
 
-      // 小文件
       const fileCalc = () => {
         const gb = +el.querySelector('#ogb').value, p = +el.querySelector('#op').value
         el.querySelector('#vogb').textContent = gb + ' GB'
         el.querySelector('#vop').textContent = p
         const per = gb * 1024 / p
         const v = el.querySelector('#fileVerdict')
-        if (per < 32) { v.className = 'verdict bad'; v.innerHTML = `<b>${p} 个文件 × ${per.toFixed(1)}MB</b>：小文件灾难！NameNode 压力大、下游查询慢。解法：写出前 <code>repartition(N)</code> 或开 AQE 合并。` }
+        if (per < 32) { v.className = 'verdict bad'; v.innerHTML = `<b>${p} 个文件 × ${per.toFixed(1)}MB</b>：小文件灾难！NameNode 元数据爆炸、下游查询要打开 ${p} 次文件。解法：写出前 <code>repartition(N)</code> 或开 AQE 合并。` }
         else if (per <= 512) { v.className = 'verdict ok'; v.innerHTML = `<b>${p} 个文件 × ${per.toFixed(0)}MB</b>：健康（128~256MB/文件最省心）。` }
         else { v.className = 'verdict warn'; v.innerHTML = `<b>${p} 个文件 × ${per.toFixed(0)}MB</b>：单文件偏大，读取并行度可能不足。` }
       }
       el.querySelector('#ogb').oninput = fileCalc
       el.querySelector('#op').oninput = fileCalc
       fileCalc()
-
-      // 反模式卡片
-      const antis = [
-        ['count() 后再 write', 'count 触发一次全量计算，write 又触发一次。', '→ 只 write；或先 cache 再 count'],
-        ['collect() 大表', '全量拉回 Driver，必 OOM。', '→ limit 后再 toPandas / collect'],
-        ['groupByKey 后 sum', '全量 Shuffle，无 map 端预聚合。', '→ reduceByKey / groupBy().agg()'],
-        ['普通 Python UDF', '每行 JVM↔Python 序列化，慢 30×。', '→ 内置函数 / pandas_udf'],
-        ['repartition(1) 出单文件', '单 Task 瓶颈，集群空转。', '→ 接受多文件，下游再合并'],
-        ['默认 200 分区跑百 GB', '单 Task 数 GB，慢且 spill。', '→ 调大 shuffle.partitions 或 AQE'],
-      ]
-      const antiBox = el.querySelector('#anti')
-      antis.forEach(([t, bad, fix]) => {
-        const c = document.createElement('div')
-        c.className = 'card click'
-        c.innerHTML = `<h3>${t}</h3><ul><li>${bad}</li></ul>`
-        let flipped = false
-        c.onclick = () => {
-          flipped = !flipped
-          c.innerHTML = flipped ? `<h3>${t}</h3><ul><li style="color:var(--ok)">${fix}</li></ul>` : `<h3>${t}</h3><ul><li>${bad}</li></ul>`
-        }
-        antiBox.appendChild(c)
-      })
     }
 
-    /* ============ 09 Structured Streaming ============ */
+    /* ============ 09 Watermark 模拟器（自动播放） ============ */
     function render09(el) {
       el.innerHTML = `
-        <h2>Watermark 模拟器</h2>
-        <p class="lead">事件按「事件时间」落在 5 分钟窗口里；Watermark = 已见最大事件时间 − 10 分钟。点「推进」模拟数据到达，看窗口何时输出、迟到数据何去何从。</p>
-        <div class="toolbar"><button class="primary" id="adv">推进（新到一批事件）</button><button id="reset">重置</button><span class="phase" id="wmInfo"></span></div>
+        <h2>Watermark：流处理怎么处理「迟到的数据」？</h2>
+        <p class="lead">事件按「事件时间」落进 5 分钟窗口；Watermark = 已见最大事件时间 − 10 分钟，<b>是引擎对「数据大概到齐了」的估计</b>。点推进或自动播放，看窗口何时输出、迟到数据的两种命运。</p>
+        <div class="toolbar"><button class="primary" id="adv">推进一批</button><button id="auto">▶ 自动播放</button><button id="reset">重置</button><span class="phase" id="wmInfo"></span></div>
         <div class="timeline" id="tl"></div>
         <div class="win-grid" id="wins"></div>
-        <div class="detail" id="wmDetail" style="min-height:2.6em">窗口在 watermark 越过其结束时间后才输出；迟于 watermark 的数据被丢弃（红色）。</div>
+        <div class="verdict info" id="wmDetail">窗口在 Watermark 越过其结束时间后才输出；比 Watermark 还迟到的数据被丢弃（红点）。</div>
 
-        <h4>输出模式 × 查询类型（点击格子）</h4>
-        <table class="matrix" id="mx" style="margin-top:8px">
+        <h4>输出模式 × 查询类型（点击格子看原因）</h4>
+        <table class="matrix" id="mx">
           <tr><th></th><th>append</th><th>update</th><th>complete</th></tr>
         </table>
-        <div class="detail" id="mxDetail" style="min-height:2.6em">点击矩阵格子查看原因。</div>
+        <div class="verdict info" id="mxDetail">点击矩阵格子查看为什么。</div>
       `
-      // watermark 模拟
-      const W = 5            // 窗口 5 分钟
-      const LAG = 10         // watermark 延迟
-      const MAXT = 30
-      // 预置事件：{et: 事件时间, batch: 第几批到达}
+      const W = 5, LAG = 10, MAXT = 30
       const events = [
         { et: 2, b: 1 }, { et: 4, b: 1 }, { et: 7, b: 1 },
         { et: 9, b: 2 }, { et: 12, b: 2 }, { et: 15, b: 2 },
-        { et: 6, b: 3, late: true },   // 迟到但 watermark 还没过 10，仍可接收
+        { et: 6, b: 3, late: true },   // 迟到但 watermark 未越过其窗口 → 仍接收
         { et: 17, b: 3 }, { et: 19, b: 3 }, { et: 22, b: 3 },
-        { et: 8, b: 4, late: true },   // 严重迟到，将被丢弃
+        { et: 8, b: 4, late: true },   // 严重迟到 → 丢弃
         { et: 24, b: 4 }, { et: 27, b: 4 },
       ]
-      let batch = 0
+      let batch = 0, autoTimer = null
       const tl = el.querySelector('#tl'), wins = el.querySelector('#wins'), info = el.querySelector('#wmInfo')
-      const x = (t) => 20 + (t / MAXT) * (tl.clientWidth - 40)
+      const x = (t) => 20 + (t / MAXT) * ((tl.clientWidth || 800) - 40)
       function draw() {
         const arrived = events.filter(e => e.b <= batch)
         const maxEt = arrived.length ? Math.max(...arrived.map(e => e.et)) : 0
         const wm = Math.max(0, maxEt - LAG)
-        info.textContent = batch ? `已到达 ${arrived.length} 条 · 最大事件时间 ${maxEt} 分 · Watermark = ${Math.max(0, wm)} 分` : ''
+        info.textContent = batch ? `已到达 ${arrived.length} 条 · 最大事件时间 ${maxEt} 分 · Watermark = ${wm} 分` : ''
         let dots = ''
         arrived.forEach(e => {
           const dropped = e.et < wm && e.late
           const cls = dropped ? 'late' : (e.et < wm ? 'done' : '')
-          const title = dropped ? '迟到丢弃' : '已接收'
-          dots += `<div class="ev ${cls}" style="left:${x(e.et)}px" title="et=${e.et} ${title}"></div>`
+          dots += `<div class="ev ${cls}" style="left:${x(e.et)}px" title="事件时间=${e.et}分 ${dropped ? '迟到丢弃' : '已接收'}"></div>`
         })
         tl.innerHTML = `<div class="tl-axis"></div>` +
-          [0, 5, 10, 15, 20, 25, 30].map(t => `<span class="tl-tick" style="left:${x(t)}px">${t}</span>`).join('') +
+          [0, 5, 10, 15, 20, 25, 30].map(t => `<span class="tl-tick" style="left:${x(t)}px">${t}分</span>`).join('') +
           dots +
-          (batch ? `<div class="wm-line" style="left:${x(wm)}px"><span class="wm-tag">WM ${Math.max(0, wm)}</span></div>` : '')
-        // 窗口格子
-        let cells = ''
+          (batch ? `<div class="wm-line" style="left:${x(wm)}px"><span class="wm-tag">WM ${wm}</span></div>` : '')
+        let cells = '', openCnt = 0
         for (let s = 0; s < MAXT; s += W) {
           const end = s + W
           const inWin = arrived.filter(e => e.et >= s && e.et < end && !(e.et < wm && e.late))
           const closed = batch > 0 && end <= wm
+          if (!closed && batch > 0 && inWin.length) openCnt++
           cells += `<div class="win-cell ${closed ? 'closed' : (batch ? 'open' : '')}">[${s}-${end})<br>${closed ? '已输出: ' + inWin.length : (batch ? '计数中: ' + inWin.length : '—')}</div>`
         }
         wins.innerHTML = cells
+        const detail = el.querySelector('#wmDetail')
+        if (batch === 3) detail.innerHTML = '注意：<b>事件时间=6 的事件迟到了</b>，但 Watermark（12）还没越过窗口 [5-10) 的结束时间 10 → <b>仍被接收</b>，窗口继续计数。'
+        else if (batch === 4) detail.innerHTML = '注意：<b>事件时间=8 的事件严重迟到</b>，Watermark（17）已越过窗口 [5-10) → <b>被丢弃（红点）</b>。窗口已关闭输出，状态被清理，内存释放。'
+        else if (batch) detail.innerHTML = `状态中维护的窗口数 ≈ ${openCnt || 1} 个；窗口一关闭，状态立即清理——这就是 Watermark 的第二个作用：<b>防止状态无限膨胀</b>。`
       }
       el.querySelector('#adv').onclick = () => { if (batch < 4) { batch++; draw() } }
-      el.querySelector('#reset').onclick = () => { batch = 0; draw() }
+      el.querySelector('#auto').onclick = (e) => {
+        if (autoTimer) { clearInterval(autoTimer); autoTimer = null; e.target.textContent = '▶ 自动播放'; return }
+        e.target.textContent = '⏸ 暂停'
+        autoTimer = setInterval(() => {
+          if (batch >= 4) { clearInterval(autoTimer); autoTimer = null; el.querySelector('#auto').textContent = '▶ 自动播放'; return }
+          batch++; draw()
+        }, 1100)
+        timers.push(autoTimer)
+      }
+      el.querySelector('#reset').onclick = () => { batch = 0; if (autoTimer) { clearInterval(autoTimer); autoTimer = null; el.querySelector('#auto').textContent = '▶ 自动播放' } draw() }
       draw()
-      setTimeout(draw, 100)  // 等容器有宽度后重绘
+      later(draw, 120)
 
-      // 输出模式矩阵
       const rows = [
-        ['无聚合（map/filter）', { append: '✔ 默认。每来一条出一条，不再变化。', update: '可用但无意义（没有可更新的结果）。', complete: '❌ 不允许：全量结果表无限增长。' }],
+        ['无聚合（map/filter）', { append: '✔ 默认。每来一条出一条，结果不再变化。', update: '可用但无意义（没有可更新的结果）。', complete: '❌ 不允许：全量结果表无限增长。' }],
         ['聚合 + watermark 窗口', { append: '✔ 窗口关闭后才输出，输出即不再变。', update: '✔ 窗口未关时持续更新计数。', complete: '✔ 每批输出全部窗口（适合小结果集）。' }],
-        ['聚合但无 watermark', { append: '❌ 不允许：旧 key 的结果随时会变，违背 append 语义。', update: '✔ 只输出有变化的 key。', complete: '✔ 每批输出全量结果表。' }],
+        ['聚合但无 watermark', { append: '❌ 不允许：旧 key 的结果随时会变，违背 append 语义。', update: '✔ 只输出有变化的 key。', complete: '✔ 每批输出全量结果表（状态无限膨胀风险）。' }],
       ]
       const mx = el.querySelector('#mx')
       rows.forEach(([q, m]) => {
         const tr = document.createElement('tr')
         tr.innerHTML = `<th style="text-align:left">${q}</th>` + ['append', 'update', 'complete'].map(k => `<td class="cell" data-t="${m[k]}">${m[k].slice(0, 1)}</td>`).join('')
-        tr.querySelectorAll('.cell').forEach(td => td.onclick = () => el.querySelector('#mxDetail').textContent = td.dataset.t)
+        tr.querySelectorAll('.cell').forEach(td => td.onclick = () => {
+          el.querySelector('#mxDetail').className = 'verdict ' + (td.dataset.t.startsWith('❌') ? 'bad' : 'ok')
+          el.querySelector('#mxDetail').textContent = td.dataset.t
+        })
         mx.appendChild(tr)
       })
     }
 
-    /* ============ 10 生态与 FAQ ============ */
+    /* ============ 10 决策树 ============ */
     function render10(el) {
       el.innerHTML = `
-        <h2>Spark 还是 Flink？（决策树）</h2>
-        <p class="lead">回答几个问题，给出引擎建议。</p>
+        <h2>Spark 还是 Flink？决策树</h2>
+        <p class="lead">实时选型是新人最容易纠结的问题。回答几个问题，给出建议。</p>
         <div class="toolbar" id="tree"></div>
-        <div class="detail" id="treeDetail">点开始。</div>
-        <h4>湖仓格式对比（点击了解）</h4>
-        <div class="flow" id="lake"></div>
-        <div class="detail" id="lakeDetail" style="min-height:2.8em">点击上方格式。</div>
-        <h4>高频面试题（点击展开）</h4>
-        <div id="faq"></div>
+        <div class="verdict info" id="treeDetail">点「开始」。</div>
+        <div class="concl">一句话选型：<b>离线数仓 / SQL / ML 选 Spark；亚秒级延迟、复杂状态流选 Flink</b>。国内常见「Spark 离线 + Flink 实时」并存。湖仓格式（Delta / Iceberg / Hudi）解决的是对象存储上的 ACID 与 Schema 演进，与引擎正交——细节见笔记。</div>
       `
       const tree = [
         { q: '需要亚秒级（毫秒）延迟，或复杂事件处理 CEP？', yes: 1, no: 2 },
@@ -1030,62 +1285,31 @@
         { q: '需要 MLlib / 图计算 / 成熟湖仓生态？', yes: 'spark', no: 'both' },
       ]
       const verdicts = {
-        flink: '建议 Flink：原生流、毫秒延迟、状态管理是强项。',
-        spark: '建议 Spark：离线数仓/SQL/ML 生态最成熟，流式用 Structured Streaming（秒级）即可。',
-        both: 'Spark 与 Flink 均可，按团队技术栈与已有基建选择；国内常见「Spark 离线 + Flink 实时」并存。',
+        flink: ['ok', '建议 Flink：原生流、毫秒延迟、状态管理是强项。'],
+        spark: ['ok', '建议 Spark：离线数仓/SQL/ML 生态最成熟，流式用 Structured Streaming（秒级微批）即可。'],
+        both: ['info', '两者均可，按团队技术栈与已有基建选择。'],
       }
       let ti = -1
       const treeBox = el.querySelector('#tree'), td = el.querySelector('#treeDetail')
       function step(ans) {
         if (ans !== undefined) {
           const r = tree[ti][ans]
-          if (typeof r === 'string') { td.textContent = verdicts[r]; treeBox.innerHTML = '<button id="again">重新开始</button>'; el.querySelector('#again').onclick = () => step('reset'); return }
+          if (typeof r === 'string') {
+            td.className = 'verdict ' + verdicts[r][0]
+            td.textContent = verdicts[r][1]
+            treeBox.innerHTML = '<button id="again">重新开始</button>'
+            el.querySelector('#again').onclick = () => step('reset')
+            return
+          }
           ti = r
         } else ti = 0
         treeBox.innerHTML = `<span>${tree[ti].q}</span><button class="primary" id="y">是</button><button id="n">否</button>`
+        td.className = 'verdict info'; td.textContent = '回答上方问题…'
         el.querySelector('#y').onclick = () => step('yes')
         el.querySelector('#n').onclick = () => step('no')
       }
       treeBox.innerHTML = '<button class="primary" id="tstart">开始</button>'
       el.querySelector('#tstart').onclick = () => step()
-      el.querySelector('#tree').addEventListener('click', (e) => { if (e.target.id === 'again') step() })
-
-      const lakes = [
-        ['Delta Lake', 'Databricks 主导，与 Spark 血缘最深。ACID、OPTIMIZE/ZORDER、时间旅行。Spark 重度用户首选。'],
-        ['Iceberg', 'Netflix/Apple 发起。隐藏分区、快照隔离、引擎中立（Spark/Flink/Trino 通吃）。社区增长最快。'],
-        ['Hudi', 'Uber 发起。upsert 强、CDC 增量场景、增量视图。'],
-      ]
-      const lakeBox = el.querySelector('#lake')
-      lakes.forEach(([n, d]) => {
-        const c = document.createElement('button')
-        c.className = 'chip ghost'; c.type = 'button'; c.textContent = n
-        c.onclick = () => {
-          lakeBox.querySelectorAll('.chip').forEach(x => x.classList.add('ghost'))
-          c.classList.remove('ghost')
-          el.querySelector('#lakeDetail').textContent = `${n}：${d}`
-        }
-        lakeBox.appendChild(c)
-      })
-
-      const faqs = [
-        ['Spark 为什么比 MapReduce 快？', '① 内存计算：中间结果不落盘；② DAG 调度：全图优化+流水线；③ 线程模型：Task 是线程而非进程。'],
-        ['宽依赖 vs 窄依赖？', '看子分区是否依赖多个父分区。窄依赖可流水线、容错代价小；宽依赖（Shuffle）切 Stage、是性能瓶颈。'],
-        ['cache 和 checkpoint 区别？', 'cache 存内存/磁盘、保留血缘、加速复用；checkpoint 写可靠存储、切断血缘、防长链路重算。常配合用。'],
-        ['什么时候用广播 Join？风险？', '小表（默认 ≤10MB）join 大表时广播小表，消灭 Shuffle。风险：表大导致 Executor OOM；broadcastTimeout 超时。'],
-        ['数据倾斜怎么发现与处理？', 'UI 看 Task 耗时/Shuffle Read 分布。处理：广播小表、热点 key 单独处理、加盐两阶段聚合、AQE skewJoin。'],
-        ['shuffle.partitions 怎么定？', '目标单 Task 处理 100~200MB：总 Shuffle 量 ÷ 200MB ≈ 分区数。开 AQE 可自动合并小分区。'],
-        ['PySpark 慢先查什么？', '普通 Python UDF、collect 大表、Shuffle 过重、Python worker OOM、数据倾斜。'],
-        ['流批一体怎么体现？', 'Structured Streaming 用同一套 DataFrame/SQL API，业务逻辑不感知流批；同一份 process(df) 可跑批也可跑流。'],
-      ]
-      const faqBox = el.querySelector('#faq')
-      faqs.forEach(([q, a]) => {
-        const btn = document.createElement('button')
-        btn.className = 'faq-q'; btn.textContent = 'Q：' + q
-        const ans = document.createElement('div')
-        ans.className = 'faq-a hidden'; ans.textContent = 'A：' + a
-        btn.onclick = () => ans.classList.toggle('hidden')
-        faqBox.appendChild(btn); faqBox.appendChild(ans)
-      })
     }
 
     const renders = {

@@ -46,11 +46,19 @@ yili-ai-xuexi/
 
 ## 主题索引
 
-| 主题 | 说明 |
-| --- | --- |
-| [海豚调度](./notes/dolphin-scheduler/) | Apache DolphinScheduler：DAG 调度概念与本地 Python 演示 |
-| [Spark](./notes/spark/) | Apache Spark：PySpark 10 章笔记 + 浏览器可视化交互演示 |
-| [Hadoop](./notes/hadoop/) | Apache Hadoop：HDFS / YARN / MapReduce 10 章笔记 + 浏览器可视化交互演示 |
+按**学习路线图顺序**排列（依赖关系 → 认知顺序），详见 [知识框架.md#大数据学习路线图](./知识框架.md#大数据学习路线图)。
+
+| 顺序 | 主题 | 层级 | 说明 |
+| --- | --- | --- | --- |
+| 1 | [Hadoop](./notes/hadoop/) | 基础设施底座 | HDFS / YARN / MapReduce 10 章 + 浏览器可视化交互演示 |
+| 2 | [Hive](./notes/hive/) | 数仓 SQL 层 | Metastore + 数仓分层 + ACID 10 章 + 浏览器可视化交互演示 |
+| 3 | [Spark](./notes/spark/) | 计算引擎 | PySpark 10 章 + 浏览器可视化交互演示 |
+| 4 | [Flink](./notes/flink/) | 计算引擎 | 流计算（Watermark/State/Checkpoint）10 章 + 浏览器可视化交互演示 |
+| 5 | [Kafka](./notes/kafka/) | 实时管道 | 消息队列 10 章 + 浏览器可视化交互演示 |
+| 6 | [湖仓一体](./notes/iceberg/) | 湖仓表格式 | Apache Iceberg：ACID + Time Travel 10 章 + 浏览器可视化交互演示 |
+| 7 | [HBase](./notes/hbase/) | 数据访问 | LSM-Tree 点查数据库 10 章 + 浏览器可视化交互演示 |
+| 8 | [ClickHouse](./notes/clickhouse/) | 数据访问 | 列式 OLAP 数据库 10 章 + 浏览器可视化交互演示 |
+| 9 | [海豚调度](./notes/dolphin-scheduler/) | 调度编排 | DAG 调度概念 + 浏览器可视化交互演示 |
 
 ## 约定摘要
 

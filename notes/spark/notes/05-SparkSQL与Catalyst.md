@@ -2,7 +2,7 @@
 
 ## 一句话
 
-**Spark SQL = SQL 语法 + DataFrame API 共享同一套优化器（Catalyst）和执行引擎（Tungsten）**：同一条逻辑，写 SQL 或写 DataFrame，最终生成的物理执行计划几乎一样，性能也几乎一样。
+**Spark SQL = SQL 语法 + DataFrame API 共享同一套优化器（Catalyst）和执行引擎（Tungsten）**：同e'd一条逻辑，写 SQL 或写 DataFrame，最终生成的物理执行计划几乎一样，性能也几乎一样。
 
 ## SQL 的三种使用姿势
 
