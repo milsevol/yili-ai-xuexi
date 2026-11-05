@@ -20,6 +20,13 @@ TOPICS = [
     ("6", "vector-db", "向量数据库与 Embedding"),
     ("7", "rag", "RAG 检索增强生成"),
     ("8", "agent", "Agent 智能体"),
+    ("9", "flink", "Apache Flink（流处理）"),
+    ("10", "hbase", "Apache HBase（列式 KV）"),
+    ("11", "kafka", "Apache Kafka（消息队列）"),
+    ("12", "hive", "Apache Hive（数仓 SQL）"),
+    ("13", "clickhouse", "ClickHouse（列式 OLAP）"),
+    ("14", "iceberg", "Apache Iceberg（湖仓表格式）"),
+    ("15", "quant-trading", "量化交易（从研究到实盘）"),
 ]
 
 

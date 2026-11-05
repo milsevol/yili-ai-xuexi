@@ -18,9 +18,12 @@
 ## 启动演示
 
 ```bash
-./start.sh          # 浏览器可视化交互
-./start.sh 02       # 直达 Attention 权重演示
+./start.sh          # 启动本地服务并打开交互页
+./start.sh 07       # 直达「采样与真实概率」演示
+./start.sh --port 9000  # 指定本地服务端口
 ./start.sh --cli    # 终端摘要版
 ```
+
+第 07 章的「取真实模型概率」会调用 DeepSeek，Key 通过环境变量 `DEEPSEEK_API_KEY` 提供；未配置时页面仍可离线浏览。
 
 也可在仓库根目录：`python3 main.py llm-foundations`。

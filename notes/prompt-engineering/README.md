@@ -16,9 +16,12 @@
 ## 启动演示
 
 ```bash
-./start.sh          # 浏览器可视化交互
-./start.sh 03       # 直达 CoT 对比演示
+./start.sh          # 启动本地服务并打开交互页
+./start.sh 03       # 直达 CoT 真实对比演示
+./start.sh --port 9000  # 指定本地服务端口
 ./start.sh --cli    # 终端摘要版
 ```
+
+第 02/03/05 章的「真实运行」会调用 DeepSeek，Key 通过环境变量 `DEEPSEEK_API_KEY` 提供；未配置时页面仍可离线浏览。
 
 也可在仓库根目录：`python3 main.py prompt-engineering`。

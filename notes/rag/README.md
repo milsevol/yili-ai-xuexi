@@ -18,9 +18,12 @@
 ## 启动演示
 
 ```bash
-./start.sh          # 浏览器可视化交互
-./start.sh 03       # 直达 Chunking 切块演示
+./start.sh          # 启动本地服务并打开交互页
+./start.sh 08       # 直达真实检索与生成 trace
+./start.sh --port 9000  # 指定本地服务端口
 ./start.sh --cli    # 终端摘要版
 ```
+
+第 08 章的「运行一次查询」会在本地知识库做 BM25 检索，再调用 DeepSeek 生成带引用的答案；Key 通过环境变量 `DEEPSEEK_API_KEY` 提供。
 
 也可在仓库根目录：`python3 main.py rag`。

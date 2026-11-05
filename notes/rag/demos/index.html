@@ -355,44 +355,82 @@ const CHAPTERS = [
   },
   {
     code: "08", title: "企业知识库实战与 FAQ",
-    lead: "点「运行」看一次真实查询的完整 trace：检索到了什么、重排后留下什么、最终 Prompt 与答案。这是排查效果问题最有效的手段。",
+    lead: "点「运行」看一次真实查询的完整 trace：本地知识库检索到了什么、实际发送的 Prompt 与模型答案。这是排查效果问题最有效的手段。",
     note: "生产四件事：权限过滤下推到检索、引用可溯源、无答案兜底、全链路日志。",
     render(el) {
       const bar = document.createElement("div");
       bar.className = "toolbar";
+      const input = document.createElement("input");
+      input.value = "出差住一线城市，住宿费最多能报多少？";
+      input.placeholder = "问一个差旅制度问题";
+      input.style.cssText = "border:1px solid var(--line);border-radius:8px;padding:.4rem .6rem;font-size:.84rem;min-width:280px;flex:1";
       const run = document.createElement("button");
       run.className = "primary";
       run.textContent = "运行一次查询";
-      bar.appendChild(run);
+      const status = document.createElement("div");
+      status.className = "mono";
+      status.textContent = "当前展示的是示例 trace；点「运行一次查询」会用本地知识库真实检索并调用 DeepSeek 生成。";
+      bar.append(input, run);
       const out = document.createElement("div");
-      const trace = [
+      const sampleTrace = [
         { k: "用户提问", v: "出差住一线城市，住宿费最多能报多少？" },
-        { k: "查询改写", v: "差旅 住宿标准 一线城市 报销上限" },
         { k: "向量召回 Top-3", v: "[1] 住宿标准分级说明：一线不超过 600（0.81）\n[2] 差旅制度第五章全文（0.79）\n[3] 报销流程与时限（0.72）" },
         { k: "Rerank 后 Top-2", v: "[1] 住宿标准分级说明：一线不超过 600（0.93）\n[2] 差旅制度第五章全文（0.71）" },
         { k: "拼装 Prompt", v: "你是知识库助手，只能依据【参考资料】回答，每个结论标注 [编号]。" },
         { k: "最终答案", v: "一线城市住宿费每晚不超过 600 元，超标部分需自行承担。[1]" }
       ];
-      let i = 0;
-      const draw = () => {
-        out.innerHTML = trace.slice(0, i).map((t) => `
-          <div class="chunk"><b>${t.k}</b><br><span style="white-space:pre-wrap">${t.v}</span></div>`).join("");
+      const drawTrace = (items, upto) => {
+        out.innerHTML = items.slice(0, upto).map((t) => `
+          <div class="chunk"><b>${t.k}</b><br><span style="white-space:pre-wrap">${esc(t.v)}</span></div>`).join("");
       };
-      run.onclick = () => {
-        i = 0;
-        draw();
+      const play = (items) => {
+        let i = 0;
+        drawTrace(items, 0);
         const timer = setInterval(() => {
           i += 1;
-          draw();
-          if (i >= trace.length) clearInterval(timer);
+          drawTrace(items, i);
+          if (i >= items.length) clearInterval(timer);
         }, 320);
       };
-      el.append(bar, out);
-      i = trace.length;
-      draw();
+      run.onclick = async () => {
+        const question = input.value.trim();
+        if (!question) return;
+        run.disabled = true;
+        status.textContent = "正在本地检索并调用 DeepSeek 生成…";
+        out.innerHTML = "";
+        try {
+          const resp = await fetch("/api/rag", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ question })
+          });
+          const data = await resp.json();
+          if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
+          const retrieved = data.chunks.map((c, i) => `[${i + 1}] ${c.title}（BM25 ${c.score.toFixed(2)}）：${c.text}`).join("\n");
+          const items = [
+            { k: "用户提问", v: data.question },
+            { k: "真实检索 Top-3（BM25）", v: retrieved },
+            { k: "实际发送的 Prompt", v: data.prompt },
+            { k: "模型回答", v: data.answer },
+            { k: "调用信息", v: `模型：${data.model}　耗时：${data.elapsed_ms} ms` }
+          ];
+          play(items);
+          status.textContent = "以上为真实检索与模型输出；换一个问题可继续验证。";
+        } catch (err) {
+          status.textContent = `真实调用不可用：${err.message}。请用 ./start.sh 启动本地服务后重试。`;
+        } finally {
+          run.disabled = false;
+        }
+      };
+      el.append(bar, status, out);
+      drawTrace(sampleTrace, sampleTrace.length);
     }
   }
 ];
+
+function esc(text) {
+  return String(text).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+}
 
 const nav = document.getElementById("nav");
 const titleEl = document.getElementById("title");

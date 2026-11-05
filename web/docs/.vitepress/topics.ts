@@ -160,8 +160,17 @@ export const topics: Topic[] = [
     title: 'Agent 智能体',
     category: 'AI技术',
     description:
-      '让模型自己干活：规划/记忆/工具三要素、ReAct 循环、Function Calling 与 MCP、LangGraph 状态机、多 Agent 协作、投研助手实战。8 章笔记 + 浏览器可视化交互演示。',
+      '让模型自己干活：从零手写 Agent 循环、规划/记忆/工具三要素、ReAct、Function Calling 与 MCP、LangGraph 状态机、多 Agent、生产工程化与企业级智能投研平台。10 章笔记 + 浏览器可视化交互演示。',
     link: '/agent/',
+    status: 'ready',
+  },
+  {
+    id: 'quant-trading',
+    title: '量化交易',
+    category: '金融技术',
+    description:
+      '从市场规则到实盘工程：订单簿与 A 股规则、因子研究与 IC、趋势/回归/多因子/套利策略、回测偏差与绩效、组合优化与风险、TWAP/VWAP 执行、实盘架构与 AI 投研。10 章笔记 + 浏览器可视化交互演示。',
+    link: '/quant-trading/',
     status: 'ready',
   },
 ]

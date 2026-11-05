@@ -1228,9 +1228,9 @@ orders
       lead.innerHTML = "输入你的业务需求，得到 JM/TM/Slot/内存/G1 参数的建议。";
       root.appendChild(lead);
 
-      const calc = document.createElement("div");
-      calc.className = "budget-calc";
-      calc.innerHTML = `
+      const calcPanel = document.createElement("div");
+      calcPanel.className = "budget-calc";
+      calcPanel.innerHTML = `
         <label>最大算子并行度</label>
         <input type="number" id="inp_parallelism" value="16">
 
@@ -1252,7 +1252,7 @@ orders
         <button id="calcBtn" class="primary" style="margin-top:10px;width:100%">计算建议</button>
         <div id="budgetResult" class="budget-result" style="margin-top:12px"></div>
       `;
-      root.appendChild(calc);
+      root.appendChild(calcPanel);
 
       function calc() {
         const p = +document.getElementById("inp_parallelism").value;

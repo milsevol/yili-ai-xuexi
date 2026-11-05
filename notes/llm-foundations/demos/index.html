@@ -409,11 +409,12 @@ const CHAPTERS = [
   },
   {
     code: "07", title: "推理基础与采样",
-    lead: "Temperature 缩放 logits 后 softmax，改变候选词的锐利程度。拖动滑块，看同一组 logits 在 4 个候选词上的概率如何变化。",
+    lead: "Temperature 缩放 logits 后 softmax，改变候选词的锐利程度。拖动滑块看示例 logits；也可以直接拉取 DeepSeek 返回的真实 top_logprobs 来观察同一规律。",
     note: "通用起点 temperature=0.7 + top_p=0.9；结构化输出用 0；过高会跑题，过低会重复。",
     render(el) {
       const words = ["好", "晴", "热", "冷"];
       const logits = [3.2, 2.6, 1.4, 0.8];
+      let real = null; // 真实模型返回的 [{token, logprob}]
       const bar = document.createElement("div");
       bar.className = "toolbar";
       const range = document.createElement("input");
@@ -422,26 +423,73 @@ const CHAPTERS = [
       label.textContent = "temperature";
       const val = document.createElement("span");
       val.className = "val";
+      const src = document.createElement("span");
+      src.className = "mono";
+      src.textContent = "示例 logits";
       const out = document.createElement("div");
       out.className = "bars";
       const draw = () => {
         const T = Number(range.value);
         val.textContent = T.toFixed(1);
-        const scaled = logits.map((l) => l / T);
+        const items = real
+          ? real.map((x) => ({ w: x.token, l: x.logprob }))
+          : words.map((w, i) => ({ w, l: logits[i] }));
+        const scaled = items.map((x) => x.l / T);
         const max = Math.max(...scaled);
         const exps = scaled.map((s) => Math.exp(s - max));
         const sum = exps.reduce((a, b) => a + b, 0);
-        const probs = exps.map((e) => e / sum);
-        out.innerHTML = words.map((w, i) => `
+        out.innerHTML = items.map((x, i) => {
+          const p = exps[i] / sum;
+          return `
           <div class="barrow">
-            <span>${w}</span>
-            <div class="track"><div class="fill" style="width:${(probs[i] * 100).toFixed(1)}%"></div></div>
-            <span class="mono">${(probs[i] * 100).toFixed(1)}%</span>
-          </div>`).join("");
+            <span>${x.w.replace(/</g, "&lt;")}</span>
+            <div class="track"><div class="fill" style="width:${(p * 100).toFixed(1)}%"></div></div>
+            <span class="mono">${(p * 100).toFixed(1)}%</span>
+          </div>`;
+        }).join("");
       };
       range.oninput = draw;
-      bar.append(label, range, val);
-      el.append(bar, out);
+      bar.append(label, range, val, src);
+
+      // —— 真实调用：用 DeepSeek 返回的 top_logprobs 代替示例 logits ——
+      const live = document.createElement("div");
+      live.className = "toolbar";
+      const input = document.createElement("input");
+      input.value = "今天天气真";
+      input.placeholder = "输入一段话，预测下一个 token";
+      input.style.cssText = "border:1px solid var(--line);border-radius:8px;padding:.4rem .6rem;font-size:.84rem;min-width:240px;flex:1";
+      const run = document.createElement("button");
+      run.className = "primary";
+      run.textContent = "取真实模型概率（DeepSeek）";
+      const status = document.createElement("div");
+      status.className = "mono";
+      status.style.marginTop = "8px";
+      run.onclick = async () => {
+        run.disabled = true;
+        run.textContent = "请求中…";
+        status.textContent = "正在调用 DeepSeek…";
+        try {
+          const resp = await fetch("/api/logprobs", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt: input.value.trim(), top_k: 8 })
+          });
+          const data = await resp.json();
+          if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
+          real = data.alternatives;
+          src.textContent = `真实概率 · ${data.model}`;
+          status.textContent = `模型续写的下一个 token 是「${data.token}」；拖动 temperature 看同一组真实 logprob 被缩放后的分布`;
+          draw();
+        } catch (err) {
+          status.textContent = `真实调用不可用：${err.message}。请用 ./start.sh 启动本地服务后重试。`;
+        } finally {
+          run.disabled = false;
+          run.textContent = "取真实模型概率（DeepSeek）";
+        }
+      };
+      live.append(input, run);
+
+      el.append(bar, out, live, status);
       draw();
     }
   },

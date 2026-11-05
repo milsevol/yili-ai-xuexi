@@ -99,7 +99,7 @@
   <aside>
     <div class="brand">
       <h1>Agent 智能体</h1>
-      <p>8 章交互演示 · 左侧选章节</p>
+      <p>8 个交互演示 · 上方选章节</p>
     </div>
     <nav class="nav" id="nav"></nav>
   </aside>
@@ -149,7 +149,7 @@ const CHAPTERS = [
     }
   },
   {
-    code: "02", title: "Agent 核心架构",
+    code: "03", title: "Agent 核心架构",
     lead: "三要素：规划（Planning）、记忆（Memory）、工具（Tools）。点组件看职责与工程要点。",
     note: "三要素里最容易低估的是「记忆」——上下文预算管理做不好，Agent 跑几轮就开始忘事。",
     render(el) {
@@ -178,11 +178,11 @@ const CHAPTERS = [
     }
   },
   {
-    code: "03", title: "ReAct 推理范式",
+    code: "04", title: "ReAct 推理范式",
     lead: "ReAct = Reason + Act：模型交替输出「思考」和「动作」，环境返回「观察」，直到得出最终答案。点「下一步」逐步播放一次真实 trace。",
     note: "最常见的两种失败：死循环（重复同一动作）与幻觉工具（调用不存在的工具/参数）。必须设最大步数。",
     render(el) {
-      const trace = [
+      const sample = [
         { t: "Thought", v: "问题问的是某公司 2024 年营收，我需要先查财报数据。" },
         { t: "Action", v: "search_financials(company=\"XX科技\", year=2024)" },
         { t: "Observation", v: "找到 2024 年报：营业收入 128.6 亿元，同比 +18.2%。" },
@@ -200,27 +200,82 @@ const CHAPTERS = [
       const reset = document.createElement("button");
       reset.textContent = "重播";
       bar.append(next, reset);
+
+      // —— 真实运行：模型自行决定调用哪个工具，前端按真实 trace 播放 ——
+      const live = document.createElement("div");
+      live.className = "toolbar";
+      const input = document.createElement("input");
+      input.value = "XX科技 2024 年营收是多少？增速是否高于半导体行业平均？";
+      input.placeholder = "问一个需要查数据的问题";
+      input.style.cssText = "border:1px solid var(--line);border-radius:8px;padding:.4rem .6rem;font-size:.84rem;min-width:280px;flex:1";
+      const run = document.createElement("button");
+      run.textContent = "真实运行 ReAct（DeepSeek）";
+      const status = document.createElement("div");
+      status.className = "mono";
+      status.textContent = "当前是示例 trace；点「真实运行」由模型自主选择工具并生成真实步骤。";
+      live.append(input, run);
+
       const line = document.createElement("div");
       line.className = "line";
-      trace.forEach((s) => {
-        const m = document.createElement("div");
-        m.className = "msg hide";
-        m.innerHTML = `<b>${s.t}</b>：${s.v}`;
-        line.appendChild(m);
-      });
       let i = 0;
       const draw = () => {
         [...line.children].forEach((n, idx) => n.classList.toggle("hide", idx >= i));
       };
-      next.onclick = () => { i = Math.min(i + 1, trace.length); draw(); };
+      const buildLine = (items) => {
+        line.innerHTML = "";
+        items.forEach((s) => {
+          const m = document.createElement("div");
+          m.className = "msg hide";
+          m.style.whiteSpace = "pre-wrap";
+          m.innerHTML = `<b>${s.t}</b>：${esc(s.v)}`;
+          line.appendChild(m);
+        });
+      };
+      next.onclick = () => { i = Math.min(i + 1, line.children.length); draw(); };
       reset.onclick = () => { i = 0; draw(); };
-      el.append(bar, line);
+
+      run.onclick = async () => {
+        const question = input.value.trim();
+        if (!question) return;
+        run.disabled = true;
+        status.textContent = "模型正在循环调用工具…（最多 6 步）";
+        try {
+          const resp = await fetch("/api/agent", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ question })
+          });
+          const data = await resp.json();
+          if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
+          const items = [];
+          data.steps.forEach((s) => {
+            if (s.tool) {
+              if (s.thought) items.push({ t: "Thought", v: s.thought });
+              items.push({ t: "Action", v: `${s.tool}(${s.args})` });
+              items.push({ t: "Observation", v: s.observation });
+            } else if (s.final) {
+              items.push({ t: "Final", v: s.final });
+            }
+          });
+          buildLine(items);
+          i = 1;
+          draw();
+          status.textContent = `真实 trace 已生成：${data.steps.length} 个模型回合 · 模型 ${data.model} · ${data.elapsed_ms} ms；点「下一步」逐步播放。`;
+        } catch (err) {
+          status.textContent = `真实调用不可用：${err.message}。请用 ./start.sh 启动本地服务后重试。`;
+        } finally {
+          run.disabled = false;
+        }
+      };
+
+      buildLine(sample);
+      el.append(live, status, bar, line);
       i = 1;
       draw();
     }
   },
   {
-    code: "04", title: "Function Calling 与 MCP",
+    code: "05", title: "Function Calling 与 MCP",
     lead: "工具调用的可靠性取决于三件事：schema 写得清、参数校验严、错误可恢复。MCP 则把「工具」标准化成可复用的服务协议。",
     note: "工具设计三原则：原子性（一个工具做一件事）、幂等性（重复调用安全）、错误可读（模型能据此修正）。",
     render(el) {
@@ -254,7 +309,7 @@ const CHAPTERS = [
     }
   },
   {
-    code: "05", title: "LangGraph 状态机",
+    code: "06", title: "LangGraph 状态机",
     lead: "把 Agent 画成图：节点是动作，边是流转条件，State 在节点间传递。相比「一口气写 prompt」，图编排可中断、可重放、可人工介入。",
     note: "关键能力是 checkpointer：每步落盘状态，失败可从断点续跑，也支持人工审批后继续。",
     render(el) {
@@ -304,7 +359,7 @@ app = graph.compile(checkpointer=memory)`;
     }
   },
   {
-    code: "06", title: "多 Agent 协作",
+    code: "08", title: "多 Agent 协作",
     lead: "多 Agent 不是越多越好：每多一个角色，就多一份 token 与一次可能的误解。先看协作模式再决定要不要拆。",
     note: "判断标准：任务是否能被清晰切成独立子任务？如果是串行依赖强的任务，单 Agent + 好工具通常更稳。",
     render(el) {
@@ -385,9 +440,9 @@ app = graph.compile(checkpointer=memory)`;
     }
   },
   {
-    code: "08", title: "投研助手实战与 FAQ",
-    lead: "一个真实的金融投研 Agent：工具包含行情、财报检索、新闻搜索、计算器；知识来自研报 RAG；输出必须带数据来源与时间戳。",
-    note: "金融场景红线：不得给出投资建议式表述、所有数字必须可溯源、时效数据必须带时间戳、异常必须显式说明。",
+    code: "10", title: "企业级实战：智能投研平台",
+    lead: "一个可评审的企业级投研平台：多租户与权限、工具网关、LangGraph 审批编排、多租户 RAG、数字溯源与合规。",
+    note: "企业场景红线：越权零容忍、数字必须可溯源、发布必须审批、所有 run 可审计。",
     render(el) {
       const parts = [
         { k: "工具层", d: "get_quote（行情）、search_filings（公告/财报）、search_news（新闻）、calculator（估值计算）。全部幂等 + 超时 + 结构化返回。" },
@@ -412,21 +467,67 @@ app = graph.compile(checkpointer=memory)`;
       });
       const code = document.createElement("div");
       code.className = "code";
-      code.textContent = `问：XX科技 2024 年营收和增速怎么样？
+      const sampleQuestion = "XX科技 2024 年营收和增速怎么样？和半导体行业平均比呢？";
+      code.textContent = `问：${sampleQuestion}
 
 Agent trace:
   Thought: 需要营收与增速，先取财报数据
-  Action:  search_filings(company="XX科技", period="2024")
+  Action:  search_financials(company="XX科技", year="2024")
   Obs:     营业收入 128.6 亿元（同比 +18.2%）
   Thought: 需要行业对比才有意义
-  Action:  search_industry(industry="半导体", metric="growth", year=2024)
+  Action:  search_industry(industry="半导体", metric="revenue_growth", year="2024")
   Obs:     行业平均 11.4%
   Final:   128.6 亿元（同比 +18.2%），高于行业均值 6.8pct
            [来源：2024 年报 P42；行业数据 2025-03-01]`;
-      el.append(wrap, detail, code);
+
+      const live = document.createElement("div");
+      live.className = "toolbar";
+      const run = document.createElement("button");
+      run.className = "primary";
+      run.textContent = "真实运行这个投研问题";
+      const status = document.createElement("div");
+      status.className = "mono";
+      status.textContent = "上面是示例 trace；点按钮会用 DeepSeek 实际执行工具调用并展示真实结果。";
+      run.onclick = async () => {
+        run.disabled = true;
+        status.textContent = "模型正在调用工具并校验数据…";
+        try {
+          const resp = await fetch("/api/agent", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ question: sampleQuestion })
+          });
+          const data = await resp.json();
+          if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
+          const lines = [`问：${data.question}`, "", "Agent trace:"];
+          data.steps.forEach((s) => {
+            if (s.tool) {
+              if (s.thought) lines.push(`  Thought: ${s.thought}`);
+              lines.push(`  Action:  ${s.tool}(${s.args})`);
+              lines.push(`  Obs:     ${s.observation}`);
+            } else if (s.final) {
+              lines.push(`  Final:   ${s.final}`);
+            }
+          });
+          code.textContent = lines.join("\n");
+          status.textContent = `真实执行完成 · 模型 ${data.model} · ${data.elapsed_ms} ms · 共 ${data.steps.length} 个回合`;
+        } catch (err) {
+          status.textContent = `真实调用不可用：${err.message}。请用 ./start.sh 启动本地服务后重试。`;
+        } finally {
+          run.disabled = false;
+        }
+      };
+      live.append(run);
+
+      el.append(wrap, detail, live, status, code);
     }
   }
 ];
+CHAPTERS.sort((a, b) => a.code.localeCompare(b.code));
+
+function esc(text) {
+  return String(text).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+}
 
 const nav = document.getElementById("nav");
 const titleEl = document.getElementById("title");
@@ -435,7 +536,14 @@ const lab = document.getElementById("lab");
 const noteEl = document.getElementById("note");
 
 function show(code) {
-  const ch = CHAPTERS.find((c) => c.code === code) || CHAPTERS[0];
+  const ch = CHAPTERS.find((c) => c.code === code);
+  if (!ch) {
+    titleEl.textContent = `${code} 本章暂无交互演示`;
+    leadEl.textContent = "本章以代码实战或工程清单为主，请直接阅读对应笔记；可从上方选择其他带演示的章节。";
+    noteEl.textContent = "";
+    lab.innerHTML = "";
+    return;
+  }
   titleEl.textContent = `${ch.code} ${ch.title}`;
   leadEl.textContent = ch.lead;
   noteEl.textContent = ch.note;

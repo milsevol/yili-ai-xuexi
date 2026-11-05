@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>量化交易 · 交互式演示</title>
+<style>
+  :root {
+    --bg: #f4f6f8;
+    --panel: #fff;
+    --ink: #14202b;
+    --muted: #5d6b78;
+    --line: rgba(20, 32, 43, 0.11);
+    --brand: #0f5c56;
+    --brand-soft: rgba(15, 92, 86, 0.09);
+    --up: #b91c1c;
+    --down: #15803d;
+    --run: #1d4ed8;
+    --warn: #a16207;
+    --c0: #0f5c56; --c1: #1d4ed8; --c2: #b45309; --c3: #7c3aed;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "IBM Plex Sans", "PingFang SC", "Noto Sans SC", sans-serif;
+    color: var(--ink);
+    background:
+      radial-gradient(ellipse 70% 40% at 0% 0%, var(--brand-soft), transparent 55%),
+      var(--bg);
+    min-height: 100vh;
+  }
+  .app { max-width: 1120px; margin: 0 auto; padding: 20px 16px 48px; display: grid; gap: 16px; }
+  @media (min-width: 880px) { .app { grid-template-columns: 220px 1fr; align-items: start; } }
+  .brand h1 { margin: 0; font-size: 1.22rem; font-family: "Noto Serif SC", "Songti SC", serif; }
+  .brand p { margin: 4px 0 0; color: var(--muted); font-size: 0.82rem; line-height: 1.5; }
+  .nav { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+  @media (min-width: 880px) {
+    .nav { flex-direction: column; position: sticky; top: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 10px; }
+  }
+  .nav button { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 0.45rem 0.85rem; font-size: 0.85rem; cursor: pointer; text-align: left; color: var(--ink); white-space: nowrap; }
+  @media (min-width: 880px) { .nav button { width: 100%; border-radius: 10px; border-color: transparent; background: transparent; } .nav button:hover { background: #eef3f2; } }
+  .nav button.active { background: var(--brand-soft); border-color: var(--brand); color: var(--brand); font-weight: 600; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px 18px 24px; min-height: 440px; }
+  .panel h2 { margin: 0 0 6px; font-size: 1.18rem; }
+  .panel h4 { margin: 20px 0 8px; font-size: 0.95rem; }
+  .lead { margin: 0 0 14px; color: var(--muted); font-size: 0.9rem; line-height: 1.65; }
+  .grid2 { display: grid; gap: 12px; }
+  @media (min-width: 700px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+  .grid3 { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+  .card { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; background: #fafcfc; }
+  .card h3 { margin: 0 0 6px; font-size: 0.92rem; }
+  .card ul { margin: 0; padding-left: 1.1rem; color: var(--muted); font-size: 0.84rem; line-height: 1.55; }
+  .pick { border: 1px solid var(--line); border-radius: 12px; padding: 11px 12px; cursor: pointer; background: #fff; transition: all .2s; }
+  .pick:hover, .pick.on { border-color: var(--brand); background: var(--brand-soft); }
+  .pick strong { display: block; font-size: 0.9rem; margin-bottom: 3px; }
+  .pick span { font-size: 0.78rem; color: var(--muted); line-height: 1.4; }
+  .detail { margin-top: 10px; padding: 11px 14px; border-radius: 10px; background: var(--brand-soft); font-size: 0.88rem; line-height: 1.65; min-height: 3em; }
+  .flow { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 10px 0; }
+  .node { border: 2px solid var(--brand); background: #fff; color: var(--brand); border-radius: 9px; padding: 0.42rem 0.7rem; font-size: 0.82rem; font-weight: 600; cursor: pointer; text-align: center; }
+  .node.on { background: var(--brand); color: #fff; }
+  .node.muted { border-color: var(--line); color: var(--muted); font-weight: 500; }
+  .arrow { color: var(--muted); font-size: 0.8rem; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 10px 0 12px; }
+  .toolbar label { font-size: 0.84rem; color: var(--muted); }
+  .toolbar input[type=number], .toolbar select { border: 1px solid var(--line); border-radius: 8px; padding: 0.35rem 0.5rem; font-size: 0.84rem; background: #fff; color: var(--ink); }
+  .btn { border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 0.42rem 0.8rem; font-size: 0.85rem; cursor: pointer; color: var(--ink); }
+  .btn.primary { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600; }
+  .btn:hover { filter: brightness(0.97); }
+  .chip { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 0.3rem 0.7rem; font-size: 0.8rem; cursor: pointer; color: var(--ink); }
+  .chip.on { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600; }
+  .slider-row { display: flex; align-items: center; gap: 10px; margin: 7px 0; font-size: 0.84rem; }
+  .slider-row .name { width: 170px; flex: none; color: var(--muted); }
+  .slider-row input[type=range] { flex: 1; accent-color: var(--brand); }
+  .slider-row .val { width: 84px; flex: none; text-align: right; font-family: ui-monospace, Menlo, monospace; color: var(--brand); font-weight: 700; font-size: 0.82rem; }
+  table.tbl { width: 100%; border-collapse: collapse; font-size: 0.83rem; margin-top: 8px; }
+  table.tbl th, table.tbl td { border-bottom: 1px solid var(--line); padding: 0.42rem 0.5rem; text-align: left; vertical-align: top; }
+  table.tbl th { color: var(--muted); font-weight: 600; }
+  .metrics { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); margin-top: 10px; }
+  .metric { border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; background: #fafcfc; }
+  .metric .k { font-size: 0.72rem; color: var(--muted); }
+  .metric .v { font-size: 1.02rem; font-weight: 700; font-family: ui-monospace, Menlo, monospace; margin-top: 2px; }
+  .v.up { color: var(--up); } .v.down { color: var(--down); }
+  .hint { font-size: 0.79rem; color: var(--muted); line-height: 1.6; margin-top: 8px; }
+  .verdict { margin-top: 10px; padding: 10px 13px; border-radius: 10px; font-size: 0.86rem; line-height: 1.6; }
+  .verdict.ok { background: #f0fdf4; border: 1px solid rgba(21,128,61,.3); }
+  .verdict.warn { background: #fffbeb; border: 1px solid rgba(161,98,7,.35); }
+  .verdict.bad { background: #fef2f2; border: 1px solid rgba(185,28,28,.3); }
+  .chart { width: 100%; height: auto; background: #fbfdfd; border: 1px solid var(--line); border-radius: 10px; margin-top: 8px; }
+  .code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.78rem; line-height: 1.55; background: #14202b; color: #e6edf3; border-radius: 10px; padding: 10px 12px; overflow-x: auto; white-space: pre; margin-top: 8px; }
+  .bars { margin-top: 8px; }
+  .bar-row { display: flex; align-items: center; gap: 8px; font-size: 0.76rem; font-family: ui-monospace, Menlo, monospace; margin-top: 4px; }
+  .bar-row .lbl { width: 62px; color: var(--muted); flex: none; }
+  .bar-track { flex: 1; background: #eaeef1; border-radius: 6px; height: 16px; overflow: hidden; }
+  .bar-fill { height: 100%; background: var(--brand); border-radius: 6px; }
+  .bar-fill.warn { background: var(--warn); }
+  .bar-val { width: 96px; flex: none; color: var(--muted); text-align: right; }
+  .faq-q { width: 100%; text-align: left; border: 1px solid var(--line); background: #fff; border-radius: 10px; padding: 9px 12px; font-size: 0.86rem; cursor: pointer; margin-top: 7px; color: var(--ink); }
+  .faq-q:hover { border-color: var(--brand); }
+  .faq-a { margin: 4px 0; padding: 8px 12px; border-left: 3px solid var(--brand); background: var(--brand-soft); border-radius: 0 8px 8px 0; font-size: 0.84rem; line-height: 1.65; }
+  .pill { display: inline-block; border-radius: 999px; padding: 0.08rem 0.5rem; font-size: 0.72rem; background: #eef2f8; color: var(--muted); }
+  .pill.bad { background: #fee2e2; color: var(--up); }
+  .pill.good { background: #dcfce7; color: var(--down); }
+  .pill.warn { background: #fef3c7; color: var(--warn); }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brand" style="margin-bottom:12px">
+      <h1>量化交易 交互演示</h1>
+      <p>从市场规则、因子、回测到执行与风控。点左侧章节，动手改参数看结果。</p>
+    </div>
+    <nav class="nav" id="nav"></nav>
+  </aside>
+  <main class="panel" id="panel"></main>
+</div>
+
+<script>
+const chapters = [
+  { id: '01', title: '01 概述与定位' },
+  { id: '02', title: '02 市场微结构与规则' },
+  { id: '03', title: '03 数据与因子研究' },
+  { id: '04', title: '04 策略与信号' },
+  { id: '05', title: '05 回测与绩效' },
+  { id: '06', title: '06 组合优化与风险' },
+  { id: '07', title: '07 交易执行' },
+  { id: '08', title: '08 工程架构与实盘' },
+  { id: '09', title: '09 AI 与量化投研' },
+  { id: '10', title: '10 工具生态与 FAQ' },
+]
+
+const params = new URLSearchParams(location.search)
+let current = (params.get('c') || '01').padStart(2, '0')
+const nav = document.getElementById('nav')
+const panel = document.getElementById('panel')
+
+chapters.forEach((c) => {
+  const b = document.createElement('button')
+  b.textContent = c.title
+  b.dataset.id = c.id
+  b.onclick = () => show(c.id)
+  nav.appendChild(b)
+})
+
+function show(id) {
+  current = id
+  nav.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.id === id))
+  history.replaceState(null, '', '?c=' + id)
+  panel.innerHTML = ''
+  renders[id](panel)
+}
+
+/* ================= 工具函数 ================= */
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+function gauss(rng) {
+  let u = 0, v = 0
+  while (u === 0) u = rng()
+  while (v === 0) v = rng()
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v)
+}
+function fmt(n, d = 2) { return Number(n).toFixed(d) }
+function pct(n, d = 2) { return (n * 100).toFixed(d) + '%' }
+function bps(n, d = 1) { return Number(n).toFixed(d) + ' bps' }
+function clamp(x, a, b) { return Math.max(a, Math.min(b, x)) }
+
+function chartSvg(w, h, inner) {
+  return '<svg class="chart" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="xMidYMid meet">' +
+    '<rect x="0" y="0" width="' + w + '" height="' + h + '" fill="#fbfdfd"/>' + inner + '</svg>'
+}
+function polyline(pts, color, width, dash) {
+  const s = pts.map((p) => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ')
+  return '<polyline points="' + s + '" fill="none" stroke="' + color + '" stroke-width="' + width + '"' +
+    (dash ? ' stroke-dasharray="' + dash + '"' : '') + ' stroke-linejoin="round" stroke-linecap="round"/>'
+}
+function circle(x, y, r, color) {
+  return '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + r + '" fill="' + color + '"/>'
+}
+function text(x, y, str, opts) {
+  opts = opts || {}
+  return '<text x="' + x + '" y="' + y + '" font-size="' + (opts.size || 10) + '" fill="' + (opts.fill || '#5d6b78') +
+    '" text-anchor="' + (opts.anchor || 'start') + '" font-family="ui-monospace, Menlo, monospace">' + str + '</text>'
+}
+function movingAvg(arr, n) {
+  const out = []
+  let sum = 0
+  for (let i = 0; i < arr.length; i++) {
+    sum += arr[i]
+    if (i >= n) sum -= arr[i - n]
+    out.push(i >= n - 1 ? sum / n : null)
+  }
+  return out
+}
+function std(arr) {
+  const m = arr.reduce((a, b) => a + b, 0) / arr.length
+  return Math.sqrt(arr.reduce((a, b) => a + (b - m) * (b - m), 0) / arr.length)
+}
+function rankCorr(a, b) {
+  const n = a.length
+  const ra = rankOf(a), rb = rankOf(b)
+  const ma = ra.reduce((x, y) => x + y, 0) / n
+  const mb = rb.reduce((x, y) => x + y, 0) / n
+  let cov = 0, va = 0, vb = 0
+  for (let i = 0; i < n; i++) {
+    cov += (ra[i] - ma) * (rb[i] - mb)
+    va += (ra[i] - ma) * (ra[i] - ma)
+    vb += (rb[i] - mb) * (rb[i] - mb)
+  }
+  return cov / Math.sqrt(va * vb)
+}
+function rankOf(a) {
+  const idx = a.map((v, i) => [v, i]).sort((x, y) => x[0] - y[0])
+  const r = new Array(a.length)
+  for (let i = 0; i < idx.length; i++) r[idx[i][1]] = i + 1
+  return r
+}
+
+/* ================= 01 概述 ================= */
+const STRATS = [
+  { name: '趋势 / 动量', src: '价格惯性、信息扩散慢、处置效应', hold: '天—月', cap: '中高', turn: '低—中', risk: '震荡市反复止损、动量崩溃', tag: '方向性' },
+  { name: '均值回归', src: '短期过度反应后的修复', hold: '分钟—几天', cap: '中', turn: '高', risk: '单边趋势、流动性枯竭', tag: '方向性' },
+  { name: '多因子选股', src: '价值/质量/成长等风险溢价', hold: '周—季', cap: '大', turn: '低—中', risk: '因子失效、拥挤、风格切换', tag: '横截面' },
+  { name: '指数增强', src: '基准 Beta + 可控跟踪误差下的 Alpha', hold: '月—季', cap: '大', turn: '低', risk: '跟踪误差放大、行业偏离', tag: '横截面' },
+  { name: '统计套利', src: '相关资产价差的均值回归', hold: '分钟—周', cap: '中', turn: '高', risk: '价差不回归、融券成本、挤兑', tag: '相对价值' },
+  { name: '期现 / 跨期套利', src: '基差、展期收益、交割约束', hold: '天—月', cap: '中', turn: '中', risk: '基差走阔、保证金、流动性', tag: '相对价值' },
+  { name: 'CTA / 期货', src: '趋势 + 期限结构 + 波动率', hold: '天—月', cap: '中高', turn: '中', risk: '杠杆、跳空、展期损耗', tag: '衍生品' },
+  { name: '事件驱动', src: '信息冲击后的定价修正', hold: '天—周', cap: '小—中', turn: '高', risk: '事件落空、拥挤、停牌', tag: '事件' },
+  { name: '做市 / 高频', src: '买卖价差 + 返佣 + 微观结构', hold: '毫秒—秒', cap: '小', turn: '极高', risk: '技术故障、逆向选择、监管', tag: '高频' },
+]
+function render01(el) {
+  el.innerHTML = `
+    <h2>量化交易在做什么</h2>
+    <p class="lead">量化不是「预测更准」，而是让决策可验证、可复制、可规模化。先看策略谱系：每类策略的收益来源不同，容量与换手也完全不同，混着比收益率没有意义。</p>
+    <h4>策略谱系：点卡片看收益来源与代价</h4>
+    <div class="grid3" id="s01"></div>
+    <div class="detail" id="d01">点击上方任意策略。</div>
+    <h4>一条完整的决策链路</h4>
+    <div class="flow" id="f01"></div>
+    <div class="detail" id="fd01">点击链路中的环节，看它最关键的问题。</div>
+    <h4>先记住三个不等式</h4>
+    <div class="grid3">
+      <div class="card"><h3>回测好 ≠ 实盘好</h3><ul><li>成本、滑点、容量、成交假设任何一项低估，都能把 Alpha 吃光。</li><li>回测只能证伪，不能证明。</li></ul></div>
+      <div class="card"><h3>收益高 ≠ 能力强</h3><ul><li>先做收益归因：赚的是 Beta、行业、风格，还是真正的 Alpha。</li><li>杠杆放大的收益，也会同样放大尾部风险。</li></ul></div>
+      <div class="card"><h3>容量大 ≠ 策略好</h3><ul><li>高频策略的夏普可以很高，但规模一大就自我磨损。</li><li>规模、换手、冲击成本是一组连带约束。</li></ul></div>
+    </div>
+  `
+  const s = el.querySelector('#s01'), d = el.querySelector('#d01')
+  STRATS.forEach((x, i) => {
+    const b = document.createElement('div')
+    b.className = 'pick'
+    b.innerHTML = '<strong>' + x.name + '</strong><span>' + x.tag + ' · ' + x.hold + '</span>'
+    b.onclick = () => {
+      s.querySelectorAll('.pick').forEach((n) => n.classList.remove('on'))
+      b.classList.add('on')
+      d.innerHTML = '<b>' + x.name + '</b>（' + x.tag + '）<br>' +
+        '收益来源：' + x.src + '<br>' +
+        '持仓周期：' + x.hold + ' ｜ 容量：' + x.cap + ' ｜ 换手：' + x.turn + '<br>' +
+        '主要风险：' + x.risk
+    }
+    s.appendChild(b)
+  })
+  const CHAIN = [
+    ['数据', '有没有未来函数、幸存者偏差、复权错误？'],
+    ['因子', '有没有经济学逻辑，还是纯数据挖掘？'],
+    ['信号', '阈值是否稳定，换一段样本还成立吗？'],
+    ['组合', '行业、市值、风格暴露是否失控？'],
+    ['执行', '成本、滑点、成交量约束是否被低估？'],
+    ['风控', '极端行情下能不能活下来？'],
+    ['归因', '赚的到底是 Alpha 还是 Beta？'],
+  ]
+  const f = el.querySelector('#f01'), fd = el.querySelector('#fd01')
+  CHAIN.forEach((x, i) => {
+    if (i > 0) {
+      const a = document.createElement('span'); a.className = 'arrow'; a.textContent = '→'; f.appendChild(a)
+    }
+    const n = document.createElement('span')
+    n.className = 'node'; n.textContent = x[0]
+    n.onclick = () => {
+      f.querySelectorAll('.node').forEach((m) => m.classList.remove('on'))
+      n.classList.add('on')
+      fd.innerHTML = '<b>' + x[0] + '</b>：' + x[1]
+    }
+    f.appendChild(n)
+  })
+}
+
+/* ================= 02 市场微结构 ================= */
+function render02(el) {
+  el.innerHTML = `
+    <h2>订单簿与交易成本</h2>
+    <p class="lead">回测里最容易被忽略的一步，是「这笔单到底能不能按这个价格成交」。下面是一个五档订单簿，改下单量，看市价买单如何逐档吃穿、滑点如何产生。</p>
+    <div class="grid2">
+      <div>
+        <h4>卖盘（Ask）</h4>
+        <table class="tbl" id="askTbl"></table>
+      </div>
+      <div>
+        <h4>买盘（Bid）</h4>
+        <table class="tbl" id="bidTbl"></table>
+      </div>
+    </div>
+    <div class="toolbar">
+      <label>市价买入数量</label>
+      <input type="number" id="qty02" value="5000" step="1000" min="100" style="width:120px" />
+      <button class="btn primary" id="run02">模拟吃单</button>
+      <span class="pill" id="mid02"></span>
+    </div>
+    <div class="detail" id="out02">等待模拟。</div>
+    <h4>A 股规则速查</h4>
+    <table class="tbl">
+      <tr><th>规则</th><th>要点</th><th>对策略的影响</th></tr>
+      <tr><td>T+1</td><td>当日买入的股票，次一交易日才能卖出</td><td>日内无法止损；隔夜跳空风险无法规避</td></tr>
+      <tr><td>涨跌停</td><td>主板 ±10%，ST ±5%，科创/创业 ±20%，北交所 ±30%</td><td>涨停买不进、跌停卖不出，回测必须模拟无法成交</td></tr>
+      <tr><td>最小单位</td><td>买入 100 股整数倍；卖出可一次性卖零股</td><td>小资金难以精确按权重建仓</td></tr>
+      <tr><td>费用</td><td>佣金（约万 2.5，最低 5 元）、卖出印花税 0.05%、过户费</td><td>高频策略被固定费用与印花税严重侵蚀</td></tr>
+      <tr><td>集合竞价</td><td>9:15–9:25 开盘，14:57–15:00 收盘</td><td>开盘价不是随时可成交价</td></tr>
+      <tr><td>停牌 / ST</td><td>停牌无法交易；ST 有更严的涨跌幅与投资者门槛</td><td>必须维护可交易股票池</td></tr>
+    </table>
+    <p class="hint">港股 T+0、无涨跌停、可做空；美股 T+0（视账户）、有 LULD 熔断、盘前盘后流动性差异大。跨市场策略不能直接套用 A 股假设。</p>
+  `
+  const asks = [[10.02, 1800], [10.03, 3200], [10.04, 5000], [10.05, 8000], [10.06, 12000]]
+  const bids = [[10.01, 2600], [10.00, 4100], [9.99, 6800], [9.98, 9000], [9.97, 15000]]
+  const mid = (asks[0][0] + bids[0][0]) / 2
+  el.querySelector('#mid02').textContent = '中间价 ' + mid.toFixed(2)
+  const askTbl = el.querySelector('#askTbl')
+  askTbl.innerHTML = '<tr><th>档位</th><th>价格</th><th>挂单量（股）</th><th>累计</th></tr>'
+  let cum = 0
+  asks.forEach((a, i) => {
+    cum += a[1]
+    askTbl.innerHTML += '<tr><td>卖' + (5 - i) + '</td><td style="color:#b91c1c">' + a[0].toFixed(2) + '</td><td>' + a[1] + '</td><td>' + cum + '</td></tr>'
+  })
+  const bidTbl = el.querySelector('#bidTbl')
+  bidTbl.innerHTML = '<tr><th>档位</th><th>价格</th><th>挂单量（股）</th><th>累计</th></tr>'
+  cum = 0
+  bids.forEach((a, i) => {
+    cum += a[1]
+    bidTbl.innerHTML += '<tr><td>买' + (i + 1) + '</td><td style="color:#15803d">' + a[0].toFixed(2) + '</td><td>' + a[1] + '</td><td>' + cum + '</td></tr>'
+  })
+  el.querySelector('#run02').onclick = () => {
+    let qty = Math.max(100, Number(el.querySelector('#qty02').value) || 0)
+    let left = qty, notional = 0, filled = 0
+    const parts = []
+    for (const [p, v] of asks) {
+      if (left <= 0) break
+      const take = Math.min(left, v)
+      left -= take; filled += take; notional += take * p
+      parts.push(take + ' 股 @ ' + p.toFixed(2))
+    }
+    const avg = filled ? notional / filled : 0
+    const slip = filled ? (avg - mid) / mid * 10000 : 0
+    const commission = filled ? Math.max(filled * avg * 0.00025, 5) : 0
+    const transfer = filled * avg * 0.00001
+    const out = el.querySelector('#out02')
+    if (!filled) { out.innerHTML = '没有可成交的对手盘。'; return }
+    out.innerHTML = '<b>成交明细</b>：' + parts.join(' + ') + '<br>' +
+      '成交量 <b>' + filled + '</b> 股，成交均价 <b>' + avg.toFixed(4) + '</b>，中间价 ' + mid.toFixed(2) +
+      '<br>滑点（相对中间价）<b>' + slip.toFixed(1) + ' bps</b>，成交金额 ' + notional.toFixed(2) + ' 元' +
+      '<br>显性成本：佣金 ' + commission.toFixed(2) + ' 元 + 过户费 ' + transfer.toFixed(2) + ' 元 = <b>' +
+      (commission + transfer).toFixed(2) + ' 元</b>（买入无印花税）' +
+      (left > 0 ? '<br><span style="color:#b91c1c">剩余 ' + left + ' 股未成交，订单簿深度不足。</span>' : '')
+  }
+}
+
+/* ================= 03 因子研究 ================= */
+function render03(el) {
+  el.innerHTML = `
+    <h2>因子有效性：IC 实验</h2>
+    <p class="lead">因子的核心问题是「它能不能把未来收益排出顺序」。调整因子的预测力与噪声，生成 300 只股票的横截面，看 RankIC（因子排序与未来收益排序的相关系数）如何变化。</p>
+    <div class="slider-row"><span class="name">因子预测力 β</span><input type="range" id="beta03" min="0" max="0.8" step="0.02" value="0.16"><span class="val" id="beta03v">0.16</span></div>
+    <div class="slider-row"><span class="name">个体噪声 σ</span><input type="range" id="noise03" min="0.4" max="2.4" step="0.1" value="1.0"><span class="val" id="noise03v">1.0</span></div>
+    <div class="toolbar"><button class="btn primary" id="run03">重新抽样</button><span class="pill" id="ic03">RankIC —</span></div>
+    <div id="chart03"></div>
+    <div id="out03"></div>
+    <h4>因子评价的四个层次</h4>
+    <table class="tbl">
+      <tr><th>指标</th><th>看什么</th><th>经验判断</th></tr>
+      <tr><td>IC / RankIC</td><td>因子值与下期收益的横截面相关性</td><td>长期均值 0.03–0.10 已可用，关键是稳定，不是单期高</td></tr>
+      <tr><td>ICIR</td><td>IC 均值 / IC 标准差</td><td>衡量稳定性；高 IC 但 ICIR 低，说明靠少数几期</td></tr>
+      <tr><td>分组收益</td><td>按因子分 5–10 组，看单调性</td><td>多空单调优于只看头尾；注意换手与容量</td></tr>
+      <tr><td>衰减与拥挤</td><td>IC 随持有期衰减、同类因子相关性</td><td>衰减快 → 高换手；拥挤 → 回撤时流动性踩踏</td></tr>
+    </table>
+    <p class="hint">代码示例（第 03 章）：去极值 → 标准化 → 行业中性化 → RankIC。注意因子与收益的时间对齐：T 日收盘因子只能预测 T+1 及之后的收益。</p>
+  `
+  const betaEl = el.querySelector('#beta03'), noiseEl = el.querySelector('#noise03')
+  function run() {
+    const beta = Number(betaEl.value), noise = Number(noiseEl.value)
+    el.querySelector('#beta03v').textContent = beta.toFixed(2)
+    el.querySelector('#noise03v').textContent = noise.toFixed(1)
+    const rng = mulberry32(20261105)
+    const f = [], r = []
+    for (let i = 0; i < 300; i++) {
+      const x = gauss(rng)
+      f.push(x)
+      r.push(beta * x + noise * gauss(rng))
+    }
+    const ic = rankCorr(f, r)
+    el.querySelector('#ic03').textContent = 'RankIC ' + ic.toFixed(3)
+    el.querySelector('#ic03').className = 'pill ' + (Math.abs(ic) > 0.1 ? 'good' : Math.abs(ic) > 0.03 ? 'warn' : 'bad')
+    const W = 640, H = 280, pad = 36
+    const fx = f.map((v) => clamp((v + 3) / 6, 0, 1))
+    const ry = r.map((v) => clamp((v + 3.5) / 7, 0, 1))
+    const pts = fx.map((x, i) => circle(pad + x * (W - 2 * pad), H - pad - ry[i] * (H - 2 * pad), 2.2, 'rgba(15,92,86,0.45)')).join('')
+    const grid = [0, 0.25, 0.5, 0.75, 1].map((g) =>
+      '<line x1="' + (pad + g * (W - 2 * pad)) + '" y1="' + pad + '" x2="' + (pad + g * (W - 2 * pad)) + '" y2="' + (H - pad) + '" stroke="rgba(20,32,43,0.07)"/>' +
+      '<line x1="' + pad + '" y1="' + (H - pad - g * (H - 2 * pad)) + '" x2="' + (W - pad) + '" y2="' + (H - pad - g * (H - 2 * pad)) + '" stroke="rgba(20,32,43,0.07)"/>'
+    ).join('')
+    el.querySelector('#chart03').innerHTML = chartSvg(W, H,
+      grid + pts +
+      text(pad, H - 12, '因子值（低 → 高）') +
+      text(14, pad + 4, '下期收益', { size: 10 }) +
+      text(W - pad, H - 12, 'RankIC = ' + ic.toFixed(3), { anchor: 'end', fill: '#0f5c56', size: 11 })
+    )
+    let verdict, cls
+    if (Math.abs(ic) < 0.03) { verdict = '几乎无排序能力。可能因子本身无效，也可能被噪声淹没。'; cls = 'bad' }
+    else if (Math.abs(ic) < 0.1) { verdict = '有一定排序能力，但单期波动大；需要看 IC 序列的均值与 ICIR，而不是单次结果。'; cls = 'warn' }
+    else { verdict = '横截面上区分度明显。注意这是模拟数据；真实数据还要检查行业/市值暴露与换手。'; cls = 'ok' }
+    el.querySelector('#out03').innerHTML = '<div class="verdict ' + cls + '">' + verdict + '</div>'
+  }
+  betaEl.oninput = run
+  noiseEl.oninput = run
+  el.querySelector('#run03').onclick = run
+  run()
+}
+
+/* ================= 04 策略与信号 ================= */
+function genPrice(seed, n) {
+  const rng = mulberry32(seed)
+  let p = 100
+  const arr = []
+  for (let i = 0; i < n; i++) {
+    const drift = i < n / 2 ? 0.0007 : 0.0000
+    const cycle = i < n / 2 ? 0 : 0.0016 * Math.sin(i / 7)
+    p *= Math.exp(drift + cycle + 0.013 * gauss(rng))
+    arr.push(p)
+  }
+  return arr
+}
+function backtestSignal(price, signal, costBps) {
+  let equity = 1, pos = 0, trades = 0
+  const eq = [1]
+  for (let i = 1; i < price.length; i++) {
+    const ret = price[i] / price[i - 1] - 1
+    let pnl = pos * ret
+    if (signal[i - 1] !== pos) {
+      pnl -= costBps / 10000 * Math.abs(signal[i - 1] - pos)
+      pos = signal[i - 1]
+      trades++
+    }
+    equity *= 1 + pnl
+    eq.push(equity)
+  }
+  return { eq, trades }
+}
+function maxDrawdown(eq) {
+  let peak = eq[0], mdd = 0
+  eq.forEach((v) => { peak = Math.max(peak, v); mdd = Math.min(mdd, v / peak - 1) })
+  return mdd
+}
+function render04(el) {
+  el.innerHTML = `
+    <h2>趋势还是回归：同一段行情，两种信号</h2>
+    <p class="lead">前半段是带趋势的行情，后半段是震荡行情。调参数、切换策略，看同一套规则在不同市场状态下的表现差异。</p>
+    <div class="toolbar">
+      <label>策略</label>
+      <select id="strat04"><option value="trend">双均线趋势</option><option value="revert">布林带均值回归</option></select>
+      <label>快线</label><input type="number" id="fast04" value="10" min="2" max="60" style="width:70px">
+      <label>慢线/窗口</label><input type="number" id="slow04" value="40" min="5" max="120" style="width:70px">
+    </div>
+    <div id="chart04"></div>
+    <div class="metrics" id="metrics04"></div>
+    <div class="detail" id="out04"></div>
+    <h4>两类策略的收益特征</h4>
+    <div class="grid2">
+      <div class="card"><h3>趋势跟踪</h3><ul><li>低胜率、高盈亏比，靠少数大趋势赚钱</li><li>震荡市反复止损，回撤可能很长</li><li>参数敏感，但存在较宽的平台区</li></ul></div>
+      <div class="card"><h3>均值回归</h3><ul><li>高胜率，但单次亏损可能很大</li><li>单边趋势中「越跌越买」是危险动作</li><li>需要明确止损与仓位上限</li></ul></div>
+    </div>
+  `
+  const price = genPrice(20261105, 500)
+  const fastEl = el.querySelector('#fast04'), slowEl = el.querySelector('#slow04'), stratEl = el.querySelector('#strat04')
+  function run() {
+    let fast = clamp(Number(fastEl.value) || 10, 2, 120)
+    let slow = clamp(Number(slowEl.value) || 40, 3, 200)
+    if (slow <= fast) slow = fast + 5
+    const maF = movingAvg(price, fast)
+    const maS = movingAvg(price, slow)
+    const win = movingAvg(price, slow)
+    const sd = []
+    for (let i = 0; i < price.length; i++) {
+      if (i < slow - 1) { sd.push(0); continue }
+      const seg = price.slice(i - slow + 1, i + 1)
+      sd.push(std(seg))
+    }
+    const signal = []
+    let pos = 0
+    for (let i = 0; i < price.length; i++) {
+      if (stratEl.value === 'trend') {
+        if (maF[i] != null && maS[i] != null) pos = maF[i] > maS[i] ? 1 : 0
+      } else {
+        if (i >= slow - 1) {
+          if (price[i] < win[i] - 2 * sd[i]) pos = 1
+          else if (price[i] > win[i] + 0.3 * sd[i]) pos = 0
+        }
+      }
+      signal.push(pos)
+    }
+    const bt = backtestSignal(price, signal, 8)
+    const eq = bt.eq
+    const n = eq.length
+    const years = n / 252
+    const ann = Math.pow(eq[n - 1], 1 / years) - 1
+    const rets = []
+    for (let i = 1; i < n; i++) rets.push(eq[i] / eq[i - 1] - 1)
+    const vol = std(rets) * Math.sqrt(252)
+    const sharpe = vol > 0 ? ann / vol : 0
+    const mdd = maxDrawdown(eq)
+    const W = 640, H = 300, pad = 40
+    const all = price.concat(maF.filter((x) => x != null), maS.filter((x) => x != null))
+    const mn = Math.min.apply(null, all) * 0.98, mx = Math.max.apply(null, all) * 1.02
+    const xAt = (i) => pad + (i / (price.length - 1)) * (W - 2 * pad)
+    const yAt = (v) => H - pad - ((v - mn) / (mx - mn)) * (H - 2 * pad)
+    const pPts = price.map((v, i) => [xAt(i), yAt(v)])
+    let inner = ''
+    ;[0, 0.5, 1].forEach((g) => {
+      const v = mn + g * (mx - mn)
+      inner += '<line x1="' + pad + '" y1="' + yAt(v) + '" x2="' + (W - pad) + '" y2="' + yAt(v) + '" stroke="rgba(20,32,43,0.07)"/>' + text(6, yAt(v) + 3, v.toFixed(0), { size: 9 })
+    })
+    inner += '<rect x="' + (pad + (W - 2 * pad) * 0.5) + '" y="' + pad + '" width="' + ((W - 2 * pad) * 0.5) + '" height="' + (H - 2 * pad) + '" fill="rgba(161,98,7,0.05)"/>'
+    inner += text(pad + 6, pad + 12, '趋势段', { size: 10, fill: '#a16207' })
+    inner += text(pad + (W - 2 * pad) * 0.5 + 6, pad + 12, '震荡段', { size: 10, fill: '#a16207' })
+    inner += polyline(pPts, '#14202b', 1.4)
+    if (stratEl.value === 'trend') {
+      const fPts = [], sPts = []
+      maF.forEach((v, i) => { if (v != null) fPts.push([xAt(i), yAt(v)]) })
+      maS.forEach((v, i) => { if (v != null) sPts.push([xAt(i), yAt(v)]) })
+      inner += polyline(fPts, '#1d4ed8', 1.3, '4 3')
+      inner += polyline(sPts, '#b45309', 1.3, '4 3')
+    }
+    for (let i = 1; i < price.length; i++) {
+      if (signal[i] !== signal[i - 1]) {
+        inner += circle(xAt(i), yAt(price[i]), 3.2, signal[i] ? '#b91c1c' : '#15803d')
+      }
+    }
+    inner += text(pad, H - 10, '红点：开仓信号　绿点：平仓信号', { size: 9 })
+    el.querySelector('#chart04').innerHTML = chartSvg(W, H, inner)
+    el.querySelector('#metrics04').innerHTML = [
+      ['累计收益', pct(eq[n - 1] - 1, 2), eq[n - 1] >= 1 ? 'up' : 'down'],
+      ['年化收益', pct(ann, 2), ann >= 0 ? 'up' : 'down'],
+      ['夏普', fmt(sharpe, 2), sharpe >= 1 ? 'up' : ''],
+      ['最大回撤', pct(mdd, 1), 'down'],
+      ['交易次数', String(bt.trades), ''],
+      ['期末仓位', signal[signal.length - 1] ? '持有' : '空仓', ''],
+    ].map((m) => '<div class="metric"><div class="k">' + m[0] + '</div><div class="v ' + m[2] + '">' + m[1] + '</div></div>').join('')
+    el.querySelector('#out04').innerHTML = stratEl.value === 'trend'
+      ? '趋势策略在单边段通常吃到大段收益，但在震荡段会被均线反复穿越打出连续小亏。把快慢线调得太近，交易次数会暴涨，成本随之上升。'
+      : '均值回归在震荡段表现更好，但遇到单边下跌时会不断补仓。真实策略必须加止损、仓位上限与趋势过滤，否则尾部风险不可控。'
+  }
+  fastEl.oninput = run; slowEl.oninput = run; stratEl.onchange = run
+  run()
+}
+
+/* ================= 05 回测与绩效 ================= */
+function render05(el) {
+  el.innerHTML = `
+    <h2>回测实验室：成本会吃掉多少 Alpha</h2>
+    <p class="lead">同一段模拟行情、同一个双均线策略。改手续费与滑点，看净值曲线和绩效指标如何变化。注意：这里是「向量化回测」，真实撮合还需要成交量与涨跌停约束。</p>
+    <div class="toolbar">
+      <label>快线</label><input type="number" id="f05" value="10" min="2" max="60" style="width:66px">
+      <label>慢线</label><input type="number" id="s05" value="40" min="5" max="120" style="width:66px">
+      <label>单边成本（bps）</label><input type="range" id="c05" min="0" max="60" step="1" value="12" style="width:160px">
+      <span class="pill" id="c05v">12 bps</span>
+    </div>
+    <div id="chart05"></div>
+    <div class="metrics" id="m05"></div>
+    <div class="detail" id="out05"></div>
+    <h4>回测可信度检查清单</h4>
+    <div class="grid2">
+      <div class="card"><h3>数据与时间</h3><ul><li>复权方式一致，财报用公告日而非报告期</li><li>不使用未来数据；信号 T 日产生，T+1 成交</li><li>退市、停牌、ST 股票是否保留</li></ul></div>
+      <div class="card"><h3>成交与成本</h3><ul><li>涨跌停、停牌时不能成交</li><li>成交量参与率上限（如不超过当日的 10%）</li><li>佣金最低 5 元、卖出印花税、过户费</li></ul></div>
+      <div class="card"><h3>统计稳健性</h3><ul><li>样本内外分离，滚动前推验证</li><li>参数平台而非单点最优</li><li>记录试验次数，警惕多重检验</li></ul></div>
+      <div class="card"><h3>组合与容量</h3><ul><li>行业/市值中性，单票与换手约束</li><li>规模放大后冲击成本是否可承受</li><li>极端行情与流动性枯竭压力测试</li></ul></div>
+    </div>
+  `
+  const price = genPrice(777, 500)
+  const fEl = el.querySelector('#f05'), sEl = el.querySelector('#s05'), cEl = el.querySelector('#c05')
+  function run() {
+    let fast = clamp(Number(fEl.value) || 10, 2, 120)
+    let slow = clamp(Number(sEl.value) || 40, 3, 200)
+    if (slow <= fast) slow = fast + 5
+    const cost = Number(cEl.value)
+    el.querySelector('#c05v').textContent = cost + ' bps'
+    const maF = movingAvg(price, fast), maS = movingAvg(price, slow)
+    const signal = []
+    let pos = 0
+    for (let i = 0; i < price.length; i++) {
+      if (maF[i] != null && maS[i] != null) pos = maF[i] > maS[i] ? 1 : 0
+      signal.push(pos)
+    }
+    const bt = backtestSignal(price, signal, cost)
+    const eq = bt.eq, n = eq.length, years = n / 252
+    const bench = price.map((p) => p / price[0])
+    const ann = Math.pow(eq[n - 1], 1 / years) - 1
+    const bAnn = Math.pow(bench[n - 1], 1 / years) - 1
+    const rets = [], bRets = []
+    for (let i = 1; i < n; i++) { rets.push(eq[i] / eq[i - 1] - 1); bRets.push(bench[i] / bench[i - 1] - 1) }
+    const vol = std(rets) * Math.sqrt(252), bVol = std(bRets) * Math.sqrt(252)
+    const sharpe = vol ? ann / vol : 0
+    const mdd = maxDrawdown(eq), bMdd = maxDrawdown(bench)
+    const W = 640, H = 290, pad = 40
+    const mn = Math.min.apply(null, eq.concat(bench)) * 0.97
+    const mx = Math.max.apply(null, eq.concat(bench)) * 1.03
+    const xAt = (i) => pad + (i / (n - 1)) * (W - 2 * pad)
+    const yAt = (v) => H - pad - ((v - mn) / (mx - mn)) * (H - 2 * pad)
+    let inner = ''
+    ;[0, 0.5, 1].forEach((g) => {
+      const v = mn + g * (mx - mn)
+      inner += '<line x1="' + pad + '" y1="' + yAt(v) + '" x2="' + (W - pad) + '" y2="' + yAt(v) + '" stroke="rgba(20,32,43,0.07)"/>' + text(6, yAt(v) + 3, v.toFixed(2), { size: 9 })
+    })
+    inner += polyline(eq.map((v, i) => [xAt(i), yAt(v)]), '#0f5c56', 1.8)
+    inner += polyline(bench.map((v, i) => [xAt(i), yAt(v)]), '#1d4ed8', 1.2, '5 4')
+    inner += text(pad + 6, pad + 12, '实线：策略净值　虚线：买入持有', { size: 9 })
+    el.querySelector('#chart05').innerHTML = chartSvg(W, H, inner)
+    el.querySelector('#m05').innerHTML = [
+      ['策略累计', pct(eq[n - 1] - 1, 1), eq[n - 1] >= 1 ? 'up' : 'down'],
+      ['策略年化', pct(ann, 1), ann >= 0 ? 'up' : 'down'],
+      ['夏普', fmt(sharpe, 2), sharpe >= 1 ? 'up' : ''],
+      ['最大回撤', pct(mdd, 1), 'down'],
+      ['Calmar', fmt(mdd ? ann / Math.abs(mdd) : 0, 2), ''],
+      ['交易次数', String(bt.trades), ''],
+      ['基准年化', pct(bAnn, 1), bAnn >= 0 ? 'up' : 'down'],
+      ['基准回撤', pct(bMdd, 1), 'down'],
+    ].map((m) => '<div class="metric"><div class="k">' + m[0] + '</div><div class="v ' + m[2] + '">' + m[1] + '</div></div>').join('')
+    const zero = backtestSignal(price, signal, 0)
+    const drag = (zero.eq[n - 1] - eq[n - 1]) * 100
+    el.querySelector('#out05').innerHTML = '单位：单边 ' + cost + ' bps，共 ' + bt.trades + ' 次换手。' +
+      '零成本累计收益 ' + pct(zero.eq[n - 1] - 1, 1) + '，含成本 ' + pct(eq[n - 1] - 1, 1) +
+      '，成本拖累约 <b>' + drag.toFixed(1) + ' 个百分点</b>。' +
+      (cost > 30 ? '<br><span style="color:#b91c1c">当单边成本超过 30 bps，高换手策略通常很难存活。</span>' : '')
+  }
+  fEl.oninput = run; sEl.oninput = run; cEl.oninput = run
+  run()
+}
+
+/* ================= 06 组合优化 ================= */
+function render06(el) {
+  el.innerHTML = `
+    <h2>有效前沿：收益与风险的取舍</h2>
+    <p class="lead">两资产组合的权重从 0% 到 100% 变化，会在「波动率—预期收益」平面上画出一条曲线。调参数看最小方差组合与最大夏普组合怎么移动。</p>
+    <div class="slider-row"><span class="name">资产 A 预期收益</span><input type="range" id="m1" min="2" max="20" step="0.5" value="10"><span class="val" id="m1v">10.0%</span></div>
+    <div class="slider-row"><span class="name">资产 B 预期收益</span><input type="range" id="m2" min="0" max="16" step="0.5" value="5"><span class="val" id="m2v">5.0%</span></div>
+    <div class="slider-row"><span class="name">资产 A 波动率</span><input type="range" id="s1" min="5" max="45" step="1" value="22"><span class="val" id="s1v">22%</span></div>
+    <div class="slider-row"><span class="name">资产 B 波动率</span><input type="range" id="s2" min="3" max="35" step="1" value="12"><span class="val" id="s2v">12%</span></div>
+    <div class="slider-row"><span class="name">相关系数 ρ</span><input type="range" id="rho" min="-1" max="1" step="0.05" value="0.2"><span class="val" id="rhov">0.20</span></div>
+    <div id="chart06"></div>
+    <div class="metrics" id="m06"></div>
+    <div class="detail" id="out06"></div>
+    <p class="hint">有效前沿对输入极度敏感：预期收益估错 2 个百分点，最优权重可能大幅跳变。实盘里通常用收缩协方差、风险平价、行业/风格约束来「驯服」优化器，而不是直接相信均值方差的最优解。</p>
+  `
+  const ids = ['m1', 'm2', 's1', 's2', 'rho']
+  function run() {
+    const m1 = Number(el.querySelector('#m1').value) / 100
+    const m2 = Number(el.querySelector('#m2').value) / 100
+    const s1 = Number(el.querySelector('#s1').value) / 100
+    const s2 = Number(el.querySelector('#s2').value) / 100
+    const rho = Number(el.querySelector('#rho').value)
+    el.querySelector('#m1v').textContent = (m1 * 100).toFixed(1) + '%'
+    el.querySelector('#m2v').textContent = (m2 * 100).toFixed(1) + '%'
+    el.querySelector('#s1v').textContent = (s1 * 100).toFixed(0) + '%'
+    el.querySelector('#s2v').textContent = (s2 * 100).toFixed(0) + '%'
+    el.querySelector('#rhov').textContent = rho.toFixed(2)
+    const pts = []
+    for (let i = 0; i <= 100; i++) {
+      const w = i / 100
+      const mu = w * m1 + (1 - w) * m2
+      const v = Math.sqrt(w * w * s1 * s1 + (1 - w) * (1 - w) * s2 * s2 + 2 * w * (1 - w) * rho * s1 * s2)
+      pts.push({ w, mu, v, sharpe: v > 0 ? mu / v : 0 })
+    }
+    const minVar = pts.reduce((a, b) => (b.v < a.v ? b : a))
+    const maxSharpe = pts.reduce((a, b) => (b.sharpe > a.sharpe ? b : a))
+    const W = 640, H = 300, pad = 46
+    const xs = pts.map((p) => p.v), ys = pts.map((p) => p.mu)
+    const xmin = Math.min.apply(null, xs) * 0.9, xmax = Math.max.apply(null, xs) * 1.05
+    const ymin = Math.min.apply(null, ys) - 0.02, ymax = Math.max.apply(null, ys) + 0.02
+    const xAt = (v) => pad + ((v - xmin) / (xmax - xmin)) * (W - 2 * pad)
+    const yAt = (v) => H - pad - ((v - ymin) / (ymax - ymin)) * (H - 2 * pad)
+    let inner = ''
+    ;[0, 0.25, 0.5, 0.75, 1].forEach((g) => {
+      const xv = xmin + g * (xmax - xmin), yv = ymin + g * (ymax - ymin)
+      inner += '<line x1="' + xAt(xv) + '" y1="' + (H - pad) + '" x2="' + xAt(xv) + '" y2="' + pad + '" stroke="rgba(20,32,43,0.06)"/>'
+      inner += '<line x1="' + pad + '" y1="' + yAt(yv) + '" x2="' + (W - pad) + '" y2="' + yAt(yv) + '" stroke="rgba(20,32,43,0.06)"/>'
+    })
+    inner += polyline(pts.map((p) => [xAt(p.v), yAt(p.mu)]), '#0f5c56', 2)
+    inner += circle(xAt(minVar.v), yAt(minVar.mu), 4.5, '#1d4ed8')
+    inner += text(xAt(minVar.v) + 7, yAt(minVar.mu) - 5, '最小方差', { size: 9, fill: '#1d4ed8' })
+    inner += circle(xAt(maxSharpe.v), yAt(maxSharpe.mu), 4.5, '#b91c1c')
+    inner += text(xAt(maxSharpe.v) + 7, yAt(maxSharpe.mu) - 5, '最大夏普', { size: 9, fill: '#b91c1c' })
+    inner += text(pad, H - 12, '波动率 →')
+    inner += text(10, pad + 4, '预期收益', { size: 9 })
+    el.querySelector('#chart06').innerHTML = chartSvg(W, H, inner)
+    el.querySelector('#m06').innerHTML = [
+      ['最小方差波动', pct(minVar.v, 1), ''],
+      ['最小方差收益', pct(minVar.mu, 1), ''],
+      ['A 权重（MV）', pct(minVar.w, 1), ''],
+      ['最大夏普', fmt(maxSharpe.sharpe, 2), 'up'],
+      ['A 权重（MS）', pct(maxSharpe.w, 1), ''],
+      ['组合分散收益', pct(Math.max(s1, s2) - minVar.v, 1), 'up'],
+    ].map((m) => '<div class="metric"><div class="k">' + m[0] + '</div><div class="v ' + m[2] + '">' + m[1] + '</div></div>').join('')
+    el.querySelector('#out06').innerHTML = '相关系数 ρ = ' + rho.toFixed(2) + '：' +
+      (rho < 0.3 ? '分散效果明显，组合波动显著低于单一资产。' :
+        rho < 0.8 ? '分散效果一般，但仍有降低波动的空间。' :
+          '两只资产高度同向，组合几乎无法分散风险。') +
+      ' 当 ρ = 1 时，前沿退化为一条直线，组合只剩「加权平均」。'
+  }
+  ids.forEach((id) => { el.querySelector('#' + id).oninput = run })
+  run()
+}
+
+/* ================= 07 交易执行 ================= */
+function render07(el) {
+  el.innerHTML = `
+    <h2>拆单算法：TWAP / VWAP / POV</h2>
+    <p class="lead">大单一次性打出去会吃穿盘口。拆单的思路是牺牲时间换取更低的冲击，但拆得越久，价格偏离的风险越大。改订单规模与算法，看每段的下单量与预估冲击。</p>
+    <div class="toolbar">
+      <label>订单量（万股）</label><input type="number" id="q07" value="50" min="1" max="500" style="width:90px">
+      <label>算法</label>
+      <select id="a07"><option value="twap">TWAP 等分</option><option value="vwap">VWAP 按量分布</option><option value="pov">POV 20% 参与率</option></select>
+      <button class="btn primary" id="run07">生成计划</button>
+    </div>
+    <div id="chart07"></div>
+    <div class="metrics" id="m07"></div>
+    <div class="detail" id="out07"></div>
+    <h4>三种算法的适用场景</h4>
+    <table class="tbl">
+      <tr><th>算法</th><th>逻辑</th><th>适合</th><th>风险</th></tr>
+      <tr><td>TWAP</td><td>把大单平均切到 N 个时间片</td><td>流动性平稳、无明显日内节奏的标的</td><td>低流动性时段参与率过高，冲击大</td></tr>
+      <tr><td>VWAP</td><td>按历史成交量分布切分，跟随市场节奏</td><td>成交呈 U 型分布的主流标的</td><td>历史分布失真时反而落后基准</td></tr>
+      <tr><td>POV</td><td>按实时成交量的固定比例参与</td><td>流动性差的票、希望隐藏意图</td><td>成交量萎缩时可能完不成，拖到尾盘</td></tr>
+      <tr><td>IS / 到达价</td><td>在冲击与时间风险之间求最优</td><td>对价格敏感、风险厌恶高的大单</td><td>参数估计复杂，依赖波动率模型</td></tr>
+    </table>
+  `
+  const N = 8
+  const vol = [0.18, 0.12, 0.08, 0.07, 0.07, 0.09, 0.14, 0.25]
+  function run() {
+    const Q = (Number(el.querySelector('#q07').value) || 50) * 10000
+    const algo = el.querySelector('#a07').value
+    const rng = mulberry32(9527)
+    const vols = vol.map((v) => v * 5000000 * (0.85 + 0.3 * rng()))
+    let plan = []
+    if (algo === 'twap') plan = new Array(N).fill(Q / N)
+    else if (algo === 'vwap') plan = vol.map((v) => Q * v)
+    else {
+      let left = Q
+      for (let i = 0; i < N; i++) {
+        const cap = vols[i] * 0.2
+        const take = Math.min(left, cap)
+        plan.push(take); left -= take
+      }
+      if (left > 0) plan[N - 1] += left
+    }
+    const parts = plan.map((q, i) => q / vols[i])
+    const impact = plan.map((q, i) => 200 * Math.sqrt(Math.max(q, 0) / vols[i]))
+    const avgImpact = impact.reduce((a, b, i) => a + b * plan[i], 0) / Math.max(Q, 1)
+    const spread = 4
+    const total = spread + avgImpact
+    const W = 640, H = 260, pad = 44
+    const maxQ = Math.max.apply(null, plan.concat(vols)) * 1.1
+    const bw = (W - 2 * pad) / N * 0.55
+    let inner = ''
+    for (let i = 0; i < N; i++) {
+      const x = pad + (i + 0.5) * (W - 2 * pad) / N
+      const hV = (vols[i] / maxQ) * (H - 2 * pad)
+      const hQ = (plan[i] / maxQ) * (H - 2 * pad)
+      inner += '<rect x="' + (x - bw) + '" y="' + (H - pad - hV) + '" width="' + (bw * 0.9) + '" height="' + hV + '" fill="rgba(29,78,216,0.18)" rx="2"/>'
+      inner += '<rect x="' + (x - bw * 0.05) + '" y="' + (H - pad - hQ) + '" width="' + (bw * 0.9) + '" height="' + hQ + '" fill="#0f5c56" rx="2"/>'
+      inner += text(x - 12, H - pad + 14, (i + 1) + '段', { size: 9 })
+      if (plan[i] / vols[i] > 0.2) inner += text(x - 8, H - pad - hQ - 4, pct(plan[i] / vols[i], 0), { size: 8, fill: '#b91c1c' })
+    }
+    inner += text(pad, pad - 8, '蓝：该时段市场成交量　绿：我们的下单量（红字为参与率）', { size: 9 })
+    el.querySelector('#chart07').innerHTML = chartSvg(W, H, inner)
+    const maxPart = Math.max.apply(null, parts)
+    el.querySelector('#m07').innerHTML = [
+      ['预估总成本', bps(total), total > 25 ? 'down' : ''],
+      ['其中冲击', bps(avgImpact), ''],
+      ['买卖价差', bps(spread), ''],
+      ['最大参与率', pct(maxPart, 1), maxPart > 0.25 ? 'down' : ''],
+      ['完成率', '100%', ''],
+      ['执行时段', N + ' 段', ''],
+    ].map((m) => '<div class="metric"><div class="k">' + m[0] + '</div><div class="v ' + m[2] + '">' + m[1] + '</div></div>').join('')
+    el.querySelector('#out07').innerHTML = algo === 'twap'
+      ? 'TWAP 看似公平，但在成交量低谷（第 3–5 段）参与率会被动抬高，冲击成本反而更大。'
+      : algo === 'vwap'
+        ? 'VWAP 把量集中在开盘与尾盘，参与率更平滑，但尾盘流动性变差时仍要小心。'
+        : 'POV 把每段参与率控制在 20% 左右，冲击更均匀；如果全天成交量不足，剩余量会堆积到最后一段，形成「尾盘冲刺」。'
+  }
+  el.querySelector('#run07').onclick = run
+  el.querySelector('#a07').onchange = run
+  run()
+}
+
+/* ================= 08 工程架构 ================= */
+const ARCH = {
+  '数据层': {
+    duty: '行情、财报、公告、另类数据的采集、清洗、复权、对齐与版本管理。',
+    fail: '复权方式不一致、财报用报告期而非公告日、缺失数据静默填充。',
+    check: '数据快照可回溯；每日数据质量校验（缺失率、异常值、交易日历）。',
+  },
+  '研究层': {
+    duty: '因子计算、信号生成、回测、参数搜索与实验记录。',
+    fail: '研究代码与实盘代码两份实现，口径漂移；notebook 里的魔法参数没进版本库。',
+    check: '同一份因子/信号代码在研究与实盘复用；实验有配置与结果记录。',
+  },
+  '信号层': {
+    duty: '按交易日历生成目标持仓，处理停牌、涨跌停、可交易池过滤。',
+    fail: '用当天收盘数据生成当天开盘信号；未过滤不可交易标的。',
+    check: '信号时点明确（T 日盘后 / T+1 开盘前）；目标持仓可复现。',
+  },
+  '交易层': {
+    duty: '订单拆解、路由、下单、成交回报处理、状态机与重试。',
+    fail: '重复下单、断线后状态丢失、超时未撤单、部分成交处理错误。',
+    check: '幂等键、订单去重、状态持久化、超时与撤单策略、kill switch。',
+  },
+  '风控层': {
+    duty: '事前额度与禁投池、事中异常监控、事后归因与审计。',
+    fail: '只做事后风控；单票/行业超限；回撤触发后没有降仓机制。',
+    check: '资金/持仓/集中度/杠杆限额；异常价格与频繁撤单监控；降仓预案。',
+  },
+  '监控层': {
+    duty: '盘中指标、成交与持仓对账、告警、日志与审计留痕。',
+    fail: '只监控进程存活，不监控「策略是否按预期交易」。',
+    check: '信号数/订单数/成交数/滑点/仓位偏差；对账差异告警；值班与升级路径。',
+  },
+}
+function render08(el) {
+  el.innerHTML = `
+    <h2>实盘系统：把研究变成可运维的工程</h2>
+    <p class="lead">策略上线后，大部分事故不是「模型不赚钱」，而是数据错、重复下单、状态丢失、没人发现。点下方各层，看职责、典型故障与必须做的检查。</p>
+    <div class="flow" id="arch08" style="justify-content:center"></div>
+    <div class="detail" id="archD08">点击任意一层。</div>
+    <h4>一天的运行节奏</h4>
+    <table class="tbl">
+      <tr><th>阶段</th><th>动作</th><th>关键检查</th></tr>
+      <tr><td>盘前</td><td>更新数据 → 计算因子 → 生成目标持仓 → 风控预检 → 生成订单计划</td><td>数据是否齐全、信号是否异常、禁投池、资金与持仓</td></tr>
+      <tr><td>盘中</td><td>下单/拆单 → 跟踪成交 → 处理部分成交与拒单 → 盘中风控</td><td>订单状态、成交偏离、参与率、异常撤单</td></tr>
+      <tr><td>盘后</td><td>对账 → 归因 → 日志归档 → 复盘</td><td>成交与持仓一致、现金一致、滑点归因</td></tr>
+    </table>
+    <h4>上线前自查（可勾选）</h4>
+    <div id="check08"></div>
+    <p class="hint">工程化的核心不是「多写代码」，而是让每一次交易都可解释、可复现、可回滚。没有 kill switch 的实盘系统，等于没有刹车。</p>
+  `
+  const flow = el.querySelector('#arch08'), d = el.querySelector('#archD08')
+  const names = Object.keys(ARCH)
+  names.forEach((n, i) => {
+    if (i > 0) {
+      const a = document.createElement('span'); a.className = 'arrow'; a.textContent = '→'; flow.appendChild(a)
+    }
+    const b = document.createElement('span')
+    b.className = 'node'; b.textContent = n
+    b.onclick = () => {
+      flow.querySelectorAll('.node').forEach((m) => m.classList.remove('on'))
+      b.classList.add('on')
+      const x = ARCH[n]
+      d.innerHTML = '<b>' + n + '</b><br>职责：' + x.duty + '<br><span style="color:#b91c1c">典型故障：' + x.fail + '</span><br>必须检查：' + x.check
+    }
+    flow.appendChild(b)
+  })
+  const CHECKS = [
+    '同一份因子/信号代码在研究与实盘复用',
+    '所有配置进版本库，密钥走环境变量',
+    '订单有幂等键，重复提交不会重复下单',
+    '断线重连后能恢复订单与持仓状态',
+    '涨跌停、停牌、ST 标的有可交易过滤',
+    '单票/行业/杠杆/集中度限额已配置',
+    '回撤触发降仓或停机的规则已定义',
+    '有 kill switch，且经过演练',
+    '盘后自动对账（持仓、现金、成交）',
+    '关键指标有告警，且有人负责响应',
+  ]
+  const box = el.querySelector('#check08')
+  box.innerHTML = CHECKS.map((c, i) =>
+    '<label style="display:block;font-size:0.85rem;line-height:1.9"><input type="checkbox" data-i="' + i + '"> ' + c + '</label>'
+  ).join('')
+}
+
+/* ================= 09 AI 与量化 ================= */
+function render09(el) {
+  el.innerHTML = `
+    <h2>多重检验：试得越多，最好的回测越虚高</h2>
+    <p class="lead">假设所有策略的真实收益都是 0，只靠随机噪声。你试的策略越多，「最好的那个」夏普就越高。这就是为什么「我回测了 200 个参数组合，挑出夏普 2.5 的那个」不可信。</p>
+    <div class="slider-row"><span class="name">试验次数 N</span><input type="range" id="n09" min="1" max="200" step="1" value="50"><span class="val" id="n09v">50</span></div>
+    <div class="toolbar"><button class="btn primary" id="run09">重新模拟</button><span class="pill" id="p09"></span></div>
+    <div id="chart09"></div>
+    <div class="metrics" id="m09"></div>
+    <div class="detail" id="out09"></div>
+    <h4>AI 在量化里的正确位置</h4>
+    <div class="grid2">
+      <div class="card"><h3>适合做的事</h3><ul><li>非线性因子合成、特征交互</li><li>文本信息处理：财报摘要、事件抽取、舆情</li><li>执行优化、组合权重预测</li></ul></div>
+      <div class="card"><h3>不适合做的事</h3><ul><li>用 LLM 直接预测涨跌</li><li>随机 K-Fold 交叉验证（泄漏未来）</li><li>不看成本、不看容量地追求高 IC</li></ul></div>
+    </div>
+    <p class="hint">时序验证要用 Purged K-Fold + Embargo：训练集与验证集之间留出隔离期，避免标签窗口重叠。真实项目还要记录试验次数，用 Deflated Sharpe Ratio 做校正。</p>
+  `
+  const nEl = el.querySelector('#n09')
+  function run() {
+    const N = Number(nEl.value)
+    el.querySelector('#n09v').textContent = N
+    const rng = mulberry32(20261105)
+    const T = 500
+    const sharpes = []
+    for (let k = 0; k < N; k++) {
+      let sum = 0, sum2 = 0
+      for (let i = 0; i < T; i++) {
+        const r = 0.0002 + 0.011 * gauss(rng)
+        sum += r; sum2 += r * r
+      }
+      const mean = sum / T
+      const sd = Math.sqrt(Math.max(sum2 / T - mean * mean, 1e-12))
+      sharpes.push(mean / sd * Math.sqrt(252))
+    }
+    sharpes.sort((a, b) => a - b)
+    const best = sharpes[sharpes.length - 1]
+    const median = sharpes[Math.floor(sharpes.length / 2)]
+    const W = 640, H = 260, pad = 40
+    const mn = Math.min.apply(null, sharpes) - 0.2
+    const mx = Math.max.apply(null, sharpes) + 0.2
+    const bins = 24, counts = new Array(bins).fill(0)
+    sharpes.forEach((v) => {
+      const idx = clamp(Math.floor((v - mn) / (mx - mn) * bins), 0, bins - 1)
+      counts[idx]++
+    })
+    const maxC = Math.max.apply(null, counts)
+    const bw = (W - 2 * pad) / bins
+    let inner = ''
+    counts.forEach((c, i) => {
+      const h = (c / maxC) * (H - 2 * pad)
+      inner += '<rect x="' + (pad + i * bw) + '" y="' + (H - pad - h) + '" width="' + (bw * 0.86) + '" height="' + h + '" fill="rgba(15,92,86,0.55)" rx="2"/>'
+    })
+    inner += '<line x1="' + pad + '" y1="' + (H - pad) + '" x2="' + (W - pad) + '" y2="' + (H - pad) + '" stroke="rgba(20,32,43,0.2)"/>'
+    inner += text(pad, H - 12, '策略夏普分布（真实 Alpha = 0）')
+    inner += text(6, pad + 4, '频数', { size: 9 })
+    el.querySelector('#chart09').innerHTML = chartSvg(W, H, inner)
+    const expectMax = 0.8 * Math.sqrt(2 * Math.log(Math.max(N, 2)))
+    el.querySelector('#m09').innerHTML = [
+      ['试验次数', String(N), ''],
+      ['最好夏普', fmt(best, 2), best > 1.5 ? 'down' : ''],
+      ['中位数夏普', fmt(median, 2), ''],
+      ['理论期望最大值', '≈' + fmt(expectMax, 2), ''],
+      ['虚高幅度', fmt(best - median, 2), 'down'],
+      ['真实 Alpha', '0', ''],
+    ].map((m) => '<div class="metric"><div class="k">' + m[0] + '</div><div class="v ' + m[2] + '">' + m[1] + '</div></div>').join('')
+    el.querySelector('#p09').textContent = 'N = ' + N
+    el.querySelector('#out09').innerHTML = '在真实 Alpha 为 0 的前提下，试 ' + N + ' 次，最好的夏普约 <b>' + best.toFixed(2) +
+      '</b>，中位数只有 ' + median.toFixed(2) + '。这不是策略有效，而是选择偏差。' +
+      '<br>实践建议：固定试验次数并登记；把样本外数据留到最后只测一次；用 Deflated Sharpe Ratio 或 Bonferroni 类方法校正阈值。'
+  }
+  nEl.oninput = run
+  el.querySelector('#run09').onclick = run
+  run()
+}
+
+/* ================= 10 工具与 FAQ ================= */
+const TOOLS = [
+  { name: 'numpy', cat: '数据', desc: '数值计算底座，向量化与矩阵运算', who: '所有人', pit: '别用 Python 循环逐行算因子' },
+  { name: 'pandas', cat: '数据', desc: '表格数据处理、时间序列、面板', who: '入门首选', pit: '大数据量内存吃紧，注意 dtype' },
+  { name: 'polars', cat: '数据', desc: 'Rust 实现的多线程 DataFrame', who: '中大规模型号', pit: 'API 与 pandas 有差异，生态较新' },
+  { name: 'PyArrow', cat: '数据', desc: '列式内存格式与 Parquet 读写', who: '数据管道', pit: '注意 schema 与分区设计' },
+  { name: 'TA-Lib', cat: '指标', desc: '经典技术指标库（C 实现）', who: '需要标准指标', pit: '安装依赖 C 库，版本兼容需注意' },
+  { name: 'pandas-ta', cat: '指标', desc: '纯 Python 技术指标集合', who: '快速原型', pit: '部分指标实现与主流定义有差异' },
+  { name: 'backtrader', cat: '回测', desc: '事件驱动回测框架，文档成熟', who: '学习回测结构', pit: '社区更新放缓，性能一般' },
+  { name: 'vectorbt', cat: '回测', desc: '向量化回测与参数扫描', who: '批量实验', pit: '学习曲线陡，事件驱动细节弱' },
+  { name: 'backtesting.py', cat: '回测', desc: '轻量回测，API 简单', who: '快速验证想法', pit: '复杂组合与多资产支持有限' },
+  { name: 'Qlib', cat: '回测', desc: '微软开源量化平台，含数据/模型/回测', who: 'AI 量化研究', pit: '依赖重，数据准备成本高' },
+  { name: 'zipline-reloaded', cat: '回测', desc: 'Quantopian 风格的事件驱动框架', who: '美股策略', pit: '数据 bundle 维护麻烦' },
+  { name: 'cvxpy', cat: '优化', desc: '凸优化建模，组合约束求解', who: '组合优化', pit: '求解器选择与数值稳定性要调' },
+  { name: 'PyPortfolioOpt', cat: '优化', desc: '均值方差、风险平价、Black-Litterman', who: '组合构建', pit: '默认参数不适合直接实盘' },
+  { name: 'Riskfolio-Lib', cat: '优化', desc: '风险度量与组合优化工具箱', who: '进阶组合', pit: '文档偏学术，参数多' },
+  { name: 'akshare', cat: '数据源', desc: '开源财经数据接口（A 股为主）', who: '个人研究', pit: '接口稳定性依赖上游，需缓存' },
+  { name: 'tushare', cat: '数据源', desc: 'A 股数据接口，积分制', who: 'A 股研究', pit: '高频/历史深度受权限限制' },
+  { name: 'baostock', cat: '数据源', desc: '免费 A 股历史行情', who: '入门回测', pit: '数据更新与字段有限' },
+  { name: 'Wind / 聚宽 / 米筐', cat: '数据源', desc: '商业数据与研究平台', who: '机构/付费用户', pit: '成本高，注意授权范围' },
+  { name: 'vn.py', cat: '交易', desc: '开源交易框架，支持多柜台', who: '实盘接入', pit: '需要自己补齐运维与风控' },
+  { name: 'QMT / Ptrade', cat: '交易', desc: '券商提供的量化交易终端', who: 'A 股实盘', pit: '权限与资金门槛，API 版本差异' },
+  { name: 'CTP', cat: '交易', desc: '国内期货柜台接口标准', who: '期货 CTA', pit: '穿透式监管与席位配置' },
+  { name: 'IB API', cat: '交易', desc: 'Interactive Brokers 交易接口', who: '海外市场', pit: '连接稳定性与合约细节' },
+  { name: 'matplotlib', cat: '可视化', desc: '静态图表', who: '研究报告', pit: '默认样式朴素，需自行配置' },
+  { name: 'plotly', cat: '可视化', desc: '交互式图表', who: '看板/探索', pit: '大样本渲染性能有限' },
+]
+const FAQS = [
+  ['量化交易需要多少资金起步？', '学习与回测不需要资金；实盘建议先用模拟盘跑通全流程，再用可承受损失的小资金验证执行与运维。资金量决定了策略容量与可承受的固定成本（佣金最低 5 元、数据费用）。'],
+  ['数学要学到什么程度？', '入门需要概率统计（均值、方差、相关性、假设检验）、线性代数（矩阵运算）与基础微积分。进阶再补时间序列、回归、优化。不需要先学完数学再做，边做边补更有效。'],
+  ['只会 Python 够吗？', '研究、回测、中低频实盘足够。高频/低延迟才需要 C++、FPGA、内核旁路等。先把 Python 工程能力（测试、日志、并发、数据管道）练扎实。'],
+  ['A 股 T+1 对策略有什么影响？', '当日买入不能当日卖出，日内止损失效，隔夜跳空风险无法规避；也意味着高频日内策略在 A 股股票上受限（可转债、期货等品种规则不同）。'],
+  ['回测夏普 2 以上可信吗？', '先看试验次数、成本假设、成交假设、样本外表现。单次回测夏普越高越要警惕：可能是幸存者偏差、未来函数或过拟合。'],
+  ['因子失效了怎么办？', '先区分是「短期回撤」还是「逻辑失效」：看 IC 衰减、拥挤度、基本面逻辑是否被破坏。不要因为三个月回撤就推翻长期因子，也不要因为长期有效就忽视结构性变化。'],
+  ['需要自己写回测框架吗？', '学习阶段建议先手写一个向量化回测，理解成本、仓位、净值计算；生产阶段用成熟框架或自研事件驱动引擎，重点是可复现与可运维。'],
+  ['量化会不会加剧亏损？', '量化会放大执行纪律，也会放大错误：数据错误、过拟合、风控缺失都会被系统化地重复执行。它的价值是可控、可归因，而不是保证盈利。'],
+  ['一个人能做量化吗？', '可以做中低频、小资金、单一市场的策略；难点在数据、工程与运维的全链路。先从「一个策略 + 一套回测 + 一套对账」跑通，再扩张。'],
+  ['多久能稳定盈利？', '没有时间表。更现实的指标是：能否稳定复现回测、能否解释每一笔盈亏、能否在不利行情中控制回撤。把「稳定盈利」换成「稳定执行 + 可归因」，进步会更快。'],
+  ['LLM 能直接用来选股吗？', '不建议直接把 LLM 当预测器。它更适合做信息处理：财报摘要、公告事件抽取、研报问答、舆情分类，再把结构化结果作为因子输入。注意幻觉、时效与合规。'],
+  ['为什么回测和实盘差很多？', '常见原因：成本与滑点低估、成交假设过于理想、数据时点错误、幸存者偏差、实盘改了代码但回测没同步、规模变大导致冲击上升。逐项对账，通常能找到差异来源。'],
+  ['多因子怎么合成为什么不直接用机器学习？', '机器学习可以捕捉非线性与交互，但需要更大样本、更严格的验证与更强的正则化。线性加权可解释、稳健，是很好的基线；先确认基线有效，再上复杂模型。'],
+  ['要不要做空/加杠杆？', '做空与杠杆会放大尾部风险，且受券源、保证金、监管约束。先在不加杠杆的情况下跑通全流程，再评估是否需要用衍生品对冲。'],
+  ['怎么看策略容量？', '用不同资金规模重跑回测，把冲击成本写成规模的函数；观察收益随规模衰减的拐点。容量不是固定值，取决于市场流动性、换手与执行方式。'],
+  ['实盘最重要的三件事？', '数据正确、订单幂等、风控可停机。其余都是在这三件事之上的优化。'],
+]
+function render10(el) {
+  el.innerHTML = `
+    <h2>工具生态与常见问题</h2>
+    <p class="lead">工具没有唯一答案，按「数据 → 研究 → 回测 → 优化 → 交易」的环节选。先筛用途，再看定位与坑。</p>
+    <div class="flow" id="filter10"></div>
+    <div class="grid3" id="tools10"></div>
+    <h4>常见问题</h4>
+    <div id="faq10"></div>
+    <h4>推荐项目结构</h4>
+    <div class="code">quant-project/
+├── data/            # 原始数据与清洗后快照（Parquet）
+├── factors/         # 因子计算，纯函数 + 单元测试
+├── strategies/      # 信号与组合构建
+├── backtest/        # 撮合、成本、绩效
+├── execution/       # 订单、券商接口、风控
+├── config/          # 参数与股票池（进版本库）
+├── notebooks/       # 探索，不直接上生产
+└── tests/           # 数据校验、信号回归测试</div>
+    <p class="hint">原则：研究与实盘共用同一份因子/信号代码；配置与密钥分离；notebook 只做探索，进入生产的逻辑必须有测试。</p>
+  `
+  const cats = ['全部', '数据', '指标', '回测', '优化', '数据源', '交易', '可视化']
+  const f = el.querySelector('#filter10')
+  let active = '全部'
+  function renderTools() {
+    const box = el.querySelector('#tools10')
+    box.innerHTML = TOOLS.filter((t) => active === '全部' || t.cat === active).map((t) =>
+      '<div class="card"><h3>' + t.name + ' <span class="pill">' + t.cat + '</span></h3><ul><li>' + t.desc + '</li><li>适合：' + t.who + '</li><li style="color:#a16207">坑：' + t.pit + '</li></ul></div>'
+    ).join('')
+  }
+  cats.forEach((c) => {
+    const b = document.createElement('button')
+    b.className = 'chip' + (c === '全部' ? ' on' : '')
+    b.textContent = c
+    b.onclick = () => {
+      active = c
+      f.querySelectorAll('.chip').forEach((x) => x.classList.toggle('on', x.textContent === c))
+      renderTools()
+    }
+    f.appendChild(b)
+  })
+  renderTools()
+  const faq = el.querySelector('#faq10')
+  FAQS.forEach(([q, a]) => {
+    const btn = document.createElement('button')
+    btn.className = 'faq-q'
+    btn.textContent = 'Q：' + q
+    const ans = document.createElement('div')
+    ans.className = 'faq-a hidden'
+    ans.textContent = 'A：' + a
+    btn.onclick = () => ans.classList.toggle('hidden')
+    faq.appendChild(btn)
+    faq.appendChild(ans)
+  })
+}
+
+/* ================= 启动 ================= */
+const renders = {
+  '01': render01, '02': render02, '03': render03, '04': render04, '05': render05,
+  '06': render06, '07': render07, '08': render08, '09': render09, '10': render10,
+}
+if (!renders[current]) current = '01'
+show(current)
+</script>
+</body>
+</html>

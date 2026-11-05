@@ -3,12 +3,14 @@
 
 from __future__ import annotations
 
+import importlib.util
 import sys
 import webbrowser
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 LAB = ROOT / "index.html"
+SHARED = ROOT.parents[1] / "_shared" / "ai_demo_server.py"
 
 CHAPTERS = [
     ("01", "概述与定位", "Prompt Engineering 是「不改模型、只改输入」的优化层：零成本、见效快。边界要分清——知识缺失用 RAG，能力不足用微调，输出格式不稳用结构化约束 + 校验。"),
@@ -34,6 +36,23 @@ def open_lab(chapter: str | None = None) -> None:
     webbrowser.open(uri)
 
 
+def serve_lab(chapter: str | None = None, port: int = 8765) -> None:
+    """启动本地服务（静态页 + DeepSeek 真实调用），并打开浏览器。"""
+    if not LAB.is_file():
+        print(f"找不到可视化演示页: {LAB}", file=sys.stderr)
+        sys.exit(1)
+    if not SHARED.is_file():  # 共享模块缺失时回退为直接打开文件
+        open_lab(chapter)
+        return
+    spec = importlib.util.spec_from_file_location("ai_demo_server", SHARED)
+    if spec is None or spec.loader is None:
+        open_lab(chapter)
+        return
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.run(ROOT, page=LAB.name, chapter=chapter, port=port, label="提示词工程")
+
+
 def print_chapter(code: str) -> None:
     code = code.strip().zfill(2) if code.isdigit() else code.strip()
     for num, title, summary in CHAPTERS:
@@ -57,15 +76,25 @@ def main() -> None:
     args = sys.argv[1:]
     if args and args[0] in {"-h", "--help"}:
         print("用法:")
-        print("  python3 demos/main.py           # 打开可视化交互页")
+        print("  python3 demos/main.py           # 启动本地服务并打开交互页（支持真实调用）")
         print("  python3 demos/main.py 03        # 打开并定位到第 3 章")
+        print("  python3 demos/main.py --port 9000  # 指定端口")
         print("  python3 demos/main.py --cli     # 终端摘要菜单")
         print("  python3 demos/main.py --cli 03  # 终端查看某章摘要")
         return
     if args and args[0] == "--cli":
         print_chapter(args[1]) if len(args) > 1 else cli_menu()
         return
-    open_lab(args[0] if args else None)
+    port = 8765
+    if "--port" in args:
+        idx = args.index("--port")
+        try:
+            port = int(args[idx + 1])
+            del args[idx:idx + 2]
+        except (IndexError, ValueError):
+            print("--port 需要一个整数端口，例如 --port 9000", file=sys.stderr)
+            sys.exit(1)
+    serve_lab(args[0] if args else None, port)
 
 
 if __name__ == "__main__":

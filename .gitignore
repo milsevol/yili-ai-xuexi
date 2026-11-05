@@ -18,6 +18,9 @@ Thumbs.db
 __pycache__/
 *.py[cod]
 *$py.class
+
+# --- 本地应用数据 ---
+quant-platform/data/
 *.egg-info/
 .eggs/
 dist/

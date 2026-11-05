@@ -63,9 +63,12 @@ yili-ai-xuexi/
 | 11 | [提示词工程](./notes/prompt-engineering/) | AI 输入控制 | 四要素 / CoT / 结构化输出 / 防注入 6 章 + 浏览器可视化交互演示 |
 | 12 | [向量数据库](./notes/vector-db/) | AI 检索底座 | Embedding / HNSW / FAISS / Milvus 6 章 + 浏览器可视化交互演示 |
 | 13 | [RAG 检索增强生成](./notes/rag/) | AI 知识增强 | Chunking / 多路召回 / Rerank / RAGAS 8 章 + 浏览器可视化交互演示 |
-| 14 | [Agent 智能体](./notes/agent/) | AI 自主执行 | ReAct / MCP / LangGraph / 多 Agent 8 章 + 浏览器可视化交互演示 |
+| 14 | [Agent 智能体](./notes/agent/) | AI 自主执行 | 手写 Agent / ReAct / MCP / LangGraph / 多 Agent / 企业级实战 10 章 + 浏览器可视化交互演示 |
+| 15 | [量化交易](./notes/quant-trading/) | 金融技术 | 市场规则 / 因子 / 策略 / 回测 / 组合风险 / 执行 / 实盘工程 / AI 投研 10 章 + 浏览器可视化交互演示 |
 
 AI 技术路线的依赖关系与两条可选路径（应用侧 / 原理侧）见 [知识框架.md#ai-技术学习路线图](./知识框架.md#ai-技术学习路线图)。
+
+金融技术（量化）路线的学习顺序与最小可行路线见 [知识框架.md#金融技术学习路线图](./知识框架.md#金融技术学习路线图)。
 
 ## 约定摘要
 

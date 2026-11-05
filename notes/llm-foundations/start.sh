@@ -1,11 +1,12 @@
 #!/usr/bin/env zsh
-# Transformer 与大模型原理 — 一键启动（默认：浏览器可视化交互演示）
+# Transformer 与大模型原理 — 一键启动（本地服务 + 可视化交互演示）
 # 用法：
-#   ./start.sh           # 打开交互页
-#   ./start.sh 02        # 打开并跳到第 2 章（Transformer 架构详解）
+#   ./start.sh           # 启动本地服务并打开交互页
+#   ./start.sh 07        # 打开并跳到第 7 章（采样与真实概率）
+#   ./start.sh --port 9000  # 指定本地服务端口
 #   ./start.sh --cli     # 终端摘要菜单
-#   ./start.sh --cli 02  # 终端查看某章摘要
 #   ./start.sh --help
+# 说明：页面上的「真实调用」需要已配置 DEEPSEEK_API_KEY
 
 set -euo pipefail
 
@@ -21,6 +22,6 @@ if ! command -v python3 >/dev/null 2>&1; then
   exit 1
 fi
 
-echo "==> Transformer 与大模型原理 演示（可视化交互页）"
+echo "==> Transformer 与大模型原理 演示（本地服务 + 交互页）"
 cd "$TOPIC_ROOT"
 exec python3 demos/main.py "$@"

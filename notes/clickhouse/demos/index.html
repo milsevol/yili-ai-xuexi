@@ -1179,7 +1179,7 @@ PIPELINE (6 steps)
         'TiDB': 'PingCAP 的 HTAP 数据库，TiKV（RocksDB 行存 OLTP）+ TiFlash（列存 OLAP）。ClickHouse 是<b>纯 OLAP</b>。如果同一个业务表既要高并发点查（OLTP）又要大规模聚合（OLAP）→ TiDB 更合适。如果纯分析 → ClickHouse 更简单。',
         'HBase': '列式 KV 数据库（LSM-Tree），强依赖 ZooKeeper。适合<b>高并发点查</b>（PK 定位一行）。ClickHouse 不适合点查，但适合聚合分析。两者完全互补：HBase 做在线业务库，ClickHouse 做离线/近线分析。',
         'Hive': '数仓 SQL 层，Metastore + 执行引擎（Tez/Spark/Flink）。ClickHouse 经常用来<b>替换 Hive 的 ADS 报表层</b>，但前面的 ODS/DWD/DWS 清洗链路还是要靠 Hive/Spark。Hive Metastore 可以作为 ClickHouse 的 Catalog（Iceberg Engine 对接）。',
-        'Iceberg': 'Apache Iceberg 是湖仓一体表格式。ClickHouse 22.x+ 内置 Iceberg Engine，可以直接查询 S3/HDFS 上的 Iceberg 表（<code>ENGINE = Iceberg(\\'hdfs://warehouse/orders\\')</code>）。Spark/Flink 写 Iceberg → ClickHouse 高性能读同一份数据。',
+        'Iceberg': 'Apache Iceberg 是湖仓一体表格式。ClickHouse 22.x+ 内置 Iceberg Engine，可以直接查询 S3/HDFS 上的 Iceberg 表（<code>ENGINE = Iceberg(&#39;hdfs://warehouse/orders&#39;)</code>）。Spark/Flink 写 Iceberg → ClickHouse 高性能读同一份数据。',
       }
       ecos.forEach(([n, tag, d]) => {
         const div = document.createElement('div')
@@ -1216,7 +1216,11 @@ PIPELINE (6 steps)
         fl.appendChild(b); fl.appendChild(div)
       })
     }
-  ]
+
+    const renders = {
+      '01': render01, '02': render02, '03': render03, '04': render04, '05': render05,
+      '06': render06, '07': render07, '08': render08, '09': render09, '10': render10,
+    }
 
     // 初始化
     show(current)

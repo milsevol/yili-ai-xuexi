@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>QuantLab · 本地量化交易工作台</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b0f14'/%3E%3Cpath d='M8 21l5-6 4 3 7-9' stroke='%2335d0b4' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+<link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <path d="M4 17l4.5-5.5 3.5 2.5L18 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <h1>QuantLab</h1>
+        <p>本地量化工作台</p>
+      </div>
+      <button class="icon-btn close-side" id="closeSidebar" title="关闭">×</button>
+    </div>
+
+    <button class="new-btn" id="newStrategyBtn"><span>＋</span> 新建策略</button>
+
+    <div class="side-title">策略库 <span class="count" id="strategyCount"></span></div>
+    <div class="strategy-list" id="strategyList"></div>
+
+    <div class="data-card">
+      <div class="side-title">行情数据 <span class="tag">模拟</span></div>
+      <div class="data-line"><span>区间</span><b id="dataRange">—</b></div>
+      <div class="data-line"><span>标的</span><b id="dataCount">—</b></div>
+      <div class="data-line"><span>频率</span><b>日线 · T+1</b></div>
+      <div class="data-line"><span>撮合</span><b>次日开盘 · 滑点 0.05%</b></div>
+      <div class="data-line"><span>费用</span><b>佣金万三 · 印花税 0.05%</b></div>
+      <details class="universe">
+        <summary>查看标的池</summary>
+        <ul id="universeList"></ul>
+      </details>
+      <p class="data-note">数据为内置确定性模拟行情，不对应真实证券，仅用于学习回测方法。</p>
+    </div>
+
+    <div class="side-foot">仅供学习 · 不构成投资建议</div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="topbar-row">
+        <button class="icon-btn menu-btn" id="menuBtn" title="策略库">☰</button>
+        <div class="name-wrap">
+          <input id="strategyName" class="name-input" value="未命名策略" spellcheck="false" />
+          <span class="dirty-dot" id="dirtyDot" title="有未保存的修改"></span>
+        </div>
+        <div class="spacer"></div>
+        <button class="btn" id="saveBtn" title="⌘S">保存</button>
+        <button class="btn primary" id="runBtn"><span class="run-text">运行回测</span><kbd>⌘ ↵</kbd></button>
+      </div>
+      <div class="topbar-row controls">
+        <label class="field">区间
+          <input type="date" id="startDate" />
+          <span class="tilde">~</span>
+          <input type="date" id="endDate" />
+        </label>
+        <label class="field">初始资金
+          <input type="number" id="cashInput" step="100000" min="10000" />
+        </label>
+        <label class="field">基准
+          <select id="benchmarkSelect"></select>
+        </label>
+        <span class="run-hint" id="runHint">收盘出信号 · 次日开盘成交</span>
+      </div>
+    </header>
+
+    <nav class="tabs">
+      <button class="tab on" data-tab="code">策略代码</button>
+      <button class="tab" data-tab="result">回测结果</button>
+      <button class="tab" data-tab="trades">交易明细</button>
+      <button class="tab" data-tab="logs">运行日志</button>
+      <div class="spacer"></div>
+      <select class="template-select" id="templateSelect">
+        <option value="">载入示例策略…</option>
+      </select>
+      <button class="btn ghost" id="apiBtn">API 速查</button>
+    </nav>
+
+    <div class="content">
+      <section class="tab-panel on" id="tab-code">
+        <div class="editor-shell">
+          <div class="editor-bar">
+            <span class="editor-file"><i></i> strategy.py</span>
+            <span class="editor-tip">Python 3 · 修改后记得保存</span>
+          </div>
+          <div class="editor-wrap">
+            <div class="gutter" id="gutter" aria-hidden="true"></div>
+            <textarea id="editor" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+          </div>
+          <div class="editor-foot">
+            <span>⌘/Ctrl + Enter 运行 · Tab 缩进 4 空格</span>
+            <span id="cursorPos">第 1 行</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="tab-panel" id="tab-result">
+        <div class="empty-state" id="resultEmpty">
+          <div class="empty-icon">▤</div>
+          <h3>还没有回测结果</h3>
+          <p>点击右上角「运行回测」，或按 ⌘/Ctrl + Enter 执行当前策略。</p>
+        </div>
+        <div id="resultBody" hidden>
+          <div class="metrics" id="metrics"></div>
+
+          <div class="card">
+            <div class="card-head">
+              <h3>净值曲线</h3>
+              <div class="legend">
+                <span><i class="dot strategy"></i>策略</span>
+                <span><i class="dot benchmark"></i><b id="legendBenchmark">基准</b></span>
+              </div>
+            </div>
+            <div class="chart-box" id="equityBox">
+              <canvas id="equityChart"></canvas>
+              <div class="chart-tip" id="chartTip" hidden></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <h3>策略回撤</h3>
+              <span class="subtle" id="mddLabel"></span>
+            </div>
+            <div class="chart-box small"><canvas id="drawdownChart"></canvas></div>
+          </div>
+
+          <div class="grid-two">
+            <div class="card">
+              <h3>月度收益</h3>
+              <div class="heatmap" id="monthlyHeatmap"></div>
+            </div>
+            <div class="card">
+              <h3>期末持仓</h3>
+              <div id="positionsWrap"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>回测信息</h3>
+            <div class="meta-grid" id="runMeta"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="tab-panel" id="tab-trades">
+        <div class="empty-state" id="tradesEmpty">
+          <div class="empty-icon">⇅</div>
+          <h3>暂无成交记录</h3>
+          <p>运行回测后，这里会列出每一笔成交与未成交委托。</p>
+        </div>
+        <div id="tradesBody" hidden>
+          <div class="card">
+            <div class="card-head"><h3>成交明细</h3><span class="subtle" id="tradeCount"></span></div>
+            <div class="table-wrap" id="tradesTable"></div>
+          </div>
+          <div class="card" id="rejectedCard">
+            <div class="card-head"><h3>未成交委托</h3><span class="subtle" id="rejectedCount"></span></div>
+            <div class="table-wrap" id="rejectedTable"></div>
+            <p class="card-note">常见原因：资金不足、T+1 当日买入不可卖、不足一手、停牌。少量未成交属于正常摩擦。</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="tab-panel" id="tab-logs">
+        <div class="empty-state" id="logsEmpty">
+          <div class="empty-icon">›_</div>
+          <h3>暂无运行日志</h3>
+          <p>回测时策略里的 log.info / log.warn 以及引擎提示都会显示在这里。</p>
+        </div>
+        <div id="logsBody" hidden>
+          <div class="card">
+            <div class="card-head"><h3>运行日志</h3><span class="subtle" id="logCount"></span></div>
+            <div class="log-list" id="logList"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<div class="scrim" id="scrim"></div>
+
+<div class="modal" id="apiModal" hidden>
+  <div class="modal-card">
+    <div class="modal-head">
+      <div>
+        <h2>策略 API 速查</h2>
+        <p>日频回测：handle_data 中的委托会在下一交易日开盘撮合</p>
+      </div>
+      <button class="icon-btn" id="closeApi" title="关闭">×</button>
+    </div>
+    <div class="modal-body">
+      <section>
+        <h4>生命周期</h4>
+        <div class="api-item"><code>initialize(context)</code><p>回测开始时调用一次，用于设置参数、基准、费用。</p></div>
+        <div class="api-item"><code>handle_data(context, data)</code><p>每个交易日收盘后调用，编写信号逻辑并下单。</p></div>
+      </section>
+      <section>
+        <h4>下单（次日开盘成交）</h4>
+        <div class="api-item"><code>order(security, amount)</code><p>按股数买卖，正数买入、负数卖出。</p></div>
+        <div class="api-item"><code>order_value(security, value)</code><p>按金额买卖，正数买入、负数卖出。</p></div>
+        <div class="api-item"><code>order_target(security, amount)</code><p>调整持仓到指定股数，传 0 即清仓。</p></div>
+        <div class="api-item"><code>order_target_value(security, value)</code><p>调整持仓到指定市值。</p></div>
+        <div class="api-item"><code>order_target_percent(security, percent)</code><p>调整持仓到总资产的指定比例，例如 0.95。</p></div>
+      </section>
+      <section>
+        <h4>行情数据</h4>
+        <div class="api-item"><code>data.current(security, field)</code><p>当前 bar 的 open / high / low / close / volume。</p></div>
+        <div class="api-item"><code>data[security]</code><p>当前 bar 对象，含 close、limit_up、limit_down、paused 等。</p></div>
+        <div class="api-item"><code>attribute_history(security, count, unit='1d', fields=None)</code><p>最近 count 根日线，返回 {field: [...]}，包含当日。</p></div>
+        <div class="api-item"><code>history(security, count, field='close')</code><p>最近 count 个收盘价（或指定字段）的列表。</p></div>
+        <div class="api-item"><code>get_current_data()</code><p>全部标的当前 bar 的字典。</p></div>
+      </section>
+      <section>
+        <h4>账户与持仓</h4>
+        <div class="api-item"><code>context.portfolio.total_value</code><p>账户总资产（现金 + 持仓市值）。</p></div>
+        <div class="api-item"><code>context.portfolio.available_cash</code><p>可用现金。</p></div>
+        <div class="api-item"><code>context.portfolio.positions</code><p>持仓字典：{code: Position}，Position 含 amount / available / avg_cost / price。</p></div>
+        <div class="api-item"><code>get_position(security)</code><p>返回单个持仓对象或 None。</p></div>
+      </section>
+      <section>
+        <h4>交易设置</h4>
+        <div class="api-item"><code>set_benchmark(security)</code><p>设置业绩基准，如 000300.XSHG。代码中的设置会覆盖顶部基准选择。</p></div>
+        <div class="api-item"><code>set_commission(rate, min_commission, stamp_duty)</code><p>佣金率、最低佣金、卖出印花税。</p></div>
+        <div class="api-item"><code>set_slippage(slippage)</code><p>单边滑点比例，默认 0.0005。</p></div>
+      </section>
+      <section>
+        <h4>工具</h4>
+        <div class="api-item"><code>g</code><p>跨交易日保存状态的对象，例如 g.counter = 0。</p></div>
+        <div class="api-item"><code>log.info / log.warn / log.error</code><p>写运行日志，显示在「运行日志」页。</p></div>
+        <div class="api-item"><code>get_date()</code><p>当前回测日期（date 对象）。</p></div>
+      </section>
+      <section class="api-note">
+        <h4>交易规则</h4>
+        <ul>
+          <li>A 股 T+1：当日买入的股份次日才可卖出。</li>
+          <li>买入按 100 股整手；卖出零股仅在清仓时允许。</li>
+          <li>涨跌停 ±10%；佣金万三（最低 5 元）；卖出印花税 0.05%；默认滑点单边 0.05%。</li>
+          <li>策略代码在本机执行，请只运行你信任的代码。</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
