@@ -1,6 +1,7 @@
 /** 由 web/scripts/sync-notes.mjs 自动生成，勿手改 */
 export default {
   "agent": 10,
+  "agent-platform": 5,
   "clickhouse": 10,
   "dolphin-scheduler": 10,
   "flink": 10,

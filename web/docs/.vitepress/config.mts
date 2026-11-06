@@ -41,6 +41,10 @@ export default defineConfig({
         ],
       },
       {
+        text: 'AI应用',
+        items: [{ text: 'Agent 平台实战', link: '/agent-platform/' }],
+      },
+      {
         text: '金融技术',
         items: [{ text: '量化交易', link: '/quant-trading/' }],
       },
@@ -284,6 +288,19 @@ export default defineConfig({
             { text: '08 多 Agent 协作', link: '/agent/notes/08-多Agent协作' },
             { text: '09 生产工程化与评估', link: '/agent/notes/09-生产工程化与评估' },
             { text: '10 企业级实战：智能投研平台', link: '/agent/notes/10-企业级实战智能投研平台' },
+          ],
+        },
+      ],
+      '/agent-platform/': [
+        {
+          text: '金融 Agent 平台实战',
+          items: [
+            { text: '主题入口', link: '/agent-platform/' },
+            { text: '01 项目需求与业务场景', link: '/agent-platform/notes/01-项目需求与业务场景' },
+            { text: '02 平台设计与领域模型', link: '/agent-platform/notes/02-平台设计与领域模型' },
+            { text: '03 技术架构与核心链路', link: '/agent-platform/notes/03-技术架构与核心链路' },
+            { text: '04 部署与运维', link: '/agent-platform/notes/04-部署与运维' },
+            { text: '05 上线验收与 FAQ', link: '/agent-platform/notes/05-上线验收与FAQ' },
           ],
         },
       ],

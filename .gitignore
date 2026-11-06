@@ -21,6 +21,7 @@ __pycache__/
 
 # --- 本地应用数据 ---
 quant-platform/data/
+notes/agent-platform/demos/.data/
 *.egg-info/
 .eggs/
 dist/

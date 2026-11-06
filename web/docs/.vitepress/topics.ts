@@ -165,6 +165,15 @@ export const topics: Topic[] = [
     status: 'ready',
   },
   {
+    id: 'agent-platform',
+    title: '金融 Agent 平台实战',
+    category: 'AI应用',
+    description:
+      '企业内部多租户 Agent 平台：MCP 注册、Agent 上架审核、真实模型与工具调用、运行时鉴权、全链路审计与部署运维。5 章项目实战 + FastAPI/Vue 可运行控制台。',
+    link: '/agent-platform/',
+    status: 'ready',
+  },
+  {
     id: 'quant-trading',
     title: '量化交易',
     category: '金融技术',

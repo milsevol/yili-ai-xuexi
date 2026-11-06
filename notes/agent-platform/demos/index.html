@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>金融 Agent 平台 · 控制台演示</title>
+<style>
+  :root {
+    --bg: #f4f6f9;
+    --panel: #ffffff;
+    --ink: #16202e;
+    --muted: #64707f;
+    --line: rgba(22, 32, 46, 0.1);
+    --brand: #0f766e;
+    --brand-soft: rgba(15, 118, 110, 0.08);
+    --ok: #15803d;
+    --warn: #a16207;
+    --fail: #b91c1c;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  [v-cloak] { display: none; }
+  body {
+    margin: 0;
+    color: var(--ink);
+    background: var(--bg);
+    font-family: "IBM Plex Sans", "PingFang SC", "Noto Sans SC", system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  button { font: inherit; }
+  .app { max-width: 1180px; margin: 0 auto; padding: 18px 16px 56px; }
+  .topbar {
+    display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 14px 18px; margin-bottom: 14px;
+  }
+  .brand h1 { margin: 0; font-size: 1.05rem; letter-spacing: 0.01em; }
+  .brand p { margin: 2px 0 0; color: var(--muted); font-size: 0.82rem; }
+  .who { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .tenant {
+    display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px;
+    background: var(--brand-soft); color: var(--brand); font-size: 0.78rem; font-weight: 600;
+  }
+  select, input, textarea {
+    font: inherit; color: var(--ink); background: #fff; border: 1px solid var(--line);
+    border-radius: 8px; padding: 7px 10px; outline: none;
+  }
+  select:focus, input:focus, textarea:focus { border-color: var(--brand); }
+  .tabs { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 14px; }
+  .tabs button {
+    border: 1px solid transparent; background: transparent; color: var(--muted);
+    padding: 8px 14px; border-radius: 9px; cursor: pointer; white-space: nowrap;
+  }
+  .tabs button:hover { background: #e9eef5; }
+  .tabs button.active { background: var(--panel); border-color: var(--line); color: var(--brand); font-weight: 600; }
+  .grid { display: grid; gap: 14px; }
+  .grid.stats { grid-template-columns: repeat(2, 1fr); }
+  @media (min-width: 780px) { .grid.stats { grid-template-columns: repeat(4, 1fr); } }
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 16px 18px;
+  }
+  .stat .k { color: var(--muted); font-size: 0.8rem; }
+  .stat .v { font-size: 1.6rem; font-weight: 700; margin-top: 2px; }
+  .stat .v small { font-size: 0.8rem; font-weight: 400; color: var(--muted); margin-left: 4px; }
+  .section-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 20px 0 10px; }
+  .section-title h2 { margin: 0; font-size: 1rem; }
+  .section-title p { margin: 2px 0 0; color: var(--muted); font-size: 0.8rem; }
+  .btn {
+    border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 8px;
+    padding: 6px 12px; cursor: pointer;
+  }
+  .btn:hover { border-color: #b9c4d2; }
+  .btn.primary { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600; }
+  .btn.primary:hover { background: #0b5f59; }
+  .btn.ghost { background: transparent; }
+  .btn.danger { color: var(--fail); border-color: rgba(185, 28, 28, 0.3); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 4px; padding: 1px 9px; border-radius: 999px;
+    font-size: 0.75rem; font-weight: 600; white-space: nowrap;
+  }
+  .pill.draft, .pill.offline { background: #eef1f5; color: #52606f; }
+  .pill.pending { background: #fef6e6; color: var(--warn); }
+  .pill.published, .pill.success { background: #eaf7ee; color: var(--ok); }
+  .pill.rejected, .pill.denied { background: #fdecec; color: var(--fail); }
+  .pill.degraded { background: #fef6e6; color: var(--warn); }
+  .agent-card { display: grid; gap: 10px; }
+  .agent-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
+  .agent-head h3 { margin: 0; font-size: 0.98rem; }
+  .desc { color: var(--muted); font-size: 0.85rem; margin: 0; }
+  .meta { color: var(--muted); font-size: 0.78rem; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    background: #f1f5f9; border: 1px solid var(--line); border-radius: 6px;
+    padding: 2px 8px; font-size: 0.76rem; font-family: ui-monospace, Menlo, monospace;
+  }
+  .chip.off { color: #97a2b0; text-decoration: line-through; }
+  .chip.allowed { background: var(--brand-soft); border-color: rgba(15, 118, 110, 0.25); color: var(--brand); }
+  .muted { color: var(--muted); }
+  .flow { display: grid; gap: 8px; grid-template-columns: repeat(2, 1fr); }
+  @media (min-width: 860px) { .flow { grid-template-columns: repeat(6, 1fr); } }
+  .flow div {
+    background: #fbfdff; border: 1px dashed #c8d4e2; border-radius: 9px; padding: 10px;
+    font-size: 0.78rem; text-align: center; color: var(--muted);
+  }
+  .flow div b { display: block; color: var(--ink); font-size: 0.84rem; margin-bottom: 2px; }
+  .form-grid { display: grid; gap: 10px; }
+  @media (min-width: 760px) { .form-grid { grid-template-columns: 1fr 1fr; } .form-grid .full { grid-column: 1 / -1; } }
+  label.field { display: grid; gap: 4px; font-size: 0.8rem; color: var(--muted); }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .timeline { display: grid; gap: 10px; margin-top: 12px; }
+  .step { border-left: 3px solid var(--line); padding: 2px 0 2px 12px; }
+  .step.thought { border-color: #9aa8b8; }
+  .step.action { border-color: #2563eb; }
+  .step.observation { border-color: var(--brand); }
+  .step.final { border-color: var(--ok); }
+  .step.warning { border-color: var(--warn); }
+  .step.blocked { border-color: var(--fail); }
+  .step .t { font-weight: 600; font-size: 0.84rem; }
+  .step .d { color: var(--muted); font-size: 0.82rem; }
+  .answer {
+    margin-top: 14px; background: #fbfdff; border: 1px solid var(--line);
+    border-radius: 10px; padding: 14px 16px; font-size: 0.88rem;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 0.78rem; }
+  .table-wrap { overflow-x: auto; }
+  .empty { color: var(--muted); padding: 26px; text-align: center; border: 1px dashed var(--line); border-radius: 10px; }
+  .toast {
+    position: fixed; right: 18px; bottom: 18px; max-width: 360px; z-index: 20;
+    background: #16202e; color: #fff; border-radius: 10px; padding: 10px 14px; font-size: 0.85rem;
+    box-shadow: 0 10px 30px rgba(16, 24, 40, 0.24);
+  }
+  .toast.fail { background: var(--fail); }
+  .note { font-size: 0.78rem; color: var(--muted); }
+  .hint { background: var(--brand-soft); border-radius: 8px; padding: 8px 12px; font-size: 0.8rem; color: #0b5f59; }
+  .run-item { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .run-q { font-weight: 600; font-size: 0.86rem; }
+  .code { font-family: ui-monospace, Menlo, monospace; font-size: 0.78rem; }
+  @media (max-width: 640px) { .brand h1 { font-size: 0.95rem; } .topbar { padding: 12px; } }
+</style>
+</head>
+<body>
+<div id="app" v-cloak class="app">
+  <header class="topbar">
+    <div class="brand">
+      <h1>金融 Agent 平台 · 控制台</h1>
+      <p>多租户 · Agent 上架 · MCP 注册 · 调试运行 · 全链路审计</p>
+    </div>
+    <div class="who">
+      <span class="tenant">{{ me.tenant_name || '加载中' }}</span>
+      <span class="pill" :class="llm.online ? 'published' : 'draft'">{{ llm.online ? llm.model : '离线模拟' }}</span>
+      <select v-model="userId" @change="switchUser" title="演示用身份切换，生产由 SSO 颁发">
+        <option v-for="u in users" :key="u.id" :value="u.id">
+          {{ u.name }} · {{ u.title }}（{{ u.tenant_name }}）
+        </option>
+      </select>
+      <span class="pill" :class="me.role === 'viewer' ? 'draft' : 'published'">{{ roleText(me.role) }}</span>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button v-for="t in tabs" :key="t.id" :class="{ active: tab === t.id }" @click="tab = t.id">
+      {{ t.label }}<span v-if="t.id === 'agents' && stats.pending" class="muted"> · {{ stats.pending }}</span>
+    </button>
+  </nav>
+
+  <!-- 概览 -->
+  <section v-if="tab === 'overview'" class="grid">
+    <div class="grid stats">
+      <div class="card stat"><div class="k">Agent 总数</div><div class="v">{{ stats.agents }}<small>个</small></div></div>
+      <div class="card stat"><div class="k">已上线</div><div class="v">{{ stats.published }}<small>个</small></div></div>
+      <div class="card stat"><div class="k">待审核</div><div class="v">{{ stats.pending }}<small>个</small></div></div>
+      <div class="card stat"><div class="k">累计调用</div><div class="v">{{ stats.runs }}<small>次 · 平均 {{ stats.avg_latency }}ms</small></div></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title" style="margin-top:0">
+        <div><h2>平台治理链路</h2><p>每一步都留痕，跨租户请求在入口即被拦截</p></div>
+      </div>
+      <div class="flow">
+        <div><b>注册 MCP</b>工具与权限声明</div>
+        <div><b>创建 Agent</b>选工具 + 写人设</div>
+        <div><b>提交审核</b>草稿 → 待审核</div>
+        <div><b>管理员审批</b>发布 / 驳回</div>
+        <div><b>调试调用</b>运行时鉴权</div>
+        <div><b>审计回溯</b>谁在何时做了什么</div>
+      </div>
+      <p class="hint" style="margin-top:12px">
+        当前身份可调用工具：{{ myScopes }}。<template v-if="stats.denied"> 已有 {{ stats.denied }} 次运行时权限拦截，可在「审计」中查看。</template>
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="section-title" style="margin-top:0">
+        <div><h2>最近运行</h2><p>只展示本租户数据</p></div>
+        <button class="btn ghost" @click="tab = 'debug'">去调试台</button>
+      </div>
+      <div class="grid" v-if="runs.length">
+        <div class="run-item" v-for="r in runs" :key="r.id">
+          <div class="row" style="justify-content:space-between">
+            <span class="run-q">{{ r.question }}</span>
+            <span class="pill" :class="r.status">{{ runText(r.status) }}</span>
+          </div>
+          <div class="meta">{{ r.agent_name }} · {{ userLabel(r.user_id) }} · {{ r.created_at }} · {{ r.tokens }} tokens</div>
+        </div>
+      </div>
+      <div v-else class="empty">还没有调用记录，去「调试台」跑一次</div>
+    </div>
+  </section>
+
+  <!-- Agent -->
+  <section v-if="tab === 'agents'" class="grid">
+    <div class="card">
+      <div class="section-title" style="margin-top:0">
+        <div><h2>Agent 目录</h2><p>草稿 → 待审核 → 已上线；下线后可重新提交</p></div>
+        <button v-if="canDevelop" class="btn primary" @click="showAgentForm = !showAgentForm">
+          {{ showAgentForm ? '收起' : '新建 Agent' }}
+        </button>
+      </div>
+
+      <div v-if="showAgentForm" class="card" style="background:#fbfdff;margin-bottom:14px">
+        <div class="form-grid">
+          <label class="field">名称<input v-model.trim="agentForm.name" maxlength="30" placeholder="如：可转债条款助手" /></label>
+          <label class="field">可见范围<input value="仅本租户（固定）" disabled /></label>
+          <label class="field full">描述<input v-model.trim="agentForm.description" maxlength="200" placeholder="一句话说明解决什么问题" /></label>
+          <label class="field full">系统提示词
+            <textarea v-model.trim="agentForm.system_prompt" rows="3" placeholder="约束回答口径，如：数字必须来自工具、不构成投资建议"></textarea>
+          </label>
+          <div class="field full">
+            <span class="muted" style="font-size:0.8rem">授权工具（来自本租户已启用的 MCP）</span>
+            <div class="chips" style="margin-top:6px">
+              <label v-for="t in tools" :key="t.name" class="chip" :class="t.allowed ? 'allowed' : 'off'">
+                <input type="checkbox" :value="t.name" v-model="agentForm.tools" :disabled="!t.allowed" />
+                {{ t.label }} <span class="muted">{{ t.scope }}</span>
+              </label>
+              <span v-if="!tools.length" class="muted">暂无可用工具，请先注册并启用 MCP</span>
+            </div>
+          </div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <button class="btn primary" :disabled="busy" @click="createAgent">保存为草稿</button>
+          <span class="note">保存后仍需提交审核，由租户管理员发布</span>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card agent-card" v-for="a in agents" :key="a.id" style="background:#fbfdff">
+          <div class="agent-head">
+            <div>
+              <h3>{{ a.name }} <span class="pill" :class="a.status">{{ agentText(a.status) }}</span></h3>
+              <p class="desc">{{ a.description || '未填写描述' }}</p>
+            </div>
+            <div class="meta">v{{ a.version }} · {{ a.creator_name }} · {{ a.updated_at }}</div>
+          </div>
+          <div class="chips">
+            <span class="chip" v-for="t in a.tools" :key="t">{{ t }}</span>
+            <span v-if="!a.tools.length" class="muted">未授权工具</span>
+          </div>
+          <div v-if="a.review_note" class="note">审核意见：{{ a.review_note }}</div>
+          <div class="row">
+            <button v-if="a.status === 'published'" class="btn primary" @click="openDebug(a)">去调试</button>
+            <button v-if="canDevelop && a.created_by === me.id && ['draft','rejected','offline'].includes(a.status)"
+                    class="btn" :disabled="busy" @click="submitAgent(a)">提交审核</button>
+            <template v-if="me.role === 'admin' && a.status === 'pending'">
+              <button class="btn primary" :disabled="busy" @click="reviewAgent(a, 'publish')">通过并上线</button>
+              <button class="btn danger" :disabled="busy" @click="reviewAgent(a, 'reject')">驳回</button>
+            </template>
+            <button v-if="(me.role === 'admin' || a.created_by === me.id) && a.status === 'published'"
+                    class="btn" :disabled="busy" @click="offlineAgent(a)">下线</button>
+          </div>
+        </div>
+        <div v-if="!agents.length" class="empty">本租户还没有 Agent</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MCP -->
+  <section v-if="tab === 'mcp'" class="grid">
+    <div class="card">
+      <div class="section-title" style="margin-top:0">
+        <div><h2>MCP 服务注册表</h2><p>工具即权限：scope 决定谁能调用</p></div>
+        <button v-if="canDevelop" class="btn primary" @click="showMcpForm = !showMcpForm">
+          {{ showMcpForm ? '收起' : '注册 MCP' }}
+        </button>
+      </div>
+
+      <div v-if="showMcpForm" class="card" style="background:#fbfdff;margin-bottom:14px">
+        <div class="form-grid">
+          <label class="field">服务名称<input v-model.trim="mcpForm.name" placeholder="如：新闻舆情服务" /></label>
+          <label class="field">工具名（英文）<input v-model.trim="mcpForm.tool_name" placeholder="news_search" /></label>
+          <label class="field">展示名<input v-model.trim="mcpForm.tool_label" placeholder="新闻检索" /></label>
+          <label class="field">传输方式
+            <select v-model="mcpForm.transport">
+              <option value="http">http</option><option value="sse">sse</option><option value="stdio">stdio</option>
+            </select>
+          </label>
+          <label class="field">端点<input v-model.trim="mcpForm.endpoint" placeholder="http://mcp-gateway/news" /></label>
+          <label class="field">权限 scope<input v-model.trim="mcpForm.scope" placeholder="如 report:read" /></label>
+          <label class="field full">工具描述
+            <input v-model.trim="mcpForm.description" maxlength="200"
+                   placeholder="写清楚什么时候用，模型据此选择工具，如：检索内部新闻与公告" />
+          </label>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <button class="btn primary" :disabled="busy" @click="registerMcp">提交注册</button>
+          <span class="note">开发者注册后为「未启用」，需管理员启用；管理员注册直接生效</span>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card agent-card" v-for="m in mcps" :key="m.id" style="background:#fbfdff">
+          <div class="agent-head">
+            <div>
+              <h3>{{ m.name }}
+                <span class="pill" :class="m.enabled ? 'published' : 'offline'">{{ m.enabled ? '已启用' : '未启用' }}</span>
+              </h3>
+              <p class="desc code">{{ m.transport }} · {{ m.endpoint }}</p>
+              <p class="desc">{{ m.description || '未填写工具描述' }}</p>
+            </div>
+            <div class="meta">{{ m.created_at }}</div>
+          </div>
+          <div class="chips">
+            <span class="chip allowed">{{ m.tool_name }} → {{ m.tool_label }}</span>
+            <span class="chip">scope: {{ m.scope }}</span>
+          </div>
+          <div class="row" v-if="me.role === 'admin'">
+            <button class="btn" :disabled="busy" @click="toggleMcp(m, !m.enabled)">
+              {{ m.enabled ? '停用' : '启用' }}
+            </button>
+            <span class="note">停用后，引用该工具的 Agent 调用会被标记为「工具不可用」</span>
+          </div>
+        </div>
+        <div v-if="!mcps.length" class="empty">本租户还没有注册 MCP</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 调试 -->
+  <section v-if="tab === 'debug'" class="grid">
+    <div class="card">
+      <div class="section-title" style="margin-top:0">
+        <div><h2>调试台</h2><p>只有已上线的 Agent 能被调用，真实模型 + 真实工具执行，运行时逐工具鉴权</p></div>
+        <span class="pill" :class="llm.online ? 'published' : 'draft'">
+          {{ llm.online ? '在线模型 ' + llm.model : '离线模拟（未配置 Key）' }}
+        </span>
+      </div>
+      <div class="form-grid">
+        <label class="field">选择 Agent
+          <select v-model="chat.agent_id">
+            <option value="" disabled>请选择已上线的 Agent</option>
+            <option v-for="a in publishedAgents" :key="a.id" :value="a.id">
+              {{ a.name }} · v{{ a.version }} · {{ a.tools.length }} 个工具
+            </option>
+          </select>
+        </label>
+        <label class="field">当前可用工具
+          <input :value="myScopes" disabled />
+        </label>
+        <label class="field full">问题
+          <textarea v-model.trim="chat.question" rows="3" maxlength="500"
+                    placeholder="如：宁德时代最近行情和研报观点怎么样？"></textarea>
+        </label>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <span class="note">示例：</span>
+        <button class="btn ghost" v-for="p in prompts" :key="p" @click="chat.question = p">{{ p }}</button>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn primary" :disabled="busy || !chat.agent_id || !chat.question" @click="runAgent">运行 Agent</button>
+        <span class="note" v-if="me.role === 'viewer'">试试选「财报对比助手」：研究员没有 finance:read，会在运行时被拦截</span>
+        <span class="note" v-else-if="!publishedAgents.length">当前没有已上线的 Agent：新建后需提交审核并由管理员发布</span>
+      </div>
+
+      <details style="margin-top:12px">
+        <summary class="note" style="cursor:pointer">查看 API 调用方式（创建好的 Agent 也可以直接被业务系统调用）</summary>
+        <pre class="code" style="background:#0f172a;color:#e2e8f0;border-radius:8px;padding:12px;overflow:auto;font-size:0.76rem">curl -X POST http://127.0.0.1:8787/api/runs \\
+  -H 'Content-Type: application/json' \\
+  -H 'X-User-Id: u-sec-view' \\
+  -d '{"agent_id":"ag-sec-1","question":"宁德时代最近行情和研报观点怎么样？"}'</pre>
+        <p class="note" style="margin:6px 0 0">
+          Demo 用 <span class="code">X-User-Id</span> 模拟 SSO 身份；生产环境换成
+          <span class="code">Authorization: Bearer &lt;token&gt;</span> 或平台签发的 API Key，并按调用方 scope 鉴权。
+        </p>
+      </details>
+
+      <template v-if="lastRun">
+        <div class="row" style="margin-top:16px">
+          <span class="pill" :class="lastRun.status">{{ runText(lastRun.status) }}</span>
+          <span class="meta">{{ lastRun.tokens }} tokens · 耗时 {{ lastRun.latency_ms }}ms · {{ lastRun.model }}</span>
+        </div>
+        <div class="timeline">
+          <div class="step" :class="s.type" v-for="(s, i) in lastRun.steps" :key="i">
+            <div class="t">{{ s.title }}</div>
+            <div class="d">{{ s.detail }}</div>
+          </div>
+        </div>
+        <div v-if="lastRun.answer" class="answer" v-html="renderAnswer(lastRun.answer)"></div>
+      </template>
+    </div>
+  </section>
+
+  <!-- 审计 -->
+  <section v-if="tab === 'audit'" class="grid">
+    <div class="card">
+      <div class="section-title" style="margin-top:0">
+        <div><h2>审计日志</h2><p>发布、驳回、下线、跨租户拦截全部留痕</p></div>
+        <span class="meta">租户：{{ me.tenant_name }}</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>时间</th><th>操作人</th><th>动作</th><th>对象</th><th>详情</th></tr></thead>
+          <tbody>
+            <tr v-for="a in audit" :key="a.id">
+              <td class="meta">{{ a.created_at }}</td>
+              <td>{{ a.actor }}</td>
+              <td><span class="code">{{ a.action }}</span></td>
+              <td>{{ a.target }}</td>
+              <td class="muted">{{ a.detail }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div v-if="!audit.length" class="empty" style="margin-top:12px">暂无审计记录</div>
+    </div>
+  </section>
+
+  <div v-if="toast" class="toast" :class="toast.type">{{ toast.message }}</div>
+</div>
+
+<script src="./vendor/vue.global.prod.js"></script>
+<script>
+const { createApp } = Vue
+
+createApp({
+  data() {
+    return {
+      userId: localStorage.getItem('agent-platform-user') || 'u-sec-admin',
+      me: {},
+      llm: { online: false, model: '', max_steps: 6 },
+      users: [],
+      agents: [],
+      mcps: [],
+      tools: [],
+      runs: [],
+      audit: [],
+      stats: {},
+      scopes: [],
+      tab: 'overview',
+      busy: false,
+      toast: null,
+      showAgentForm: false,
+      showMcpForm: false,
+      lastRun: null,
+      tabs: [
+        { id: 'overview', label: '概览' },
+        { id: 'agents', label: 'Agent 目录' },
+        { id: 'mcp', label: 'MCP 注册' },
+        { id: 'debug', label: '调试台' },
+        { id: 'audit', label: '审计' },
+      ],
+      prompts: [
+        '宁德时代最近行情和研报观点怎么样？',
+        '对比近三年营收、毛利率和现金流',
+        '这份投顾话术是否符合适当性要求？',
+        '帮我算一下年化收益和最大回撤',
+      ],
+      agentForm: { name: '', description: '', system_prompt: '', tools: [] },
+      mcpForm: { name: '', tool_name: '', tool_label: '', transport: 'http', endpoint: '', scope: 'custom:run', description: '' },
+      chat: { agent_id: '', question: '' },
+    }
+  },
+  computed: {
+    canDevelop() { return ['admin', 'developer'].includes(this.me.role) },
+    publishedAgents() { return this.agents.filter(a => a.status === 'published') },
+    myScopes() {
+      const list = this.tools.filter(t => t.allowed).map(t => t.scope)
+      return list.length ? [...new Set(list)].join(' · ') : '无可调用工具'
+    },
+  },
+  methods: {
+    async api(path, method = 'GET', body) {
+      const res = await fetch(path, {
+        method,
+        headers: { 'Content-Type': 'application/json', 'X-User-Id': this.userId },
+        body: body ? JSON.stringify(body) : undefined,
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.detail || `请求失败（${res.status}）`)
+      return data
+    },
+    notify(message, type = '') {
+      this.toast = { message, type }
+      clearTimeout(this._toastTimer)
+      this._toastTimer = setTimeout(() => (this.toast = null), 3200)
+    },
+    async load() {
+      try {
+        const boot = await this.api('/api/bootstrap')
+        this.me = boot.me
+        this.users = boot.users
+        this.scopes = boot.scopes
+        this.llm = boot.llm || this.llm
+        localStorage.setItem('agent-platform-user', this.userId)
+        const data = await this.api('/api/overview')
+        Object.assign(this, {
+          agents: data.agents, mcps: data.mcps, tools: data.tools,
+          runs: data.runs, audit: data.audit, stats: data.stats,
+        })
+        if (!this.chat.agent_id && this.publishedAgents.length) this.chat.agent_id = this.publishedAgents[0].id
+      } catch (e) {
+        this.notify(e.message, 'fail')
+      }
+    },
+    switchUser() { this.lastRun = null; this.load() },
+    openDebug(a) {
+      this.chat.agent_id = a.id
+      this.lastRun = null
+      this.tab = 'debug'
+    },
+    async createAgent() {
+      if (!this.agentForm.name) return this.notify('请填写 Agent 名称', 'fail')
+      this.busy = true
+      try {
+        await this.api('/api/agents', 'POST', this.agentForm)
+        this.notify('已保存为草稿，提交审核后由管理员发布')
+        this.agentForm = { name: '', description: '', system_prompt: '', tools: [] }
+        this.showAgentForm = false
+        await this.load()
+      } catch (e) { this.notify(e.message, 'fail') } finally { this.busy = false }
+    },
+    async submitAgent(a) {
+      this.busy = true
+      try {
+        await this.api(`/api/agents/${a.id}/submit`, 'POST')
+        this.notify('已提交审核')
+        await this.load()
+      } catch (e) { this.notify(e.message, 'fail') } finally { this.busy = false }
+    },
+    async reviewAgent(a, decision) {
+      this.busy = true
+      try {
+        const note = decision === 'reject' ? (prompt('驳回原因（可留空）') || '材料不完整，请补充工具权限说明') : '审核通过'
+        await this.api(`/api/agents/${a.id}/review`, 'POST', { decision, note })
+        this.notify(decision === 'publish' ? `${a.name} 已上线` : `${a.name} 已驳回`)
+        await this.load()
+      } catch (e) { this.notify(e.message, 'fail') } finally { this.busy = false }
+    },
+    async offlineAgent(a) {
+      this.busy = true
+      try {
+        await this.api(`/api/agents/${a.id}/offline`, 'POST')
+        this.notify(`${a.name} 已下线`)
+        await this.load()
+      } catch (e) { this.notify(e.message, 'fail') } finally { this.busy = false }
+    },
+    async registerMcp() {
+      this.busy = true
+      try {
+        await this.api('/api/mcp', 'POST', this.mcpForm)
+        this.notify('MCP 已注册')
+        this.mcpForm = { name: '', tool_name: '', tool_label: '', transport: 'http', endpoint: '', scope: 'custom:run', description: '' }
+        this.showMcpForm = false
+        await this.load()
+      } catch (e) { this.notify(e.message, 'fail') } finally { this.busy = false }
+    },
+    async toggleMcp(m, enabled) {
+      this.busy = true
+      try {
+        await this.api(`/api/mcp/${m.id}/toggle`, 'POST', { enabled })
+        this.notify(`${m.name} 已${enabled ? '启用' : '停用'}`)
+        await this.load()
+      } catch (e) { this.notify(e.message, 'fail') } finally { this.busy = false }
+    },
+    async runAgent() {
+      this.busy = true
+      this.lastRun = null
+      try {
+        this.lastRun = await this.api('/api/runs', 'POST', this.chat)
+        if (this.lastRun.status === 'denied') this.notify('运行时权限拦截：已记入审计', 'fail')
+        await this.load()
+      } catch (e) { this.notify(e.message, 'fail') } finally { this.busy = false }
+    },
+    renderAnswer(text) {
+      const safe = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      return safe
+        .replace(/^#{2,4}\s+(.+)$/gm, '<strong>$1</strong>')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/^-\s+/gm, '• ')
+        .replace(/\n/g, '<br>')
+    },
+    roleText(role) { return ({ admin: '租户管理员', developer: 'Agent 开发者', viewer: '业务用户' })[role] || role },
+    agentText(s) { return ({ draft: '草稿', pending: '待审核', published: '已上线', rejected: '已驳回', offline: '已下线' })[s] || s },
+    runText(s) { return ({ success: '成功', denied: '权限拦截', degraded: '降级输出' })[s] || s },
+    userLabel(id) { const u = this.users.find(x => x.id === id); return u ? u.name : id },
+  },
+  mounted() { this.load() },
+}).mount('#app')
+</script>
+</body>
+</html>
