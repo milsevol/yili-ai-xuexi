@@ -17,6 +17,10 @@ export default defineConfig({
     nav: [
       { text: '首页', link: '/' },
       {
+        text: '基础',
+        items: [{ text: 'OceanBase', link: '/oceanbase/' }],
+      },
+      {
         text: '大数据',
         items: [
           { text: 'Hadoop', link: '/hadoop/' },
@@ -51,6 +55,22 @@ export default defineConfig({
     ],
 
     sidebar: {
+      '/oceanbase/': [
+        {
+          text: 'OceanBase 数据库',
+          items: [
+            { text: '主题入口', link: '/oceanbase/' },
+            { text: '01 概述与定位', link: '/oceanbase/notes/01-概述与定位' },
+            { text: '02 架构与核心组件', link: '/oceanbase/notes/02-架构与核心组件' },
+            { text: '03 存储引擎与多副本', link: '/oceanbase/notes/03-存储引擎与多副本' },
+            { text: '04 多租户与资源管理', link: '/oceanbase/notes/04-多租户与资源管理' },
+            { text: '05 SQL 与兼容模式', link: '/oceanbase/notes/05-SQL与兼容模式' },
+            { text: '06 部署运维与性能调优', link: '/oceanbase/notes/06-部署运维与性能调优' },
+            { text: '07 Oracle 迁移 OceanBase', link: '/oceanbase/notes/07-Oracle迁移OceanBase' },
+            { text: '08 生态对比与 FAQ', link: '/oceanbase/notes/08-生态对比与FAQ' },
+          ],
+        },
+      ],
       '/hadoop/': [
         {
           text: 'Hadoop',

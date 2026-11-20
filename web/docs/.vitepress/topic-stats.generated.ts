@@ -11,6 +11,7 @@ export default {
   "iceberg": 10,
   "kafka": 10,
   "llm-foundations": 8,
+  "oceanbase": 8,
   "prompt-engineering": 6,
   "quant-trading": 10,
   "rag": 8,

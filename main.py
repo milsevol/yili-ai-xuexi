@@ -28,6 +28,7 @@ TOPICS = [
     ("14", "iceberg", "Apache Iceberg（湖仓表格式）"),
     ("15", "quant-trading", "量化交易（从研究到实盘）"),
     ("16", "agent-platform", "金融 Agent 平台实战（FastAPI + Vue）"),
+    ("17", "oceanbase", "OceanBase 数据库（架构 / 多租户 / Oracle 迁移）"),
 ]
 
 

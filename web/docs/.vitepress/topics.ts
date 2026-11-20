@@ -4,7 +4,7 @@
  * 新增主题时：在此登记，并同步 config.mts 导航 / web/docs/<主题>/index.md。
  */
 export type TopicCategory =
-  | '基础语言'
+  | '基础'
   | '大数据'
   | 'AI技术'
   | 'AI应用'
@@ -22,7 +22,7 @@ export type Topic = {
 
 /** 大类顺序（首页筛选与分组固定按此顺序） */
 export const categoryOrder: TopicCategory[] = [
-  '基础语言',
+  '基础',
   '大数据',
   'AI技术',
   'AI应用',
@@ -30,7 +30,7 @@ export const categoryOrder: TopicCategory[] = [
 ]
 
 export const categoryHints: Record<TopicCategory, string> = {
-  基础语言: 'Python、Java、SQL、Shell 等语言基础',
+  基础: 'Python、Java、SQL、数据库、Shell 等基础',
   大数据: '调度、数仓、消息队列、计算引擎等',
   AI技术: '模型、RAG、向量库、Agent 等技术能力',
   AI应用: '业务场景与落地用法',
@@ -38,6 +38,15 @@ export const categoryHints: Record<TopicCategory, string> = {
 }
 
 export const topics: Topic[] = [
+  {
+    id: 'oceanbase',
+    title: 'OceanBase 数据库',
+    category: '基础',
+    description:
+      '蚂蚁自研的分布式关系型数据库：Paxos 多副本、RPO=0、在线扩容、多租户、MySQL/Oracle 双兼容。8 章笔记（含 Oracle 迁移专章）+ 浏览器可视化交互演示。',
+    link: '/oceanbase/',
+    status: 'ready',
+  },
   {
     id: 'hadoop',
     title: 'Hadoop',

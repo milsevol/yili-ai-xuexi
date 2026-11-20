@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>OceanBase · 交互式演示</title>
+<style>
+  :root {
+    --bg: #f5f7fa;
+    --panel: #fff;
+    --ink: #16202e;
+    --muted: #5f6b7a;
+    --line: rgba(22, 32, 46, 0.11);
+    --brand: #0f766e;
+    --brand-soft: rgba(15, 118, 110, 0.1);
+    --ok: #15803d;
+    --warn: #a16207;
+    --fail: #b91c1c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "IBM Plex Sans", "PingFang SC", "Noto Sans SC", sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    min-height: 100vh;
+  }
+  .app { max-width: 1120px; margin: 0 auto; padding: 20px 16px 48px; display: grid; gap: 16px; }
+  @media (min-width: 880px) { .app { grid-template-columns: 230px 1fr; align-items: start; } }
+  .brand h1 { margin: 0; font-size: 1.2rem; }
+  .brand p { margin: 4px 0 0; color: var(--muted); font-size: 0.85rem; line-height: 1.5; }
+  .nav { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+  @media (min-width: 880px) {
+    .nav { flex-direction: column; position: sticky; top: 12px; background: var(--panel);
+           border: 1px solid var(--line); border-radius: 14px; padding: 10px; }
+  }
+  .nav button {
+    border: 1px solid var(--line); background: var(--panel); border-radius: 999px;
+    padding: 0.45rem 0.85rem; font-size: 0.86rem; cursor: pointer; text-align: left;
+    color: var(--ink); white-space: nowrap;
+  }
+  @media (min-width: 880px) {
+    .nav button { width: 100%; border-radius: 10px; border-color: transparent; background: transparent; }
+    .nav button:hover { background: #eef6f4; }
+  }
+  .nav button.active { background: var(--brand-soft); border-color: var(--brand); color: var(--brand); font-weight: 600; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px 18px 22px; min-height: 460px; }
+  .panel h2 { margin: 0 0 6px; font-size: 1.15rem; }
+  .lead { margin: 0 0 16px; color: var(--muted); font-size: 0.9rem; line-height: 1.65; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0 14px; }
+  .toolbar button, .toolbar label {
+    border: 1px solid var(--line); background: #fff; border-radius: 8px;
+    padding: 0.4rem 0.75rem; font-size: 0.84rem; cursor: pointer; color: var(--ink);
+  }
+  .toolbar button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .toolbar button.primary { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600; }
+  .grid2 { display: grid; gap: 12px; }
+  @media (min-width: 700px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+  .grid3 { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+  .card { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; background: #fafcff; cursor: pointer; transition: border-color .15s, transform .15s; }
+  .card:hover, .card.on { border-color: var(--brand); transform: translateY(-1px); }
+  .card h3 { margin: 0 0 8px; font-size: 0.95rem; }
+  .card ul { margin: 0; padding-left: 1.1rem; color: var(--muted); font-size: 0.85rem; line-height: 1.55; }
+  .detail { margin-top: 12px; padding: 12px 14px; border-radius: 10px; background: var(--brand-soft); font-size: 0.88rem; line-height: 1.65; min-height: 3em; }
+  .code {
+    margin-top: 10px; background: #16202e; color: #e5eaf1; border-radius: 10px;
+    padding: 12px 14px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.78rem; line-height: 1.7; white-space: pre-wrap;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 0.84rem; margin-top: 8px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 0.8rem; }
+  .pass { color: var(--ok); font-weight: 600; }
+  .warn { color: var(--warn); font-weight: 600; }
+  .fail { color: var(--fail); font-weight: 600; }
+  .note { margin-top: 14px; font-size: 0.83rem; color: var(--muted); line-height: 1.6; border-left: 3px solid var(--line); padding-left: 10px; }
+  .mono { font-family: ui-monospace, Menlo, monospace; font-size: 0.8rem; color: var(--muted); }
+  select, input[type="range"] { border: 1px solid var(--line); border-radius: 8px; padding: 0.35rem 0.6rem; font-size: 0.84rem; background: #fff; color: var(--ink); }
+  .zone { border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: #fff; text-align: center; transition: all .2s; }
+  .zone.leader { border-color: var(--brand); background: var(--brand-soft); }
+  .zone.dead { opacity: 0.45; border-style: dashed; }
+  .zone b { display: block; margin-bottom: 6px; }
+  .zone span { font-size: 0.8rem; color: var(--muted); }
+  .log { margin-top: 12px; font-family: ui-monospace, Menlo, monospace; font-size: 0.78rem;
+         line-height: 1.6; background: #0f172a; color: #e2e8f0; border-radius: 10px;
+         padding: 10px 12px; max-height: 150px; overflow: auto; white-space: pre-wrap; }
+  .bar { height: 18px; border-radius: 9px; background: #e8eef0; overflow: hidden; margin: 6px 0 10px; }
+  .bar > i { display: block; height: 100%; width: 0; background: var(--brand); transition: width .35s; }
+  .metric { display: flex; justify-content: space-between; font-size: 0.84rem; color: var(--muted); }
+  .step-list { display: grid; gap: 8px; margin-top: 8px; }
+  .step-btn { text-align: left; border: 1px solid var(--line); background: #fff; border-radius: 10px;
+              padding: 10px 12px; font-size: 0.86rem; cursor: pointer; display: flex; gap: 10px; }
+  .step-btn.done { border-color: var(--brand); background: var(--brand-soft); }
+  .step-btn .no { color: var(--brand); font-weight: 700; }
+  .faq-q { width: 100%; text-align: left; border: 1px solid var(--line); background: #fff;
+           border-radius: 10px; padding: 10px 12px; font-size: 0.88rem; cursor: pointer; margin-top: 8px; }
+  .faq-q:hover { border-color: var(--brand); }
+  .faq-a { display: none; padding: 10px 12px; font-size: 0.84rem; color: var(--muted); line-height: 1.65; }
+  .faq-a.open { display: block; }
+  .kv { font-size: 0.86rem; line-height: 1.8; }
+  .kv b { color: var(--brand); }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brand">
+      <h1>OceanBase</h1>
+      <p>8 章交互演示 · 左侧选章节</p>
+    </div>
+    <nav class="nav" id="nav"></nav>
+  </aside>
+  <main class="panel">
+    <h2 id="title"></h2>
+    <p class="lead" id="lead"></p>
+    <div id="lab"></div>
+    <div class="note" id="note"></div>
+  </main>
+</div>
+<script>
+const CHAPTERS = [
+  {
+    code: "01", title: "概述与定位",
+    lead: "OceanBase 是蚂蚁自研的分布式关系型数据库：shared-nothing + Paxos 多副本，把强一致、水平扩展、多租户和 MySQL/Oracle 双兼容放进同一个引擎。",
+    note: "先记住四个关键词：Paxos 多副本、Zone 故障域、多租户、双兼容模式。",
+    render(el) {
+      const items = [
+        { k: "它解决什么", v: ["单机容量/并发天花板", "主从切换 RPO 风险", "高端硬件成本", "Oracle 替换"], d: "分库分表中间件只能缓解，OB 从存储到 SQL 引擎原生分布式。" },
+        { k: "核心能力", v: ["Paxos 多副本，RPO=0", "在线扩容", "多租户资源隔离", "HTAP 行列共存"], d: "三副本容忍单 Zone 故障；租户像独立实例；行存做交易、列存做分析。" },
+        { k: "不适用场景", v: ["极小单机应用", "纯离线 OLAP", "超高频 KV 点查"], d: "小业务 MySQL 更简单；OLAP 交给 ClickHouse；KV 点查交给 Redis/HBase。" }
+      ];
+      const wrap = document.createElement("div");
+      wrap.className = "grid2";
+      const detail = document.createElement("div");
+      detail.className = "detail";
+      detail.textContent = "点击卡片查看说明";
+      items.forEach((it) => {
+        const c = document.createElement("div");
+        c.className = "card";
+        c.innerHTML = `<h3>${it.k}</h3><ul>${it.v.map((x) => `<li>${x}</li>`).join("")}</ul>`;
+        c.onclick = () => {
+          wrap.querySelectorAll(".card").forEach((n) => n.classList.remove("on"));
+          c.classList.add("on");
+          detail.textContent = it.d;
+        };
+        wrap.appendChild(c);
+      });
+      el.append(wrap, detail);
+      const table = document.createElement("table");
+      table.innerHTML = `
+        <tr><th>维度</th><th>OceanBase</th><th>MySQL 主从</th><th>Oracle RAC</th></tr>
+        <tr><td>架构</td><td>shared-nothing + Paxos</td><td>单机 + 主从</td><td>共享存储集群</td></tr>
+        <tr><td>故障切换</td><td class="pass">自动选主，RPO=0</td><td class="warn">可能丢数据</td><td>节点级切换</td></tr>
+        <tr><td>扩展</td><td class="pass">加机器自动均衡</td><td>分库分表</td><td>纵向为主</td></tr>
+        <tr><td>兼容</td><td>MySQL + Oracle</td><td>MySQL</td><td>Oracle</td></tr>`;
+      el.appendChild(table);
+    }
+  },
+  {
+    code: "02", title: "架构与核心组件",
+    lead: "三 Zone 三副本是最常见形态。每个分区的三个副本组成 Paxos 组，Leader 负责读写；Leader 故障后由多数派重新选举。点按钮模拟一次故障切换。",
+    note: "RootService 不是独立进程，而是内置于某台 OBServer 的服务，主 RS 故障后会自动重选。",
+    render(el) {
+      const log = document.createElement("div");
+      log.className = "log";
+      const zones = [
+        { name: "Zone 1", addr: "10.0.0.1:2881", dead: false },
+        { name: "Zone 2", addr: "10.0.0.2:2881", dead: false },
+        { name: "Zone 3", addr: "10.0.0.3:2881", dead: false }
+      ];
+      let leader = 0;
+      let busy = false;
+      const grid = document.createElement("div");
+      grid.className = "grid3";
+      const bar = document.createElement("div");
+      bar.className = "toolbar";
+      const write = (msg) => { log.textContent += msg + "\n"; log.scrollTop = log.scrollHeight; };
+      const draw = () => {
+        grid.innerHTML = "";
+        zones.forEach((z, i) => {
+          const d = document.createElement("div");
+          d.className = "zone" + (i === leader && !z.dead ? " leader" : "") + (z.dead ? " dead" : "");
+          d.innerHTML = `<b>${z.name}</b><span>${z.addr}</span><div style="margin-top:8px" class="mono">${
+            z.dead ? "OFFLINE" : i === leader ? "LEADER · 读写" : "FOLLOWER · 同步日志"
+          }</div>`;
+          d.onclick = () => {
+            if (z.dead || i === leader) return;
+            leader = i;
+            write(`[切换] 手动把 Leader 切到 ${z.name}`);
+            draw();
+          };
+          grid.appendChild(d);
+        });
+      };
+      const kill = document.createElement("button");
+      kill.className = "primary";
+      kill.textContent = "模拟 Leader 所在 Zone 故障";
+      kill.onclick = () => {
+        if (busy) return;
+        busy = true;
+        const idx = leader;
+        zones[idx].dead = true;
+        write(`[故障] ${zones[idx].name} 下线，Leader 丢失`);
+        draw();
+        kill.disabled = true;
+        setTimeout(() => {
+          const alive = zones.map((z, i) => (z.dead ? -1 : i)).filter((i) => i >= 0);
+          leader = alive[0];
+          write(`[Paxos] 剩余 ${alive.length} 个副本构成多数派，选举 ${zones[leader].name} 为新 Leader`);
+          write("[结果] 集群继续提供读写，已提交数据不丢失（RPO=0）");
+          draw();
+        }, 900);
+      };
+      const reset = document.createElement("button");
+      reset.textContent = "重置";
+      reset.onclick = () => {
+        zones.forEach((z) => (z.dead = false));
+        leader = 0;
+        log.textContent = "";
+        kill.disabled = false;
+        write("[初始化] 三 Zone 三副本，Zone 1 为 Leader");
+        draw();
+      };
+      bar.append(kill, reset);
+      el.append(bar, grid, log);
+      reset.onclick();
+    }
+  },
+  {
+    code: "03", title: "存储引擎与多副本",
+    lead: "写入先进 MemTable，内存达到阈值后冻结并转储成增量 SSTable；后台 Major Compaction 把增量与基线合并。点按钮观察每一步。",
+    note: "合并长期失败会导致增量数据膨胀、查询变慢；生产上要把合并窗口放在低峰并监控进度。",
+    render(el) {
+      let memRows = 0;
+      let incremental = 0;
+      let baseline = 100000;
+      const cap = 10000;
+      const memBar = document.createElement("div");
+      memBar.className = "bar";
+      const memFill = document.createElement("i");
+      memBar.appendChild(memFill);
+      const m1 = document.createElement("div");
+      m1.className = "metric";
+      const m2 = document.createElement("div");
+      m2.className = "metric";
+      m2.style.marginTop = "8px";
+      const log = document.createElement("div");
+      log.className = "log";
+      const write = (s) => { log.textContent += s + "\n"; log.scrollTop = log.scrollHeight; };
+      const draw = () => {
+        const pct = Math.min(100, Math.round((memRows / cap) * 100));
+        memFill.style.width = pct + "%";
+        memFill.style.background = pct >= 90 ? "var(--fail)" : pct >= 70 ? "var(--warn)" : "var(--brand)";
+        m1.innerHTML = `<span>MemTable</span><span>${memRows} / ${cap} 行（${pct}%）</span>`;
+        m2.innerHTML = `<span>增量 SSTable：<b>${incremental}</b> 个　基线数据：<b>${baseline.toLocaleString()}</b> 行</span><span></span>`;
+      };
+      const bar = document.createElement("div");
+      bar.className = "toolbar";
+      const mk = (label, fn, primary) => {
+        const b = document.createElement("button");
+        b.textContent = label;
+        if (primary) b.className = "primary";
+        b.onclick = fn;
+        bar.appendChild(b);
+        return b;
+      };
+      mk("写入 2,000 行", () => {
+        memRows += 2000;
+        write(`[写入] 2,000 行进入 MemTable，同时写 clog 并同步多数派`);
+        if (memRows >= cap) {
+          write("[冻结] MemTable 超过阈值，转为只读");
+        }
+        draw();
+      }, true);
+      mk("冻结并转储", () => {
+        if (memRows === 0) { write("[跳过] MemTable 为空"); return; }
+        incremental += 1;
+        write(`[转储] ${memRows.toLocaleString()} 行落成增量 SSTable #${incremental}`);
+        memRows = 0;
+        draw();
+      });
+      mk("触发 Major Compaction", () => {
+        if (incremental === 0) { write("[跳过] 没有增量 SSTable"); return; }
+        baseline += incremental * cap;
+        write(`[合并] ${incremental} 个增量 SSTable 与基线合并，生成新基线`);
+        write("[合并] 旧版本被回收，查询需要扫描的层数减少");
+        incremental = 0;
+        draw();
+      });
+      el.append(bar, m1, memBar, m2, log);
+      write("[初始化] 基线数据 100,000 行，MemTable 为空");
+      draw();
+    }
+  },
+  {
+    code: "04", title: "多租户与资源管理",
+    lead: "Unit Config 定义资源规格，Resource Pool 定义份数与 Zone 列表，Tenant 承载业务。调整规格，看看三 Zone 集群还能放几个租户。",
+    note: "三 Zone、UNIT_NUM=1 的租户需要 3 个 Unit；规划时还要给 sys 租户和系统进程预留资源。",
+    render(el) {
+      const cluster = { cpu: 32, mem: 128 };
+      const unit = { cpu: 2, mem: 8 };
+      const wrap = document.createElement("div");
+      wrap.className = "toolbar";
+      const mkSel = (label, opts, onChange) => {
+        const l = document.createElement("label");
+        l.textContent = label + " ";
+        const s = document.createElement("select");
+        opts.forEach((o) => {
+          const op = document.createElement("option");
+          op.value = o;
+          op.textContent = o;
+          s.appendChild(op);
+        });
+        s.onchange = () => onChange(Number(s.value));
+        l.appendChild(s);
+        wrap.appendChild(l);
+      };
+      mkSel("Unit CPU", [1, 2, 4, 8], (v) => { unit.cpu = v; draw(); });
+      mkSel("Unit 内存(G)", [4, 8, 16, 32], (v) => { unit.mem = v; draw(); });
+      const out = document.createElement("div");
+      const draw = () => {
+        const perZone = Math.min(Math.floor(cluster.cpu / unit.cpu), Math.floor(cluster.mem / unit.mem));
+        const maxTenant = Math.max(0, perZone);
+        out.innerHTML = `
+          <div class="detail">
+            集群：${cluster.cpu} 核 / ${cluster.mem} GB（每个 Zone）<br>
+            单个租户：${unit.cpu} 核 / ${unit.mem} GB × 3 Zone = ${unit.cpu * 3} 核 / ${unit.mem * 3} GB<br>
+            每 Zone 最多 <b>${perZone}</b> 个 Unit → 理论上最多 <b>${maxTenant}</b> 个该规格租户
+          </div>
+          <div class="code">CREATE RESOURCE UNIT unit_${unit.cpu}c${unit.mem}g
+  MAX_CPU = ${unit.cpu}, MIN_CPU = ${unit.cpu},
+  MEMORY_SIZE = '${unit.mem}G', LOG_DISK_SIZE = '${Math.max(10, unit.mem)}G';
+
+CREATE RESOURCE POOL pool_app
+  UNIT = 'unit_${unit.cpu}c${unit.mem}g', UNIT_NUM = 1,
+  ZONE_LIST = ('zone1', 'zone2', 'zone3');
+
+CREATE TENANT ob_app
+  RESOURCE_POOL_LIST = ('pool_app')
+  SET ob_compatibility_mode = 'mysql';</div>`;
+      };
+      el.append(wrap, out);
+      draw();
+    }
+  },
+  {
+    code: "05", title: "SQL 与兼容模式",
+    lead: "兼容模式在建租户时确定，之后不能改。切换看看同一件事在 MySQL 模式和 Oracle 模式下的写法差异。",
+    note: "Oracle 模式遵循 Oracle 语义：空串按 NULL 处理，VARCHAR2 默认按字节计长。",
+    render(el) {
+      const samples = {
+        mysql: `-- MySQL 模式
+CREATE TABLE t_order (
+  order_id   BIGINT AUTO_INCREMENT PRIMARY KEY,
+  order_no   VARCHAR(32) NOT NULL,
+  amount     DECIMAL(18,2) NOT NULL,
+  created_at DATETIME NOT NULL
+) PARTITION BY HASH(order_id) PARTITIONS 8;
+
+SELECT * FROM t_order
+ORDER BY created_at DESC
+LIMIT 10 OFFSET 20;
+
+CREATE USER 'app'@'%' IDENTIFIED BY '******';
+GRANT SELECT, INSERT ON appdb.* TO 'app'@'%';`,
+        oracle: `-- Oracle 模式
+CREATE TABLE t_order (
+  order_id   NUMBER(19) NOT NULL,
+  order_no   VARCHAR2(32) NOT NULL,
+  amount     NUMBER(18,2) NOT NULL,
+  created_at DATE NOT NULL,
+  CONSTRAINT pk_order PRIMARY KEY (order_id)
+) PARTITION BY RANGE (created_at) (
+  PARTITION p2025 VALUES LESS THAN (DATE '2026-01-01')
+);
+
+CREATE SEQUENCE seq_order_id START WITH 1 INCREMENT BY 1 CACHE 100;
+SELECT * FROM t_order ORDER BY created_at DESC FETCH FIRST 10 ROWS ONLY;
+
+CREATE USER app IDENTIFIED BY ******;
+GRANT CONNECT, RESOURCE TO app;`,
+        diff: `-- 系统视图
+MySQL : SHOW TABLES; / information_schema.tables
+Oracle: USER_TABLES / ALL_TABLES / DBA_TABLES
+
+-- 分页
+MySQL : LIMIT 10 OFFSET 20
+Oracle: ROWNUM / FETCH FIRST 10 ROWS ONLY
+
+-- 空串
+MySQL : '' 与 NULL 不同
+Oracle: '' 等价于 NULL
+
+-- 自增
+MySQL : AUTO_INCREMENT
+Oracle: SEQUENCE + NEXTVAL`
+      };
+      const bar = document.createElement("div");
+      bar.className = "toolbar";
+      const out = document.createElement("div");
+      out.className = "code";
+      const mk = (label, key) => {
+        const b = document.createElement("button");
+        b.textContent = label;
+        b.onclick = () => {
+          bar.querySelectorAll("button").forEach((x) => x.classList.remove("primary"));
+          b.classList.add("primary");
+          out.textContent = samples[key];
+        };
+        bar.appendChild(b);
+        return b;
+      };
+      const b1 = mk("MySQL 模式", "mysql");
+      const b2 = mk("Oracle 模式", "oracle");
+      mk("关键差异", "diff");
+      el.append(bar, out);
+      b1.classList.add("primary");
+      out.textContent = samples.mysql;
+    }
+  },
+  {
+    code: "06", title: "部署运维与性能调优",
+    lead: "调优的第一步永远是定位瓶颈，而不是改参数。选一个典型症状，看排查顺序。",
+    note: "大多数性能问题出在 SQL、索引、分区和统计信息，不是数据库参数。",
+    render(el) {
+      const cases = [
+        { name: "CPU 持续高", steps: ["看 GV$OB_SQL_AUDIT 的 Top SQL", "检查执行计划是否全表扫描", "补索引 / 改写 SQL / 收集统计信息", "大查询加限流或错峰", "最后再考虑扩 CPU"], tip: "CPU 高通常是坏 SQL 或并发突增，先查 SQL 再扩容。" },
+        { name: "磁盘快满", steps: ["确认数据盘 / 日志盘 / 备份盘", "检查合并是否长期失败", "清理过期备份与回收站", "评估副本与压缩率", "扩容或调整保留策略"], tip: "合并失败会导致增量堆积，是磁盘暴涨的常见原因。" },
+        { name: "写入变慢", steps: ["看 clog 同步延迟与副本状态", "检查合并是否在跑", "检查磁盘 IO 与网络", "确认是否有大事务", "拆批提交 / 错峰合并"], tip: "Paxos 提交依赖多数派，最慢的副本会拖慢整体写入。" },
+        { name: "慢 SQL 增多", steps: ["按 ELAPSED_TIME 排序找 Top SQL", "EXPLAIN 看扫描行数与算子", "检查索引与分区裁剪", "对比统计信息是否过期", "用 Outline 固定计划防止回退"], tip: "优化顺序：索引 → 分区裁剪 → SQL 改写 → 并行 → 参数。" }
+      ];
+      const bar = document.createElement("div");
+      bar.className = "toolbar";
+      const out = document.createElement("div");
+      const draw = (c) => {
+        out.innerHTML = `<div class="step-list">${c.steps.map((s, i) =>
+          `<div class="step-btn done"><span class="no">${i + 1}</span><span>${s}</span></div>`).join("")}</div>
+          <div class="detail">${c.tip}</div>`;
+      };
+      cases.forEach((c, i) => {
+        const b = document.createElement("button");
+        b.textContent = c.name;
+        b.onclick = () => {
+          bar.querySelectorAll("button").forEach((x) => x.classList.remove("primary"));
+          b.classList.add("primary");
+          draw(c);
+        };
+        bar.appendChild(b);
+        if (i === 0) b.classList.add("primary");
+      });
+      el.append(bar, out);
+      draw(cases[0]);
+    }
+  },
+  {
+    code: "07", title: "Oracle 迁移 OceanBase",
+    lead: "迁移不是「把数据搬过去」，而是评估、结构、全量、增量、校验、割接、回滚的完整工程。按步骤走一遍，再看常见对象的兼容情况。",
+    note: "无主键表、空串语义、字符长度、时区、IOT/AQ/调度是迁移中最常见的坑。",
+    render(el) {
+      const steps = [
+        { k: "1. 兼容性评估", d: "用 OMA/OMS 扫描对象与 SQL，输出兼容性报告；重点看 PL/SQL、包、DBLink、物化视图、IOT、AQ、调度作业。" },
+        { k: "2. POC 验证", d: "选核心业务的小范围真实数据，建 Oracle 模式租户，跑通结构、数据、SQL 与性能，校正工作量估算。" },
+        { k: "3. 环境准备", d: "三 Zone 集群、Oracle 模式租户、用户权限、字符集（utf8mb4）、时区、NLS、OBProxy、JDBC 驱动全部就绪。" },
+        { k: "4. 结构迁移", d: "OMS 自动转换大部分 DDL；分区表、全局索引、约束、序列、触发器、存储过程逐项复核并编译。" },
+        { k: "5. 全量迁移", d: "OMS 全量迁移，控制并发与限流；LOB、大表、无主键表单独处理；支持断点续传。" },
+        { k: "6. 增量同步", d: "OMS 解析 Oracle 日志做增量同步；持续监控延迟，割接前必须追到接近 0。" },
+        { k: "7. 数据校验", d: "行数 → 汇总（SUM/MIN/MAX）→ 抽样/全量逐行；再做业务口径校验（报表、对账、接口）。" },
+        { k: "8. 割接与回滚", d: "低峰窗口停写 → 追平 → 最终校验 → 切换连接串 → 观察；保留 Oracle 只读，OMS 反向增量做回滚。" }
+      ];
+      let cur = 0;
+      const list = document.createElement("div");
+      list.className = "step-list";
+      const detail = document.createElement("div");
+      detail.className = "detail";
+      const bar = document.createElement("div");
+      bar.className = "toolbar";
+      const prev = document.createElement("button");
+      prev.textContent = "上一步";
+      const next = document.createElement("button");
+      next.className = "primary";
+      next.textContent = "下一步";
+      const draw = () => {
+        list.innerHTML = "";
+        steps.forEach((s, i) => {
+          const d = document.createElement("div");
+          d.className = "step-btn" + (i <= cur ? " done" : "");
+          d.innerHTML = `<span class="no">${i + 1}</span><span>${s.k.replace(/^\d+\.\s*/, "")}</span>`;
+          d.onclick = () => { cur = i; draw(); };
+          list.appendChild(d);
+        });
+        detail.innerHTML = `<b>${steps[cur].k}</b><br>${steps[cur].d}`;
+        prev.disabled = cur === 0;
+        next.disabled = cur === steps.length - 1;
+      };
+      prev.onclick = () => { if (cur > 0) { cur--; draw(); } };
+      next.onclick = () => { if (cur < steps.length - 1) { cur++; draw(); } };
+      bar.append(prev, next);
+      el.append(bar, list, detail);
+
+      const table = document.createElement("table");
+      table.innerHTML = `
+        <tr><th>Oracle 对象/特性</th><th>支持情况</th><th>迁移建议</th></tr>
+        <tr><td>表 / 分区表 / 索引 / 约束</td><td class="pass">支持</td><td>注意分区键与唯一约束</td></tr>
+        <tr><td>视图 / 序列 / 同义词 / 触发器</td><td class="pass">支持</td><td>编译并回归触发逻辑</td></tr>
+        <tr><td>存储过程 / 函数 / 包</td><td class="pass">大部分支持</td><td>逐只编译，重点测异常与事务边界</td></tr>
+        <tr><td>DBLink / 物化视图</td><td class="warn">支持，需验证</td><td>网络、刷新方式与窗口单独评估</td></tr>
+        <tr><td>索引组织表（IOT）</td><td class="fail">不支持</td><td>改普通表 + 主键</td></tr>
+        <tr><td>外部表 / AQ / 调度作业</td><td class="fail">受限</td><td>改用导入工具 / 消息队列 / 外部调度</td></tr>`;
+      el.appendChild(table);
+      draw();
+    }
+  },
+  {
+    code: "08", title: "生态对比与 FAQ",
+    lead: "没有银弹：OceanBase 强在强一致、多租户、Oracle 兼容；OLAP 交给 ClickHouse/StarRocks，缓存交给 Redis，离线交给 Hive/Spark。",
+    note: "选型先看场景和数据规模，再看团队运维能力，最后看生态与合规。",
+    render(el) {
+      const table = document.createElement("table");
+      table.innerHTML = `
+        <tr><th>维度</th><th>OceanBase</th><th>TiDB</th><th>PolarDB-X</th><th>Oracle RAC</th></tr>
+        <tr><td>架构</td><td>Paxos 多副本</td><td>Raft + TiKV</td><td>计算存储分离</td><td>共享存储</td></tr>
+        <tr><td>兼容</td><td class="pass">MySQL + Oracle</td><td>MySQL</td><td>MySQL</td><td>Oracle</td></tr>
+        <tr><td>多租户</td><td class="pass">原生</td><td>较弱</td><td>较弱</td><td>无</td></tr>
+        <tr><td>典型场景</td><td>金融核心、政务</td><td>互联网 HTAP</td><td>阿里云生态</td><td>传统核心</td></tr>`;
+      el.appendChild(table);
+      const faqs = [
+        ["OceanBase 和 MySQL 最大区别？", "MySQL 是单机数据库加主从；OceanBase 是原生分布式，分区打散、Paxos 多副本、在线扩容、多租户都是内核能力。"],
+        ["Oracle 迁移最难的是什么？", "不是数据搬运，而是 PL/SQL 与高级对象兼容、SQL 调优、业务口径校验和回滚预案。"],
+        ["三副本是不是浪费存储？", "有三倍副本开销，但编码压缩能显著降低单副本体积；也可以用 2F+1A 仲裁副本降低成本。"],
+        ["大事务有什么问题？", "占用内存与日志空间，可能导致超时、回滚慢、影响其他租户。建议拆批提交。"],
+        ["社区版够用吗？", "学习、POC、部分生产可用；关键生产系统要评估企业版能力、商业支持与合规要求。"]
+      ];
+      faqs.forEach(([q, a]) => {
+        const b = document.createElement("button");
+        b.className = "faq-q";
+        b.textContent = "Q：" + q;
+        const d = document.createElement("div");
+        d.className = "faq-a";
+        d.textContent = a;
+        b.onclick = () => d.classList.toggle("open");
+        el.append(b, d);
+      });
+    }
+  }
+];
+
+const nav = document.getElementById("nav");
+const titleEl = document.getElementById("title");
+const leadEl = document.getElementById("lead");
+const lab = document.getElementById("lab");
+const noteEl = document.getElementById("note");
+
+function show(code) {
+  const ch = CHAPTERS.find((c) => c.code === code) || CHAPTERS[0];
+  titleEl.textContent = `${ch.code} ${ch.title}`;
+  leadEl.textContent = ch.lead;
+  noteEl.textContent = ch.note;
+  lab.innerHTML = "";
+  ch.render(lab);
+  [...nav.children].forEach((b) => b.classList.toggle("active", b.dataset.code === ch.code));
+  if (history.replaceState) history.replaceState(null, "", `?c=${ch.code}`);
+}
+
+CHAPTERS.forEach((c) => {
+  const b = document.createElement("button");
+  b.textContent = `${c.code} ${c.title}`;
+  b.dataset.code = c.code;
+  b.onclick = () => show(c.code);
+  nav.appendChild(b);
+});
+
+show(new URLSearchParams(location.search).get("c") || "01");
+</script>
+</body>
+</html>

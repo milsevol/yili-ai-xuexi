@@ -2,7 +2,7 @@
 
 个人技术知识学习仓库：整理笔记 + 配套可运行演示。主要给自己学，也方便朋友/读者阅读跟做。
 
-大类：**基础语言、大数据、AI 技术、AI 应用、金融技术**（详见 [知识框架.md](./知识框架.md)）。演示以 **Python** 为主。对外总入口为 **VitePress 站点**（可静态部署）。
+大类：**基础、大数据、AI 技术、AI 应用、金融技术**（详见 [知识框架.md](./知识框架.md)）。演示以 **Python** 为主。对外总入口为 **VitePress 站点**（可静态部署）。
 
 ## 怎么用
 
@@ -50,6 +50,7 @@ yili-ai-xuexi/
 
 | 顺序 | 主题 | 层级 | 说明 |
 | --- | --- | --- | --- |
+| — | [OceanBase](./notes/oceanbase/) | 数据库基础 | 分布式关系型数据库：Paxos 多副本 / 多租户 / MySQL + Oracle 双模式 / Oracle 迁移 8 章 + 浏览器可视化交互演示 |
 | 1 | [Hadoop](./notes/hadoop/) | 基础设施底座 | HDFS / YARN / MapReduce 10 章 + 浏览器可视化交互演示 |
 | 2 | [Hive](./notes/hive/) | 数仓 SQL 层 | Metastore + 数仓分层 + ACID 10 章 + 浏览器可视化交互演示 |
 | 3 | [Spark](./notes/spark/) | 计算引擎 | PySpark 10 章 + 浏览器可视化交互演示 |
