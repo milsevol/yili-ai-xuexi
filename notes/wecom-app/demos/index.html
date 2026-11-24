@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>企业微信应用开发 · 交互式演示</title>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --panel: #fff;
+      --ink: #16202e;
+      --muted: #5f6b7a;
+      --line: rgba(22, 32, 46, 0.11);
+      --brand: #1d4ed8;
+      --brand-soft: rgba(37, 99, 235, 0.1);
+      --ok: #15803d;
+      --fail: #b91c1c;
+      --run: #0369a1;
+      --warn: #a16207;
+      --c0: #1d4ed8; --c1: #0f766e; --c2: #15803d; --c3: #7c3aed; --c4: #a16207;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", "PingFang SC", "Noto Sans SC", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 70% 40% at 0% 0%, var(--brand-soft), transparent 55%),
+        var(--bg);
+      min-height: 100vh;
+    }
+    .app {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 20px 16px 48px;
+      display: grid;
+      gap: 16px;
+    }
+    @media (min-width: 880px) {
+      .app { grid-template-columns: 210px 1fr; align-items: start; }
+    }
+    .brand h1 { margin: 0; font-size: 1.25rem; font-family: "Noto Serif SC", "Songti SC", serif; }
+    .brand p { margin: 4px 0 0; color: var(--muted); font-size: 0.85rem; line-height: 1.5; }
+    .nav { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+    @media (min-width: 880px) {
+      .nav {
+        flex-direction: column;
+        position: sticky; top: 12px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 10px;
+      }
+    }
+    .nav button {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 999px;
+      padding: 0.45rem 0.85rem;
+      font-size: 0.86rem;
+      cursor: pointer;
+      text-align: left;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    @media (min-width: 880px) {
+      .nav button { width: 100%; border-radius: 10px; border-color: transparent; background: transparent; }
+      .nav button:hover { background: #f1f5fb; }
+    }
+    .nav button.active { background: var(--brand-soft); border-color: var(--brand); color: var(--brand); font-weight: 600; }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 18px 18px 22px;
+      min-height: 440px;
+    }
+    .panel h2 { margin: 0 0 6px; font-size: 1.2rem; }
+    .panel h4 { margin: 18px 0 8px; font-size: 0.95rem; }
+    .lead { margin: 0 0 16px; color: var(--muted); font-size: 0.9rem; line-height: 1.6; }
+    .grid2 { display: grid; gap: 12px; }
+    @media (min-width: 700px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      background: #fafcff;
+    }
+    .card h3 { margin: 0 0 8px; font-size: 0.95rem; }
+    .card ul { margin: 0; padding-left: 1.1rem; color: var(--muted); font-size: 0.86rem; line-height: 1.55; }
+    .card.click { cursor: pointer; transition: border-color .2s, transform .2s; }
+    .card.click:hover { border-color: var(--brand); transform: translateY(-1px); }
+    .arch { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-top: 8px; }
+    .arch-item {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      cursor: pointer;
+      transition: border-color .2s, transform .2s;
+      background: #fff;
+    }
+    .arch-item:hover, .arch-item.on { border-color: var(--brand); transform: translateY(-1px); }
+    .arch-item strong { display: block; margin-bottom: 4px; }
+    .arch-item span { font-size: 0.8rem; color: var(--muted); line-height: 1.4; }
+    .detail {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: var(--brand-soft);
+      color: var(--ink);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      min-height: 3.2em;
+    }
+    .flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0; }
+    .chip {
+      border: none;
+      border-radius: 999px;
+      padding: 0.35rem 0.75rem;
+      background: var(--brand-soft);
+      color: var(--brand);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .chip.ghost { background: #eef2f8; color: var(--muted); font-weight: 500; }
+    .chip:hover { filter: brightness(0.97); }
+    .arrow { color: var(--muted); }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0 14px; }
+    .toolbar button, .toolbar label {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 8px;
+      padding: 0.4rem 0.75rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+    .toolbar button.primary { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600; }
+    .toolbar input[type=range] { accent-color: var(--brand); }
+    .toolbar .val { font-family: ui-monospace, Menlo, monospace; font-size: 0.85rem; color: var(--brand); font-weight: 700; min-width: 3.5em; }
+    .log {
+      margin-top: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      background: #16202e;
+      color: #e5eaf1;
+      border-radius: 10px;
+      padding: 10px 12px;
+      max-height: 260px;
+      overflow: auto;
+      white-space: pre-wrap;
+    }
+    .log .hot { color: #fb923c; }
+    .log .ok { color: #86efac; }
+    .hint { font-size: 0.8rem; color: var(--muted); margin-top: 8px; }
+    .hidden { display: none !important; }
+    table.tbl { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 8px; }
+    table.tbl th, table.tbl td { border-bottom: 1px solid var(--line); padding: 0.42rem 0.5rem; text-align: left; vertical-align: top; }
+    table.tbl th { color: var(--muted); font-weight: 600; }
+    .code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      background: #f4f6fa;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      overflow-x: auto;
+      white-space: pre;
+    }
+    .bar-row { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; font-family: ui-monospace, Menlo, monospace; margin-top: 4px; }
+    .bar-row .lbl { width: 90px; color: var(--muted); flex: none; }
+    .bar-track { flex: 1; background: #eaeef5; border-radius: 6px; height: 17px; overflow: hidden; }
+    .bar-fill { height: 100%; background: var(--run); border-radius: 6px; transition: width .5s ease; }
+    .bar-fill.hot { background: var(--fail); }
+    .bar-fill.good { background: var(--ok); }
+    .bar-val { width: 80px; flex: none; color: var(--muted); text-align: right; }
+    .faq-q {
+      width: 100%;
+      text-align: left;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.88rem;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .faq-q:hover { border-color: var(--brand); }
+    .faq-a {
+      margin: 4px 0 4px;
+      padding: 8px 12px;
+      border-left: 3px solid var(--brand);
+      background: var(--brand-soft);
+      border-radius: 0 8px 8px 0;
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+    .slider-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; font-size: 0.85rem; }
+    .slider-row .name { width: 160px; color: var(--muted); flex: none; }
+    .slider-row input { flex: 1; accent-color: var(--brand); }
+    .slider-row .val { width: 120px; font-family: ui-monospace, Menlo, monospace; color: var(--brand); font-weight: 700; text-align: right; }
+    .verdict { margin-top: 10px; padding: 10px 14px; border-radius: 10px; font-size: 0.88rem; line-height: 1.6; }
+    .verdict.ok { background: #f0fdf4; border: 1px solid rgba(21,128,61,.3); }
+    .verdict.warn { background: #fffbeb; border: 1px solid rgba(161,98,7,.35); }
+    .verdict.bad { background: #fef2f2; border: 1px solid rgba(185,28,28,.3); }
+    .kv { font-size: 0.85rem; line-height: 1.85; }
+    .kv b { color: var(--brand); font-family: ui-monospace, Menlo, monospace; }
+    .pill { display: inline-block; border-radius: 999px; padding: 0.1rem 0.55rem; font-size: 0.75rem; background: #eef2f8; color: var(--muted); }
+    .pill.ok { background: #dcfce7; color: var(--ok); }
+    .pill.bad { background: #fee2e2; color: var(--fail); }
+    .steps { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .step-dot {
+      border: 1px solid var(--line); background: #fff; border-radius: 8px;
+      padding: 0.35rem 0.6rem; font-size: 0.76rem; color: var(--muted);
+    }
+    .step-dot.on { border-color: var(--brand); background: var(--brand-soft); color: var(--brand); font-weight: 700; }
+    .matrix td, .matrix th { border: 1px solid var(--line); padding: 7px; text-align: center; font-size: 0.8rem; }
+    .matrix td { background: #fff; }
+    .banner-arrow { display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: var(--brand); font-weight: bold; margin: 0 8px; }
+    .chain-box { border: 1px dashed var(--line); border-radius: 12px; padding: 14px; background: #fafcff; text-align: center; font-size: 0.88rem; }
+    .flow-line { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 12px 0; flex-wrap: wrap; }
+    .node-box { border: 1px solid var(--c0); background: var(--brand-soft); border-radius: 10px; padding: 10px 14px; font-size: 0.85rem; font-weight: 600; color: var(--brand); cursor: pointer; }
+    .node-box:hover { filter: brightness(0.95); }
+    .node-box.c1 { border-color: var(--c1); background: rgba(15,118,110,.1); color: var(--c1); }
+    .node-box.c2 { border-color: var(--c2); background: rgba(21,128,61,.1); color: var(--c2); }
+    .node-box.c3 { border-color: var(--c3); background: rgba(124,58,237,.1); color: var(--c3); }
+    .connector { font-size: 1.2rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <div class="brand" style="margin-bottom:12px">
+        <h1>企微应用开发 交互演示</h1>
+        <p>企业微信 · 服务端 API · JS-SDK · 客户联系 · 审批打卡。点章节动手玩。</p>
+      </div>
+      <nav class="nav" id="nav"></nav>
+    </aside>
+    <main class="panel" id="panel"></main>
+  </div>
+
+  <script>
+    const chapters = [
+      { id: '01', title: '01 概述与定位' },
+      { id: '02', title: '02 应用注册与配置' },
+      { id: '03', title: '03 消息收发机制' },
+      { id: '04', title: '04 客户联系与客户群' },
+      { id: '05', title: '05 侧边栏与 JS-SDK' },
+      { id: '06', title: '06 审批与打卡集成' },
+      { id: '07', title: '07 通讯录与身份验证' },
+      { id: '08', title: '08 微应用与小程序' },
+      { id: '09', title: '09 企业内部实战案例' },
+      { id: '10', title: '10 开发技巧与 FAQ' },
+      { id: '11', title: '11 管理后台常见操作' },
+    ]
+
+    const params = new URLSearchParams(location.search)
+    let current = (params.get('c') || '01').padStart(2, '0')
+    const nav = document.getElementById('nav')
+    const panel = document.getElementById('panel')
+
+    chapters.forEach((c) => {
+      const b = document.createElement('button')
+      b.textContent = c.title
+      b.dataset.id = c.id
+      b.onclick = () => show(c.id)
+      nav.appendChild(b)
+    })
+
+    function show(id) {
+      current = id
+      nav.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.id === id))
+      history.replaceState(null, '', `?c=${id}`)
+      panel.innerHTML = ''
+      renders[id](panel)
+    }
+
+    /* ============ 01 概述与定位 ============ */
+    function render01(el) {
+      el.innerHTML = `
+        <h2>企业微信 vs 微信 vs 钉钉：三选一？</h2>
+        <p class="lead">点击卡片看对比，再点开能力全景卡片了解企业微信开放能力版图。</p>
+
+        <h4>三者定位对比（点卡片看详情）</h4>
+        <div class="arch" id="p1a"></div>
+        <div class="detail" id="p1aD">点击上方产品卡片。</div>
+
+        <h4>开放能力全景（每块点一下）</h4>
+        <div class="arch" id="p1b"></div>
+        <div class="detail" id="p1bD">点击上方能力块。</div>
+      `
+      const comps = [
+        ['企业微信', '面向企业内部协同办公 + 对外客户连接。有企业身份体系、应用管理、审批、打卡、客户联系（2亿外部联系人）。与微信互通（互加好友、互通消息）。'],
+        ['个人微信', '面向 C 端用户的社交 IM。无企业身份概念、开放平台仅给公众号/小程序能力、不支持审批打卡、不适合内部企业应用集成。'],
+        ['钉钉', '阿里系企业 IM + OA。考勤/审批/组织架构强、开放平台偏钉钉生态、与个人微信基本不互通（除部分公告）、外部联系能力弱于企微。'],
+      ]
+      const a = el.querySelector('#p1a'), aD = el.querySelector('#p1aD')
+      comps.forEach(([n, d]) => {
+        const div = document.createElement('div')
+        div.className = 'arch-item'
+        div.innerHTML = `<strong>${n}</strong><span>${d.slice(0, 22)}…</span>`
+        div.onclick = () => {
+          a.querySelectorAll('.arch-item').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); aD.innerHTML = `<b>${n}</b>：${d}`
+        }
+        a.appendChild(div)
+      })
+      const caps = [
+        ['服务端 API', '几乎所有能力都有 REST API：消息推送、审批、打卡、通讯录、客户、群、会议、文档、日程、工单…BaseURL 统一为 https://qyapi.weixin.qq.com/cgi-bin。'],
+        ['消息回调', '企业微信在事件发生时 POST 到你配置的回调 URL（Message / Event）。首次验证签名 → 之后是 XML/JSON 消息体。5 秒内必须返回 "success" 表示已收到。'],
+        ['JS-SDK（H5）', '在企微内置浏览器里，wx.config 注入权限后可调用拍照、扫码、定位、选人、上传、预览、共享屏幕等原生能力。'],
+        ['客户联系（CRM）', '企业成员可添加外部微信用户为「客户」，有客户画像、标签、继承、群聊（客户群）、群聊欢迎语/入群方式。'],
+        ['应用与授权', '自建应用（微应用）→ 成员授权可见。第三方应用 → 企微管理员一键授权全企业可见。每个应用有独立 AgentID + Secret。'],
+        ['第三方代开发', 'ISV 做第三方应用（type=thirdparty），可代 1000+ 企业部署，通过 suite_access_token + 企业永久授权码管理多租户。'],
+      ]
+      const b = el.querySelector('#p1b'), bD = el.querySelector('#p1bD')
+      caps.forEach(([n, d]) => {
+        const div = document.createElement('div')
+        div.className = 'arch-item'
+        div.innerHTML = `<strong>${n}</strong><span>${d.slice(0, 22)}…</span>`
+        div.onclick = () => {
+          b.querySelectorAll('.arch-item').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); bD.innerHTML = `<b>${n}</b>：${d}`
+        }
+        b.appendChild(div)
+      })
+    }
+
+    /* ============ 02 应用注册与配置 ============ */
+    function render02(el) {
+      el.innerHTML = `
+        <h2>CorpID / AgentID / Secret 三要素</h2>
+        <p class="lead">企微应用鉴权全靠这三要素拉 access_token。点卡片看每个值在哪找、能做什么。</p>
+
+        <h4>三要素交互式展示</h4>
+        <div class="arch" id="p2a"></div>
+        <div class="detail" id="p2aD">点击上方要素卡片。</div>
+
+        <h4>access_token 获取频率计算器</h4>
+        <p class="hint">企微限制：每个应用 <b>每天调用获取 token 接口不超过 2000 次</b>，token 本身有效期 7200 秒（约 2 小时）。</p>
+        <div class="slider-row"><span class="name">应用数量</span><input type="range" id="p2apps" min="1" max="30" value="5"><span class="val" id="p2appsV">5 个</span></div>
+        <div class="slider-row"><span class="name">每应用刷新频率（次/天）</span><input type="range" id="p2freq" min="1" max="48" value="4"><span class="val" id="p2freqV">4 次/天</span></div>
+        <div class="kv" id="p2out"></div>
+        <div class="verdict ok" id="p2ver">拖动滑块看 verdict。</div>
+      `
+      const items = [
+        ['CorpID', '企业唯一标识。在「企微管理后台 → 我的企业」看，形如 <code>ww1234567890abcdef</code>。所有 API 都要传。'],
+        ['AgentID', '应用 ID。创建应用时分配，1000000 起的整数。API 推送消息时指定推给哪个应用。'],
+        ['Secret', '应用密钥，服务端存储，绝不能放前端。用于换取 access_token，泄露会导致别人代你发消息、改通讯录。'],
+      ]
+      const a = el.querySelector('#p2a'), aD = el.querySelector('#p2aD')
+      items.forEach(([n, d]) => {
+        const div = document.createElement('div')
+        div.className = 'arch-item'
+        div.innerHTML = `<strong>${n}</strong><span>${d.slice(0, 20)}…</span>`
+        div.onclick = () => {
+          a.querySelectorAll('.arch-item').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); aD.innerHTML = `<b>${n}</b>：${d}`
+        }
+        a.appendChild(div)
+      })
+
+      const apps = el.querySelector('#p2apps'), freq = el.querySelector('#p2freq')
+      const appsV = el.querySelector('#p2appsV'), freqV = el.querySelector('#p2freqV')
+      const out = el.querySelector('#p2out'), ver = el.querySelector('#p2ver')
+      function calc() {
+        const A = +apps.value, F = +freq.value
+        appsV.textContent = A + ' 个'
+        freqV.textContent = F + ' 次/天'
+        const total = A * F
+        const max = 2000
+        out.innerHTML = `总调用 = <b>${A}</b> × <b>${F}</b> = <b>${total}</b> 次/天 / 上限 ${max}`
+        const perAppBestPractice = Math.ceil(86400 / 7200) // 2 小时一次 = 12 次/天
+        if (total > max) {
+          ver.className = 'verdict bad'
+          ver.innerHTML = `❌ 超限！${total} > ${max}。建议：<br>① token 缓存到 Redis 按 expires_in 提前 5 分钟刷新；<br>② 多应用共享 token 缓存策略（注意 Secret 不同 → token 不共享，每应用单独缓存）。`
+        } else if (F > 12) {
+          ver.className = 'verdict warn'
+          ver.innerHTML = `⚠️ 每应用建议 ≤ 12 次/天（token 2 小时刷一次足够）。当前每应用 ${F} 次/天 → 疑似每次请求都刷 token。请引入 Redis 缓存。`
+        } else {
+          ver.className = 'verdict ok'
+          ver.innerHTML = `✅ 安全。${total} 次/天，预留了大量余地。最佳实践：Redis 缓存 access_token + 过期时间前 5 分钟刷新。`
+        }
+      }
+      apps.oninput = calc; freq.oninput = calc; calc()
+    }
+
+    /* ============ 03 消息收发机制 ============ */
+    function render03(el) {
+      el.innerHTML = `
+        <h2>消息收发：回调 + 主动推送</h2>
+        <p class="lead">先看 Webhook 消息的 9 步处理流程，再用模拟器试推送。</p>
+
+        <h4>回调消息处理流程（步进）</h4>
+        <div class="toolbar">
+          <button class="primary" id="p3next">下一步</button>
+          <button id="p3reset">重置</button>
+          <span class="pill" id="p3phase">未开始</span>
+        </div>
+        <div class="steps" id="p3steps"></div>
+        <div class="log" id="p3log">点击「下一步」开始。</div>
+
+        <h4>应用消息发送模拟器（频控检查）</h4>
+        <div class="slider-row"><span class="name">每次推送条数</span><input type="range" id="p3push" min="1" max="5000" value="1000" step="100"><span class="val" id="p3pushV">1000 条</span></div>
+        <div class="slider-row"><span class="name">每人每天接收上限</span><input type="range" id="p3per" min="1" max="50" value="20"><span class="val" id="p3perV">20 条/人/天</span></div>
+        <div class="slider-row"><span class="name">目标员工数</span><input type="range" id="p3emp" min="10" max="10000" value="2000" step="100"><span class="val" id="p3empV">2000 人</span></div>
+        <div class="verdict ok" id="p3ver">拖动滑块看频控 verdict。</div>
+        <p class="hint">频控规则：应用消息每成员每天上限 20 条（超过不送）；消息总上限：单应用 400 万条/天；群聊 @ 成员 20 人/群/条。</p>
+      `
+      const steps = [
+        ['回调验证', '企微首次 POST URL（GET 带 msg_signature/timestamp/nonce/echostr），服务端校验签名后原样返回 echostr。'],
+        ['XML 解析', '企微发消息是 POST（Content-Type: text/xml），包含 <ToUserName>、<FromUserName>、<Content>、<MsgType>（text/image/event…）。'],
+        ['类型判断', 'MsgType=text → 文本回复；MsgType=event → Subscribe/Scan/Click/View 等事件；AgentID 是哪个应用的回调。'],
+        ['业务处理', '查询业务系统（DB / CRM），拉取数据组装回复。这里要快——企微只等 5 秒。'],
+        ['生成回复', '拼 XML（回复消息）或 JSON（新 API 格式）。回复只能是发给 FromUserName 的单聊，不能群发。'],
+        ['5秒内返回', 'HTTP 200 + 直接返回回复 XML/JSON，或返回 "success"（表示已收到，稍后异步处理）。超时企微会重试 3 次。'],
+        ['后端异步', '复杂任务（发邮件、调第三方、写报表）放异步队列（RabbitMQ/Kafka），回调里只回"success"。'],
+        ['主动推送', '用 access_token + sendmessage API 主动给成员发应用消息。不受 5 秒限制，需要成员在应用可见范围内。'],
+        ['频控检查', '每成员每天 ≤ 20 条；总上限 400 万/应用/天；超限返回 45009。需要降频或走「客服消息」（成员在 24h 内联系过即可无限发）。'],
+      ]
+      const stepEl = el.querySelector('#p3steps'), log = el.querySelector('#p3log'), phase = el.querySelector('#p3phase')
+      steps.forEach(([n]) => { const s = document.createElement('span'); s.className = 'step-dot'; s.textContent = n; stepEl.appendChild(s) })
+      let pi = -1
+      el.querySelector('#p3next').onclick = () => {
+        pi = Math.min(pi + 1, steps.length - 1)
+        stepEl.querySelectorAll('.step-dot').forEach((x, i) => x.classList.toggle('on', i <= pi))
+        phase.textContent = steps[pi][0]
+        log.innerHTML += (pi ? '\n' : '') + `<span class="${pi >= 5 ? 'hot' : (pi >= 8 ? 'ok' : '')}">[${pi + 1}] ${steps[pi][0]}</span>\n${steps[pi][1]}`
+      }
+      el.querySelector('#p3reset').onclick = () => {
+        pi = -1; phase.textContent = '未开始'; log.textContent = '点击「下一步」开始。'
+        stepEl.querySelectorAll('.step-dot').forEach(x => x.classList.remove('on'))
+      }
+
+      const push = el.querySelector('#p3push'), per = el.querySelector('#p3per'), emp = el.querySelector('#p3emp')
+      const pushV = el.querySelector('#p3pushV'), perV = el.querySelector('#p3perV'), empV = el.querySelector('#p3empV')
+      const ver = el.querySelector('#p3ver')
+      function calc() {
+        const P = +push.value, PR = +per.value, E = +emp.value
+        pushV.textContent = P + ' 条'
+        perV.textContent = PR + ' 条/人/天'
+        empV.textContent = E.toLocaleString() + ' 人'
+        const appDayLimit = 4000000
+        // 假设推送均匀覆盖，平均每人收到 P/E 条（取 max(1, P/E) 简化）
+        const perPersonAvg = P / E
+        const overPerPerson = perPersonAvg > PR
+        const overTotal = P > appDayLimit
+        if (overTotal) {
+          ver.className = 'verdict bad'
+          ver.innerHTML = `❌ 应用每日总上限 ${appDayLimit.toLocaleString()} 条。当前推送 <b>${P.toLocaleString()}</b> 超限。<br>建议：分批推送 + 走客服消息窗口（24h 内联系过可无限发）。`
+        } else if (overPerPerson) {
+          ver.className = 'verdict warn'
+          ver.innerHTML = `⚠️ 平均每人收 <b>${perPersonAvg.toFixed(1)}</b> 条，超过企微 <b>${PR}</b> 条/人/天上限。超出部分不会送达。<br>建议：分批 + 降频 + 用应用消息卡片合并。`
+        } else {
+          ver.className = 'verdict ok'
+          ver.innerHTML = `✅ 安全。推送 ${P.toLocaleString()} 条，覆盖 ${E.toLocaleString()} 人，平均每人 ${perPersonAvg.toFixed(1)} 条，均在 ${PR} 条/人/天 以内。`
+        }
+      }
+      ;[push, per, emp].forEach(x => x.oninput = calc); calc()
+    }
+
+    /* ============ 04 客户联系与客户群 ============ */
+    function render04(el) {
+      el.innerHTML = `
+        <h2>客户联系与客户群</h2>
+        <p class="lead">点击角色卡片看实体定义，再用离职继承模拟器算哪些客户要重新分配。</p>
+
+        <h4>成员 / 客户 / 客户群 / 群主（点一下看详情）</h4>
+        <div class="arch" id="p4a"></div>
+        <div class="detail" id="p4aD">点击上方卡片。</div>
+
+        <h4>离职继承模拟器</h4>
+        <p class="hint">规则：员工离职 → 该员工名下所有客户可继承给同部门或指定替代人。群聊默认群主变更 + 群成员还能正常拉人（需继承策略）。</p>
+        <div class="slider-row"><span class="name">员工总数</span><input type="range" id="p4emp" min="10" max="2000" value="100" step="10"><span class="val" id="p4empV">100 人</span></div>
+        <div class="slider-row"><span class="name">离职人数</span><input type="range" id="p4leave" min="0" max="20" value="3"><span class="val" id="p4leaveV">3 人</span></div>
+        <div class="slider-row"><span class="name">人均客户数</span><input type="range" id="p4cust" min="5" max="500" value="80"><span class="val" id="p4custV">80 个/人</span></div>
+        <div id="p4res"></div>
+      `
+      const items = [
+        ['成员（User）', '企业内部员工。有 UserID（格式：部门ID + 序号，比如 WangWu）、手机号、邮箱。可登录企微、发应用消息、作为客户联系人。'],
+        ['客户（External Contact）', '外部联系的个人微信用户。企微侧叫 external_userid，形如 <code>woxxxxxxxxxxxxxx</code>。企业侧可打标签、查看会话存档（开启时）、分配给销售。'],
+        ['客户群（Group Chat）', '企业成员邀请外部客户进群。chat_id 形如 <code>wrOgxxxxxxxxxxxxxx</code>。群成员最多 500 人，成员可 @ 客户，可发群欢迎语、群公告。'],
+        ['群主（Owner）', '客户群的所有者。可以踢人、改群名、发公告。群主离职时默认「自动转让给指定继承人」，否则群可能被解散或变成无人管。'],
+      ]
+      const a = el.querySelector('#p4a'), aD = el.querySelector('#p4aD')
+      items.forEach(([n, d]) => {
+        const div = document.createElement('div')
+        div.className = 'arch-item'
+        div.innerHTML = `<strong>${n}</strong><span>${d.slice(0, 22)}…</span>`
+        div.onclick = () => {
+          a.querySelectorAll('.arch-item').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); aD.innerHTML = `<b>${n}</b>：${d}`
+        }
+        a.appendChild(div)
+      })
+
+      const emp = el.querySelector('#p4emp'), leave = el.querySelector('#p4leave'), cust = el.querySelector('#p4cust')
+      const empV = el.querySelector('#p4empV'), leaveV = el.querySelector('#p4leaveV'), custV = el.querySelector('#p4custV')
+      const res = el.querySelector('#p4res')
+      function calc() {
+        const E = +emp.value, L = +leave.value, C = +cust.value
+        empV.textContent = E + ' 人'
+        leaveV.textContent = L + ' 人'
+        custV.textContent = C + ' 个/人'
+        const needAssign = L * C
+        const cls = L === 0 ? 'ok' : (L > 5 ? 'warn' : 'ok')
+        const pickedNames = ['张三', '李四', '王五', '赵六', '陈七', '刘八']
+        const pick = pickedNames.slice(0, L)
+        res.innerHTML = `
+          <div class="verdict ${cls}">
+            <b>${L} 名员工离职</b>，合计 <b>${needAssign} 个客户</b> 需要分配。<br>
+            建议继承给：<b>${pick.join('、')}</b>（可在企微管理后台 → 客户联系 → 离职继承配置）。<br>
+            <span class="hint">群聊处理：群主已离职的群 → 自动转让给群内剩余管理员；如果群里没有管理员 → 群内客户仍可看消息但无法发。</span>
+          </div>
+          <div class="bar-row"><span class="lbl">需分配客户</span><span class="bar-track"><span class="bar-fill ${L === 0 ? 'good' : 'hot'}" style="width:${Math.min(100, needAssign / (E * C) * 100).toFixed(0)}%"></span></span><span class="bar-val">${needAssign} / ${E * C}</span></div>
+        `
+      }
+      ;[emp, leave, cust].forEach(x => x.oninput = calc); calc()
+    }
+
+    /* ============ 05 侧边栏与 JS-SDK ============ */
+    function render05(el) {
+      el.innerHTML = `
+        <h2>侧边栏 URL 参数 + JS-SDK 能力选择器</h2>
+        <p class="lead">在企微里打开 H5 页面，URL 会带 <code>external_userid / userid / corpid / chatid</code> 等参数。JS-SDK 让 H5 能调用原生能力。</p>
+
+        <h4>侧边栏 URL 参数（点一下看含义）</h4>
+        <div class="arch" id="p5a"></div>
+        <div class="detail" id="p5aD">点击参数卡片。</div>
+
+        <h4>JS-SDK 能力选择器（点一下看调用示例）</h4>
+        <div class="arch" id="p5b"></div>
+        <div class="detail" id="p5bD">点击能力卡片。</div>
+
+        <div class="code">// 典型 wx.config + wx.agentConfig 流程
+wx.config({
+  beta: true, jsApiList: ['scanQRCode', 'chooseImage'],
+  corpId: 'ww1234567890abcdef',
+  agentId: 1000002,
+  timestamp: ..., nonceStr: ..., signature: ...
+})
+wx.ready(() => {
+  wx.scanQRCode({ needResult: 1, success: r => console.log(r.resultStr) })
+})</div>
+      `
+      const params = [
+        ['external_userid', '外部联系人 ID（客户）。形如 <code>woxxxxxxxxxxxxxx</code>。销售侧边栏打开时会带，用来识别当前客户是谁。'],
+        ['userid', '内部员工 UserID（服务端也能拿到，侧边栏打开时 URL 参数里也会直接给）。'],
+        ['corpid', '企业 CorpID，形如 <code>ww1234567890abcdef</code>。多租户场景用来区分企业。'],
+        ['chatid', '客户群 chat_id。在客户群中打开侧边栏时带，形如 <code>wrOgxxxxxxxxxxxxxx</code>。'],
+        ['timestamp / nonce / sign', 'JS-SDK 鉴权参数。H5 页面需要先调自己后端 → 后端调 get_jsapi_ticket → 算签名 → wx.config。'],
+      ]
+      const a = el.querySelector('#p5a'), aD = el.querySelector('#p5aD')
+      params.forEach(([n, d]) => {
+        const div = document.createElement('div')
+        div.className = 'arch-item'
+        div.innerHTML = `<strong>${n}</strong><span>${d.slice(0, 24)}…</span>`
+        div.onclick = () => {
+          a.querySelectorAll('.arch-item').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); aD.innerHTML = `<b>${n}</b>：${d}`
+        }
+        a.appendChild(div)
+      })
+      const sdkCaps = [
+        ['scanQRCode 扫码', 'wx.scanQRCode({ needResult: 1, scanType: ["qrCode","barCode"] })。识别后拿到 resultStr，可当链接跳转或当商品条码查 SKU。'],
+        ['chooseImage 拍照', 'wx.chooseImage({ count: 1, sizeType: ["compressed"], sourceType: ["camera","album"], success: res => wx.uploadImage({ mediaId: res.localIds[0] }) })。'],
+        ['openLocation 定位', 'wx.openLocation({ latitude: 31.2304, longitude: 121.4737, name: "上海外滩" })。调用原生地图组件展示地点。'],
+        ['selectEnterpriseContact 选人', 'wx.selectEnterpriseContact({ fromDepartmentId: [-1], fromTagId: [-1], maxSelectedUsers: 5, success: res => console.log(res.userList) })。选出来就能给同事发消息。'],
+        ['uploadImage 上传图片', 'wx.uploadImage({ mediaId: "xxx", isShowProgressTips: 1, success: res => console.log(res.serverId) })。拿到 serverId 就能在后续消息里发送。'],
+        ['previewFile 预览文件', 'wx.previewFile({ url: "https://cdn/xxx.pdf", name: "合同.pdf", size: 1024000 })。PDF、Word、Excel 都支持原生预览。'],
+      ]
+      const b = el.querySelector('#p5b'), bD = el.querySelector('#p5bD')
+      sdkCaps.forEach(([n, d]) => {
+        const div = document.createElement('div')
+        div.className = 'arch-item'
+        div.innerHTML = `<strong>${n}</strong><span>${d.slice(0, 20)}…</span>`
+        div.onclick = () => {
+          b.querySelectorAll('.arch-item').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); bD.innerHTML = `<b>${n}</b>：${d}`
+        }
+        b.appendChild(div)
+      })
+    }
+
+    /* ============ 06 审批与打卡集成 ============ */
+    function render06(el) {
+      el.innerHTML = `
+        <h2>审批流程 + 打卡数据获取</h2>
+        <p class="lead">点节点看审批每一步，再用模拟器估打卡数据量。</p>
+
+        <h4>审批流程图</h4>
+        <div class="flow-line">
+          <span class="node-box c3" id="n6-1">员工发起<br>（表单提交）</span>
+          <span class="connector">→</span>
+          <span class="node-box c2" id="n6-2">经理审批</span>
+          <span class="connector">→</span>
+          <span class="node-box c1" id="n6-3">财务审批</span>
+          <span class="connector">→</span>
+          <span class="node-box" id="n6-4">打款 / 执行</span>
+          <span class="connector">→</span>
+          <span class="node-box c3" id="n6-5">结果通知<br>（应用消息）</span>
+        </div>
+        <div class="detail" id="p6D" style="min-height:3.2em">点击节点看这一步在企微里怎么实现。</div>
+
+        <h4>打卡数据量估算</h4>
+        <div class="slider-row"><span class="name">员工数</span><input type="range" id="p6emp" min="10" max="5000" value="500" step="50"><span class="val" id="p6empV">500 人</span></div>
+        <div class="slider-row"><span class="name">统计天数</span><input type="range" id="p6days" min="7" max="365" value="30"><span class="val" id="p6daysV">30 天</span></div>
+        <div class="slider-row"><span class="name">每天打卡次数</span><input type="range" id="p6times" min="1" max="8" value="2"><span class="val" id="p6timesV">2 次/天</span></div>
+        <div id="p6out"></div>
+      `
+      const nodes = [
+        ['n6-1', '员工发起：在企微工作台点审批应用 → 选模板（请假 / 报销 / 外出）→ 填表单 → 提交。后端收到 open_approval_id + 表单 JSON。'],
+        ['n6-2', '经理审批：企微内置审批卡片推送 → 经理点「同意/驳回」。后端通过监听 open_approval_change 回调事件拿到 approve_result。可并发给多级审批人。'],
+        ['n6-3', '财务审批：如果模板配置了多级审批，财务会接着审。可加条件分支（金额 > 5000 必须 CEO 审）。审批模板在企微管理后台可视化配置。'],
+        ['n6-4', '打款 / 执行：后端收到最终 approve_result=1（同意）→ 调财务系统 / 工资系统自动执行。这步通常是公司自有系统集成。'],
+        ['n6-5', '结果通知：执行完用 sendmessage API 给发起人发应用消息卡片（审批通过 / 驳回 / 已打款 ¥3200）。'],
+      ]
+      const d6 = el.querySelector('#p6D')
+      nodes.forEach(([id, txt]) => {
+        const n = el.querySelector('#' + id)
+        n.onclick = () => { d6.innerHTML = `<b>${n.textContent.replace(/\s+/g, ' ')}</b>：${txt.split('：')[1] || txt}` }
+      })
+
+      const emp = el.querySelector('#p6emp'), days = el.querySelector('#p6days'), times = el.querySelector('#p6times')
+      const empV = el.querySelector('#p6empV'), daysV = el.querySelector('#p6daysV'), timesV = el.querySelector('#p6timesV')
+      const out = el.querySelector('#p6out')
+      function calc() {
+        const E = +emp.value, D = +days.value, T = +times.value
+        empV.textContent = E + ' 人'
+        daysV.textContent = D + ' 天'
+        timesV.textContent = T + ' 次/天'
+        const total = E * D * T
+        // 每条打卡记录 ~ 150 字节（时间 + GPS + WIFI + 员工ID）
+        const bytes = total * 150
+        const mb = bytes / 1024 / 1024
+        out.innerHTML = `
+          <div class="kv">打卡记录总数 = <b>${E.toLocaleString()}</b> × <b>${D}</b> 天 × <b>${T}</b> 次 = <b>${total.toLocaleString()}</b> 条<br>
+          存储估算（~150 字节/条）≈ <b>${mb.toFixed(1)} MB</b>（未压缩）</div>
+          <div class="verdict ${mb > 5000 ? 'warn' : 'ok'}">
+            建议 API 策略：调用 <code>getcheckindata</code> 按天增量拉取，存在 MySQL/ClickHouse，定期归档历史数据。
+          </div>
+          <div class="bar-row"><span class="lbl">数据量</span><span class="bar-track"><span class="bar-fill ${mb > 5000 ? 'hot' : 'good'}" style="width:${Math.min(100, mb / 10000 * 100).toFixed(0)}%"></span></span><span class="bar-val">${mb.toFixed(0)} MB</span></div>
+        `
+      }
+      ;[emp, days, times].forEach(x => x.oninput = calc); calc()
+    }
+
+    /* ============ 07 通讯录与身份验证 ============ */
+    function render07(el) {
+      el.innerHTML = `
+        <h2>OAuth2 身份验证 + Scope 选择器</h2>
+        <p class="lead">企微网页授权（OAuth2）三步流程，scope 决定能拿到什么信息。</p>
+
+        <h4>OAuth2 三步流程（点节点看细节）</h4>
+        <div class="flow-line">
+          <span class="node-box c3" id="n7-1">① 跳转授权页<br>/connect/oauth2/authorize</span>
+          <span class="connector">→</span>
+          <span class="node-box c2" id="n7-2">② 带 code 回来<br>redirect_uri?code=xxx</span>
+          <span class="connector">→</span>
+          <span class="node-box c1" id="n7-3">③ 换 UserID<br>getuserinfo?code=xxx</span>
+        </div>
+        <div class="detail" id="p7D" style="min-height:3.5em">点击节点看这一步怎么做。</div>
+
+        <h4>Scope 选择器（点一下看区别）</h4>
+        <div class="arch" id="p7a"></div>
+        <div class="detail" id="p7aD">点击 scope 卡片。</div>
+
+        <div class="code">// 跳转授权 URL 示例
+https://open.weixin.qq.com/connect/oauth2/authorize
+  ?appid=wwCORPID000000
+  &redirect_uri=https%3A%2F%2Fdemo.com%2Fcallback
+  &response_type=code
+  &scope=snsapi_base
+  &state=mystate123
+  #wechat_redirect</div>
+      `
+      const n7 = [
+        ['n7-1', '跳转授权：把用户跳到企微授权 URL（必须在企微内置浏览器里打开）。snsapi_base → 静默授权（无弹窗）；snsapi_privateinfo → 弹窗让用户确认授权个人信息（敏感信息：身份证/手机号/住址）。'],
+        ['n7-2', '带 code 回来：授权完企微 302 到 redirect_uri，URL 带 ?code=xxx&state=xxx。code 有效期 5 分钟，一次性使用。后端必须在 5 分钟内用它换 access_token。'],
+        ['n7-3', '换 UserID：后端调 getuserinfo?access_token=xxx&code=yyy → 拿到 UserID / OpenID / DeviceID。如果 scope=snsapi_privateinfo，再补调 getuserdetail 拿敏感字段。'],
+      ]
+      const d7 = el.querySelector('#p7D')
+      n7.forEach(([id, txt]) => {
+        const n = el.querySelector('#' + id)
+        n.onclick = () => { d7.innerHTML = `<b>${n.textContent.replace(/\s+/g, ' ')}</b>：${txt}` }
+      })
+      const scopes = [
+        ['snsapi_base（推荐）', '静默授权，无弹窗。拿到 UserID / OpenID / DeviceID / 性别。足够做身份识别、权限控制、侧边栏用户关联。'],
+        ['snsapi_privateinfo（谨慎）', '弹窗让用户确认。额外拿到：手机号 / 身份证 / 住址 / 头像大图 / 学校 / 工作经历。敏感信息，必须有业务理由才能用。'],
+      ]
+      const a = el.querySelector('#p7a'), aD = el.querySelector('#p7aD')
+      scopes.forEach(([n, d]) => {
+        const div = document.createElement('div')
+        div.className = 'arch-item'
+        div.innerHTML = `<strong>${n}</strong><span>${d.slice(0, 22)}…</span>`
+        div.onclick = () => {
+          a.querySelectorAll('.arch-item').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); aD.innerHTML = `<b>${n}</b>：${d}`
+        }
+        a.appendChild(div)
+      })
+    }
+
+    /* ============ 08 微应用与小程序 ============ */
+    function render08(el) {
+      el.innerHTML = `
+        <h2>微应用 / 小程序 / 第三方应用：三者对比</h2>
+        <p class="lead">微应用本质是 H5 网页 + JS-SDK；小程序是原生体验的代码包；第三方应用是给 ISV 做的代开发模式。</p>
+
+        <h4>综合对比表</h4>
+        <table class="tbl matrix" style="margin-bottom:16px">
+          <tr><th>维度</th><th>微应用（自建 H5）</th><th>企业微信小程序</th><th>第三方应用（ISV）</th></tr>
+          <tr><td>技术栈</td><td>HTML5 + CSS + JS</td><td>WXML + WXSS + JS</td><td>微应用/小程序 + Suite 授权体系</td></tr>
+          <tr><td>开发成本</td><td>低（复用已有 Web 技术栈）</td><td>中（需学小程序 DSL）</td><td>高（需开发 + 维护代授权 + 多租户）</td></tr>
+          <tr><td>原生能力</td><td>JS-SDK 拍照/扫码/定位</td><td>全套原生能力（更丰富）</td><td>同左（打包给其他企业用）</td></tr>
+          <tr><td>离线</td><td>Service Worker 有限支持</td><td>不支持（按需加载）</td><td>同左</td></tr>
+          <tr><td>上架</td><td>无需上架，内部部署</td><td>需提交审核（~1-3 天）</td><td>需提交审核，上架企业应用市场</td></tr>
+          <tr><td>适用场景</td><td>内部 OA / CRM / 仪表盘</td><td>高频小程序工具（打卡/报修/审批）</td><td>Saas 服务商做多租户产品</td></tr>
+        </table>
+
+        <h4>选型建议</h4>
+        <div class="arch" id="p8a"></div>
+        <div class="detail" id="p8aD">点建议卡片。</div>
+      `
+      const suggs = [
+        ['已有 Web 应用快速接入', '选 <b>微应用（H5）</b>。把已有前端部署到 HTTPS，在企微建个自建应用，把主页 URL 填进去，加 JS-SDK 鉴权即可。成本最低、复用最多。'],
+        ['高频强交互工具', '选 <b>企业微信小程序</b>。原生体验好、启动快、支持更多原生 API。适合打卡、报修、审批等每天都用的场景。'],
+        ['SaaS / ISV 多租户', '选 <b>第三方应用</b>。通过 Suite 授权体系，让企微管理员一键授权你的应用部署到他们的企业。需要永久授权码管理多租户。'],
+        ['内部快速验证 MVP', '先 <b>微应用</b>，跑通业务逻辑后再考虑是否重写成小程序。企微允许同一 AgentID 下同时有微应用 + 小程序入口。'],
+      ]
+      const a = el.querySelector('#p8a'), aD = el.querySelector('#p8aD')
+      suggs.forEach(([n, d]) => {
+        const div = document.createElement('div')
+        div.className = 'arch-item'
+        div.innerHTML = `<strong>${n}</strong><span>${d.slice(0, 22)}…</span>`
+        div.onclick = () => {
+          a.querySelectorAll('.arch-item').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); aD.innerHTML = `<b>${n}</b>：${d}`
+        }
+        a.appendChild(div)
+      })
+    }
+
+    /* ============ 09 企业内部实战案例 ============ */
+    function render09(el) {
+      el.innerHTML = `
+        <h2>实战：客户跟进助手</h2>
+        <p class="lead">销售在侧边栏里查看客户画像、生成跟进话术、记录跟进结果。点节点看职责，再试 AI 话术生成模拟。</p>
+
+        <h4>架构图（点节点看职责）</h4>
+        <div class="flow-line">
+          <span class="node-box c3" id="n9-1">侧边栏 H5</span>
+          <span class="connector">→</span>
+          <span class="node-box c2" id="n9-2">客户 API<br>（同步 / 标签 / 画像）</span>
+          <span class="connector">→</span>
+          <span class="node-box c1" id="n9-3">消息推送<br>（跟进提醒）</span>
+          <span class="connector">←</span>
+          <span class="node-box" id="n9-4">审批回调<br>（报销申请）</span>
+          <span class="connector">←</span>
+          <span class="node-box c2" id="n9-5">定时任务<br>（每日客户复盘）</span>
+        </div>
+        <div class="detail" id="p9D" style="min-height:3.5em">点击节点看职责。</div>
+
+        <h4>AI 侧边栏话术生成模拟</h4>
+        <p class="hint">输入客户简单信息，点按钮模拟 AI 生成 3 条跟进话术建议。</p>
+        <div class="toolbar" style="display:block">
+          <textarea id="p9input" rows="3" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:10px;font-size:0.88rem" placeholder="例如：客户张总是制造业老板，上周来过公司参观，关心生产自动化"></textarea>
+          <div style="margin-top:8px">
+            <button class="primary" id="p9gen">生成话术 ✨</button>
+            <button id="p9clear">清空</button>
+          </div>
+        </div>
+        <div id="p9out"></div>
+      `
+      const n9 = [
+        ['n9-1', '侧边栏 H5：在企微打开时 URL 带 external_userid（当前客户）。H5 页面展示客户画像、跟进历史、快捷操作。'],
+        ['n9-2', '客户 API：后端用 access_token 调 get_external_contact / add_contact_way / mark_tag → 把企微客户数据同步进自有 CRM 库。'],
+        ['n9-3', '消息推送：后端 sendmessage 发应用消息卡片 → 提醒销售跟进、客户生日、合同到期。注意频控：每成员每天 ≤ 20 条。'],
+        ['n9-4', '审批回调：销售在侧边栏里提报销 → 企微审批引擎走流程 → 最终回调通知后端 → 后端走自动打款。'],
+        ['n9-5', '定时任务：cron 每天 9:00 拉取全公司销售客户跟进数据、生成每日复盘报表、用应用消息推给每个销售的工作台。'],
+      ]
+      const d9 = el.querySelector('#p9D')
+      n9.forEach(([id, txt]) => {
+        const n = el.querySelector('#' + id)
+        n.onclick = () => { d9.innerHTML = `<b>${n.textContent.replace(/\s+/g, ' ')}</b>：${txt}` }
+      })
+
+      const input = el.querySelector('#p9input'), gen = el.querySelector('#p9gen'), clr = el.querySelector('#p9clear'), out = el.querySelector('#p9out')
+      const templates = [
+        ['简洁开场', '您好！上次参观后就一直惦记着，贵司生产自动化升级这块，我整理了一份同行业案例参考，方便的时候发您看看？'],
+        ['痛点直击', '张总，您上次提到生产线人工搬运效率低，我们最近帮 XX 集团做的自动化方案把 ROI 做到了 18 个月，有数据可以参考。'],
+        ['行动引导', '张总，本周四我在您公司附近有个客户要拜访，要不要顺便过来坐坐？现场演示 10 分钟就能看到 ROI。'],
+      ]
+      gen.onclick = () => {
+        const ctx = input.value.trim()
+        const pre = ctx ? `基于「${ctx.slice(0, 20)}${ctx.length > 20 ? '…' : ''}」，建议如下话术：` : '建议以下 3 条话术：'
+        out.innerHTML = `<div class="verdict ok"><b>AI 生成结果：</b><br>${pre}</div>` +
+          templates.map(([t, c], i) => `<div style="border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-top:6px;background:#fff">
+            <div style="font-weight:600;color:var(--brand);margin-bottom:4px">方案 ${i + 1} · ${t}</div>
+            <div style="font-size:0.88rem;line-height:1.6">${c}</div>
+            <button class="chip ghost" style="margin-top:6px" onclick="navigator.clipboard?.writeText(\`${c.replace(/`/g, '')}\`)">📋 复制</button>
+          </div>`).join('')
+      }
+      clr.onclick = () => { input.value = ''; out.innerHTML = '' }
+    }
+
+    /* ============ 10 开发技巧与 FAQ ============ */
+    function render10(el) {
+      el.innerHTML = `
+        <h2>调试工具 + 错误码速查 + FAQ</h2>
+        <p class="lead">内网穿透让本地后端能收到企微回调，开发必备。错误码直接查。</p>
+
+        <h4>内网穿透工具选择（点一下看推荐）</h4>
+        <div class="arch" id="p10a"></div>
+        <div class="detail" id="p10aD">点击工具卡片。</div>
+
+        <h4>常见错误码速查表</h4>
+        <table class="tbl">
+          <tr><th>错误码</th><th>名称</th><th>常见原因 / 排查方向</th></tr>
+          <tr><td><b>0</b></td><td>ok</td><td>成功（企微没有错误码就是成功，没值时也视为 ok）</td></tr>
+          <tr><td><b>40001</b></td><td>invalid credential</td><td>Secret 错误 / access_token 过期。先确认 Secret 没写错，再看是不是 token 被重置了（管理后台重置后旧 token 失效）。</td></tr>
+          <tr><td><b>40014</b></td><td>invalid access_token</td><td>access_token 格式错误（比如末尾多了空格）、拼接 URL 时编码有问题。重新从 gettoken 接口拿新 token。</td></tr>
+          <tr><td><b>42007</b></td><td>access_token expired</td><td>token 过了 7200 秒有效期没刷新。加 Redis 缓存 + 定时提前 5 分钟刷新。</td></tr>
+          <tr><td><b>45009</b></td><td>freq limit</td><td>接口调用太频繁（> 600 次/分钟）或消息频控超限。加限流中间件、批量合并请求、客服消息窗口替代应用消息。</td></tr>
+          <tr><td><b>40013</b></td><td>invalid corpId</td><td>CorpID 格式错误（不是 ww 开头）、拼错、或用了个人微信 openid 替换企业 corpId。</td></tr>
+          <tr><td><b>41030</b></td><td>invalid page domain</td><td>JS-SDK 配置的 url 域名不在企微后台「网页授权域名」白名单里。</td></tr>
+          <tr><td><b>41033</b></td><td>invalid jsapi signature</td><td>get_jsapi_ticket 用错 / 算签名时 url 没带 # 后面的 hash / 多进程并发用了同一个 ticket。</td></tr>
+        </table>
+
+        <h4>FAQ：开发高频坑</h4>
+        <div id="p10faq"></div>
+      `
+      const tools = [
+        ['cpolar（国内推荐）', '国内用户首选。免费版有固定二级域名、速度比 ngrok 快很多。直接企微回调 URL 填生成的那个就行。'],
+        ['ngrok', '老牌。免费版域名随机（每次重启变），需企微后台重新配回调 URL。付费版有固定域名 + 多端口。国外网络快，国内慢。'],
+        ['localtunnel', 'npm install -g localtunnel && lt --port 8080。零配置、纯命令行、免费。缺点是速度一般、域名随机、稳定性不如 cpolar。'],
+        ['花生壳（oray）', '国内老牌内网穿透服务商。免费版带宽低，付费后有独立域名 + 稳定隧道。适合企业用户长期用。'],
+      ]
+      const a = el.querySelector('#p10a'), aD = el.querySelector('#p10aD')
+      tools.forEach(([n, d]) => {
+        const div = document.createElement('div')
+        div.className = 'arch-item'
+        div.innerHTML = `<strong>${n}</strong><span>${d.slice(0, 22)}…</span>`
+        div.onclick = () => {
+          a.querySelectorAll('.arch-item').forEach(x => x.classList.remove('on'))
+          div.classList.add('on'); aD.innerHTML = `<b>${n}</b>：${d}`
+        }
+        a.appendChild(div)
+      })
+      const faqs = [
+        ['回调收不到消息？', '① URL 是否公网可访问（curl 测）；② ngrok/cpolar 隧道还活着吗；③ 回调签名校验能不能通过（自己写个脚本测签名）；④ 企微回调 URL 验证先 GET 过。'],
+        ['access_token 到底存哪？', 'Redis。key = wecom_token:{corpId}:{agentId}，过期时间设 7000 秒（比 7200 提前 200）。多实例分布式：用 SETNX 加锁，只有一个实例去刷新。'],
+        ['JS-SDK 算签名老失败？', '① 每个 URL 独立 ticket（get_jsapi_ticket 是按域名拿的，全局一个）；② 拼 stringToSign = jsapi_ticket=xxx&noncestr=xxx&timestamp=xxx&url=xxx，url 是当前页面 URL 完整但不含 #hash；③ 必须与 wx.config 里的 timestamp/nonceStr 完全一致。'],
+        ['频控 45009 怎么解？', '消息类：用客服消息窗口（24h 内联系过的可无限发）；API 类：加 Token Bucket 限流（600 次/分钟/IP），合并查询（比如 batch_get_external_contact 一次查 100 个）。'],
+        ['客户联系功能怎么开启？', '企微管理后台 → 客户联系 → 开启。开启后每个成员有了可添加外部联系人的能力。注意：外部联系人上限：普通成员 2 万/人，管理员/服务人员更高。'],
+        ['第三方应用 vs 自建应用？', '自建应用：企业内部自己用，简单直接。第三方应用：给外部企业卖 SaaS，上架企业应用市场，靠 suite_access_token 管多租户。ISV 模式需要额外资质。'],
+      ]
+      const box = el.querySelector('#p10faq')
+      faqs.forEach(([q, ans]) => {
+        const b = document.createElement('button')
+        b.className = 'faq-q'; b.textContent = q
+        const a2 = document.createElement('div')
+        a2.className = 'faq-a hidden'; a2.innerHTML = ans
+        b.onclick = () => a2.classList.toggle('hidden')
+        box.appendChild(b); box.appendChild(a2)
+      })
+    }
+
+    /* ============ 11 管理后台常见操作 ============ */
+    function render11(el) {
+      el.innerHTML = `
+        <h2>管理后台：企微的「总控室」</h2>
+        <p class="lead">work.weixin.qq.com 是开发 API 之前必须熟悉的地方。点卡片看管理员体系，再点常见操作、应急场景。</p>
+
+        <div class="section"><h3>① 管理员体系：四类角色权限阶梯</h3>
+          <div class="arch" id="p11roles"></div>
+          <div class="detail" id="p11roledetail"></div>
+        </div>
+
+        <div class="section"><h3>② 常见操作速查（点开看步骤）</h3>
+          <div class="arch" id="p11ops"></div>
+          <div class="detail" id="p11opdetail"></div>
+        </div>
+
+        <div class="section"><h3>③ 应急场景（点开看处理流程）</h3>
+          <div id="p11faq"></div>
+        </div>
+      `
+      const roles = [
+        { name: '创建者', color: 'var(--c0)', desc: '注册企业的那个人，整个企业的所有者。<br>✅ 全部权限 + 可转让/注销企业<br>⚠️ 只有 1 人<br>⚠️ 转让后不可逆' },
+        { name: '超级管理员', color: 'var(--c1)', desc: '除「转让/解散」外全部权限。<br>✅ 通讯录/应用/客户/审批/打卡全部管理<br>✅ 可添加/移除其他超管<br>❌ 不能转让企业<br>📍 路径：我的企业 → 权限管理' },
+        { name: '分级管理员', color: 'var(--c2)', desc: '按模块授权的「部门管理员」。<br>✅ HR 管通讯录、行政管审批、销售管客户<br>✅ 可限定部门范围<br>📍 路径：我的企业 → 权限管理 → 分级管理员' },
+        { name: '应用管理员', color: 'var(--c3)', desc: '只管某一个自建应用。<br>✅ 改可见范围/回调 URL/菜单<br>✅ 查看 Secret（注意保密）<br>❌ 不能删除应用<br>📍 路径：应用详情 → 权限管理' },
+      ]
+      const roleBox = el.querySelector('#p11roles')
+      const roleDetail = el.querySelector('#p11roledetail')
+      roles.forEach((r) => {
+        const b = document.createElement('button')
+        b.className = 'node-box'
+        b.style.borderColor = r.color
+        b.textContent = r.name
+        b.onclick = () => {
+          roleBox.querySelectorAll('button').forEach((x) => x.classList.remove('on'))
+          b.classList.add('on')
+          roleDetail.innerHTML = `<strong>${r.name}</strong><br>${r.desc}`
+        }
+        roleBox.appendChild(b)
+      })
+
+      const ops = [
+        { name: '设置超级管理员', color: 'var(--c0)', steps: '路径：我的企业 → 权限管理 → 超级管理员 → + 添加<br>① 用创建者账号登录<br>② 选已激活成员<br>③ 勾选权限范围<br>④ 保存，对方企微收到通知' },
+        { name: '转让创建者', color: 'var(--fail)', steps: '⚠️ <strong>不可逆操作</strong><br>路径：我的企业 → 企业信息 → 创建者 → 转让<br>① 新创建者必须已是超管 + 已实名<br>② 扫码 + 短信双重验证<br>③ 转让后原创建者变成超管<br>💡 转让前导出所有 Secret 和审批模板备份' },
+        { name: '分级管理员', color: 'var(--c1)', steps: '路径：我的企业 → 权限管理 → 分级管理员<br>① 选成员<br>② 勾选模块（HR 选通讯录、行政选审批）<br>③ 限定部门范围<br>④ 保存' },
+        { name: '重置 Secret', color: 'var(--warn)', steps: '⚠️ 泄露后的应急操作<br>路径：应用详情 → Secret → 重置<br>① 确认重置，旧 Secret 立即失效<br>② 立即更新后端配置<br>③ 排查泄露来源<br>⚠️ 生产环境先做切换方案！' },
+        { name: '调整可见范围', color: 'var(--c2)', steps: '路径：应用详情 → 可见范围<br>① 添加/移除部门、标签、成员<br>② 保存后立即生效<br>💡 常见坑：新建应用默认只创建者可见' },
+        { name: '批量导入成员', color: 'var(--c3)', steps: '路径：通讯录 → 批量导入/导出<br>① 下载 Excel 模板<br>② 填姓名/手机/邮箱/部门<br>③ 上传 → 系统自动建账号<br>④ 给成员发激活邀请' },
+        { name: '配置离职继承', color: 'var(--c4)', steps: '路径：客户联系 → 离职继承<br>① 设置自动分配规则（按部门/按标签）<br>② 开启「离职自动分配」开关<br>⚠️ 删除成员前先分配客户，否则客户会流失' },
+        { name: '开启二次验证', color: 'var(--ok)', steps: '路径：我的企业 → 安全与保密<br>① 开启「二次验证」<br>② 设置「登录 IP 限制」（只允许公司 IP）<br>③ 开启「文件水印」防截屏外泄<br>✅ 金融/上市公司必备' },
+      ]
+      const opBox = el.querySelector('#p11ops')
+      const opDetail = el.querySelector('#p11opdetail')
+      ops.forEach((r) => {
+        const b = document.createElement('button')
+        b.className = 'node-box'
+        b.style.borderColor = r.color
+        b.textContent = r.name
+        b.onclick = () => {
+          opBox.querySelectorAll('button').forEach((x) => x.classList.remove('on'))
+          b.classList.add('on')
+          opDetail.innerHTML = `<strong>${r.name}</strong><br>${r.steps}`
+        }
+        opBox.appendChild(b)
+      })
+
+      const faqs = [
+        ['🚨 Secret 泄露了怎么办？', '① <strong>立即</strong>重置 Secret（应用详情 → Secret → 重置）<br>② 更新后端配置，滚动重启服务<br>③ 查操作日志看谁访问过 Secret<br>④ 查 API 调用统计，评估泄露窗口期内的异常调用<br>⑤ 排查泄露源（Git 历史？前端代码？日志输出？）'],
+        ['🚨 管理员突然离职怎么办？', '① 立即撤销其超级管理员权限（我的企业 → 权限管理）<br>② 把他管理过的应用 Secret 全部重置<br>③ 把他负责的应用分配给其他管理员<br>④ 客户联系里做离职继承（客户 → 新负责人）<br>⑤ 通讯录里「禁用」账号（不要直接删除，保留记录）'],
+        ['🚨 误删了自建应用怎么办？', '⚠️ <strong>应用删除不可恢复</strong>！只能重建：<br>① 重新创建同名应用<br>② 获取新的 AgentID 和 Secret（旧的全作废）<br>③ 重新配置可见范围、回调 URL、菜单<br>④ 通知所有接入方更新配置<br>💡 预防：重要应用设置「删除需二次确认」的内部流程'],
+        ['🚨 误删了部门怎么办？', '部门删除不会丢失成员，成员会被移到上级部门：<br>① 重建同名部门<br>② 把成员重新分配回新部门<br>③ 检查应用可见范围、审批模板里的部门引用是否需要更新<br>💡 预防：调整部门结构前先导出通讯录备份'],
+        ['❓ 创建者手机号不用了怎么登录？', '① 找任意一个超级管理员登录后台<br>② 我的企业 → 创建者信息 → 修改绑定手机<br>③ 原手机号收不到验证码可以走「申诉」流程<br>⚠️ 如果连超管都没有了，只能联系腾讯客服申诉'],
+        ['❓ 应用 IP 白名单老是被踢？', '云服务器 IP 经常变（弹性 IP、容器重启、自动扩缩容）：<br>① 用固定 IP 或 NAT 出口<br>② 或者改用云函数/内网调用<br>③ 或者把白名单配成 IP 段（CIDR）<br>⚠️ 不建议关掉白名单，会有安全风险'],
+      ]
+      const faqBox = el.querySelector('#p11faq')
+      faqs.forEach(([q, ans]) => {
+        const b = document.createElement('button')
+        b.className = 'faq-q'; b.innerHTML = q
+        const a = document.createElement('div')
+        a.className = 'faq-a hidden'; a.innerHTML = ans
+        b.onclick = () => a.classList.toggle('hidden')
+        faqBox.appendChild(b); faqBox.appendChild(a)
+      })
+    }
+
+    /* ============ 渲染注册表 ============ */
+    const renders = {
+      '01': render01, '02': render02, '03': render03, '04': render04,
+      '05': render05, '06': render06, '07': render07, '08': render08,
+      '09': render09, '10': render10, '11': render11,
+    }
+
+    // 初始化
+    show(current)
+  </script>
+</body>
+</html>

@@ -67,6 +67,7 @@ yili-ai-xuexi/
 | 14 | [Agent 智能体](./notes/agent/) | AI 自主执行 | 手写 Agent / ReAct / MCP / LangGraph / 多 Agent / 企业级实战 10 章 + 浏览器可视化交互演示 |
 | 15 | [量化交易](./notes/quant-trading/) | 金融技术 | 市场规则 / 因子 / 策略 / 回测 / 组合风险 / 执行 / 实盘工程 / AI 投研 10 章 + 浏览器可视化交互演示 |
 | 16 | [金融 Agent 平台实战](./notes/agent-platform/) | AI 应用 | 企业多租户 Agent 平台：MCP 注册 / Agent 上架审核 / 运行时鉴权 / 审计 / 部署 5 章 + FastAPI + Vue 可运行控制台 |
+| 17 | [飞书应用开发](./notes/feishu/) | 企业应用 | 飞书开放平台：App 凭证 / 三种 Token 与 OAuth / 消息与交互式卡片 / 多维表格 Bitable / 云文档与云空间 / 通讯录与扫码登录 / 日历会议审批 / 小程序 / 工作台详解 / 实战 FAQ 11 章 + 浏览器可视化交互演示 |
 
 AI 技术路线的依赖关系与两条可选路径（应用侧 / 原理侧）见 [知识框架.md#ai-技术学习路线图](./知识框架.md#ai-技术学习路线图)。
 

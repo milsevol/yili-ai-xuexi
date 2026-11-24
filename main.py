@@ -29,6 +29,8 @@ TOPICS = [
     ("15", "quant-trading", "量化交易（从研究到实盘）"),
     ("16", "agent-platform", "金融 Agent 平台实战（FastAPI + Vue）"),
     ("17", "oceanbase", "OceanBase 数据库（架构 / 多租户 / Oracle 迁移）"),
+    ("18", "wecom-app", "企业微信应用开发（企微 API / 侧边栏 / 客户联系 / OAuth）"),
+    ("19", "feishu", "飞书应用开发（开放平台 / 消息卡片 / 多维表格 / 云文档 / 小程序）"),
 ]
 
 

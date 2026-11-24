@@ -8,6 +8,7 @@ export type TopicCategory =
   | '大数据'
   | 'AI技术'
   | 'AI应用'
+  | '企业应用'
   | '金融技术'
 
 export type Topic = {
@@ -26,6 +27,7 @@ export const categoryOrder: TopicCategory[] = [
   '大数据',
   'AI技术',
   'AI应用',
+  '企业应用',
   '金融技术',
 ]
 
@@ -34,6 +36,7 @@ export const categoryHints: Record<TopicCategory, string> = {
   大数据: '调度、数仓、消息队列、计算引擎等',
   AI技术: '模型、RAG、向量库、Agent 等技术能力',
   AI应用: '业务场景与落地用法',
+  企业应用: '企业微信等企业级开发平台',
   金融技术: '量化交易、财富管理等金融域',
 }
 
@@ -189,6 +192,24 @@ export const topics: Topic[] = [
     description:
       '从市场规则到实盘工程：订单簿与 A 股规则、因子研究与 IC、趋势/回归/多因子/套利策略、回测偏差与绩效、组合优化与风险、TWAP/VWAP 执行、实盘架构与 AI 投研。10 章笔记 + 浏览器可视化交互演示。',
     link: '/quant-trading/',
+    status: 'ready',
+  },
+  {
+    id: 'wecom-app',
+    title: '企业微信应用开发',
+    category: '企业应用',
+    description:
+      '企微开放能力全景：CorpID/AgentID/Secret 三要素、消息回调与主动推送、客户联系与离职继承、侧边栏 CRM 嵌入、JS-SDK 原生能力、审批打卡集成、OAuth2 身份验证、微应用/小程序、客户跟进助手实战。10 章笔记 + 浏览器可视化交互演示。',
+    link: '/wecom-app/',
+    status: 'ready',
+  },
+  {
+    id: 'feishu',
+    title: '飞书应用开发',
+    category: '企业应用',
+    description:
+      '飞书开放能力全景：App ID/App Secret 凭证、tenant/app/user 三种 Token 与 OAuth、消息与交互式卡片、自定义机器人 Webhook、多维表格 Bitable 当数据库、云文档 Block 模型与云空间 Drive、通讯录与扫码登录、日历会议审批、飞书小程序、工作台上架与运营。11 章笔记 + 浏览器可视化交互演示。',
+    link: '/feishu/',
     status: 'ready',
   },
 ]

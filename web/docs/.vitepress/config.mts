@@ -64,6 +64,13 @@ export default defineConfig({
         items: [{ text: 'Agent 平台实战', link: '/agent-platform/' }],
       },
       {
+        text: '企业应用',
+        items: [
+          { text: '企业微信应用开发', link: '/wecom-app/' },
+          { text: '飞书应用开发', link: '/feishu/' },
+        ],
+      },
+      {
         text: '金融技术',
         items: [{ text: '量化交易', link: '/quant-trading/' }],
       },
@@ -354,6 +361,44 @@ export default defineConfig({
             { text: '08 工程架构与实盘落地', link: '/quant-trading/notes/08-工程架构与实盘落地' },
             { text: '09 AI 与量化投研', link: '/quant-trading/notes/09-AI与量化投研' },
             { text: '10 工具生态与 FAQ', link: '/quant-trading/notes/10-工具生态与FAQ' },
+          ],
+        },
+      ],
+      '/wecom-app/': [
+        {
+          text: '企业微信应用开发',
+          items: [
+            { text: '主题入口', link: '/wecom-app/' },
+            { text: '01 概述与定位', link: '/wecom-app/notes/01-概述与定位' },
+            { text: '02 应用注册与配置', link: '/wecom-app/notes/02-应用注册与配置' },
+            { text: '03 消息收发机制', link: '/wecom-app/notes/03-消息收发机制' },
+            { text: '04 客户联系与客户群', link: '/wecom-app/notes/04-客户联系与客户群' },
+            { text: '05 侧边栏与 JS-SDK', link: '/wecom-app/notes/05-侧边栏与JS-SDK' },
+            { text: '06 审批与打卡集成', link: '/wecom-app/notes/06-审批与打卡集成' },
+            { text: '07 通讯录与身份验证', link: '/wecom-app/notes/07-通讯录与身份验证' },
+            { text: '08 微应用与小程序', link: '/wecom-app/notes/08-微应用与小程序' },
+            { text: '09 企业内部实战案例', link: '/wecom-app/notes/09-企业内部实战案例' },
+            { text: '10 开发技巧与 FAQ', link: '/wecom-app/notes/10-开发技巧与FAQ' },
+            { text: '11 管理后台常见操作', link: '/wecom-app/notes/11-管理后台常见操作' },
+          ],
+        },
+      ],
+      '/feishu/': [
+        {
+          text: '飞书应用开发',
+          items: [
+            { text: '主题入口', link: '/feishu/' },
+            { text: '01 概述与定位', link: '/feishu/notes/01-概述与定位' },
+            { text: '02 开放平台与应用注册', link: '/feishu/notes/02-开放平台与应用注册' },
+            { text: '03 身份认证与 Token', link: '/feishu/notes/03-身份认证与Token' },
+            { text: '04 消息与卡片', link: '/feishu/notes/04-消息与卡片' },
+            { text: '05 多维表格 Bitable', link: '/feishu/notes/05-多维表格Bitable' },
+            { text: '06 文档与云空间', link: '/feishu/notes/06-文档与云空间' },
+            { text: '07 通讯录与组织架构', link: '/feishu/notes/07-通讯录与组织架构' },
+            { text: '08 日历会议与审批', link: '/feishu/notes/08-日历会议与审批' },
+            { text: '09 小程序与工作台', link: '/feishu/notes/09-小程序与工作台' },
+            { text: '10 工作台详解', link: '/feishu/notes/10-工作台详解' },
+            { text: '11 实战与 FAQ', link: '/feishu/notes/11-实战与FAQ' },
           ],
         },
       ],

@@ -4,6 +4,7 @@ export default {
   "agent-platform": 5,
   "clickhouse": 10,
   "dolphin-scheduler": 10,
+  "feishu": 11,
   "flink": 10,
   "hadoop": 10,
   "hbase": 10,
@@ -16,5 +17,6 @@ export default {
   "quant-trading": 10,
   "rag": 8,
   "spark": 10,
-  "vector-db": 6
+  "vector-db": 6,
+  "wecom-app": 11
 } as Record<string, number>
