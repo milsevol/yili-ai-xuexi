@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process'
 import { defineConfig } from 'vitepress'
 
 // 本地开发默认 '/'；GitHub Pages / 打包脚本用 '/yili-ai-xuexi/'
@@ -5,13 +6,27 @@ import { defineConfig } from 'vitepress'
 const defaultBase = process.env.GITHUB_ACTIONS ? '/yili-ai-xuexi/' : '/'
 const base = process.env.VITEPRESS_BASE || defaultBase
 
+// VitePress 的 lastUpdated 依赖 git log：若当前进程无法执行 git（如 IDE 沙箱、
+// PATH 不完整），计算页面数据时会直接抛 "spawn git ENOENT" 导致整页渲染失败。
+// 启动时探测一次，不可用就关闭最后更新时间，保证预览正常。
+function gitAvailable(): boolean {
+  try {
+    execFileSync('git', ['--version'], { stdio: 'ignore' })
+    return true
+  } catch {
+    return false
+  }
+}
+
+const useLastUpdated = gitAvailable()
+
 export default defineConfig({
   title: 'yili-ai-xuexi',
   description: '个人技术知识学习仓库：大数据、AI、量化交易 — 笔记 + Python 演示',
   lang: 'zh-CN',
   base,
   cleanUrls: true,
-  lastUpdated: true,
+  lastUpdated: useLastUpdated,
 
   themeConfig: {
     nav: [
